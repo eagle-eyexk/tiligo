@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToggleLeft, ToggleRight, LogOut, Bell, CheckCircle, MapPin, Phone } from "lucide-react";
+import { ToggleLeft, ToggleRight, LogOut, Bell, CheckCircle, MapPin, Phone, TrendingUp, Star, Bike, Clock, Package } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import TiliGoLogo from "@/components/TiliGoLogo";
@@ -9,15 +9,6 @@ const STATUS_LABELS = {
   e_re: "E Re", pranuar: "Pranuar", ne_pergatitje: "Në Përgatitje",
   gati_per_dorezim: "Gati për Dorëzim", ne_rruge: "Në Rrugë",
   dorezuar: "Dorëzuar", anuluar: "Anuluar"
-};
-const STATUS_COLORS = {
-  e_re: "bg-blue-100 text-blue-700",
-  pranuar: "bg-indigo-100 text-indigo-700",
-  ne_pergatitje: "bg-amber-100 text-amber-700",
-  gati_per_dorezim: "bg-orange-100 text-orange-700",
-  ne_rruge: "bg-purple-100 text-purple-700",
-  dorezuar: "bg-green-100 text-green-700",
-  anuluar: "bg-red-100 text-red-700",
 };
 
 export default function DeliveryDashboard() {
@@ -40,7 +31,7 @@ export default function DeliveryDashboard() {
     const unsub = base44.entities.Order.subscribe((event) => {
       if (event.data?.status === "gati_per_dorezim" && !event.data?.delivery_id) {
         setNewOrder(true);
-        setTimeout(() => setNewOrder(false), 5000);
+        setTimeout(() => setNewOrder(false), 6000);
         loadOrders();
       } else if (event.type === "update") {
         loadOrders();
@@ -82,44 +73,46 @@ export default function DeliveryDashboard() {
     navigate("/");
   };
 
-  // Orders ready for pickup (not yet assigned)
   const availableOrders = orders.filter(o => o.status === "gati_per_dorezim" && !o.delivery_id);
-  // My active orders
   const myOrders = orders.filter(o => o.delivery_id === driver?.id && o.status === "ne_rruge");
-  // My history
   const myHistory = orders.filter(o => o.delivery_id === driver?.id && o.status === "dorezuar");
 
-  const todayEarnings = myHistory.filter(o => {
+  const todayHistory = myHistory.filter(o => {
     const d = new Date(o.created_date);
-    const today = new Date();
-    return d.toDateString() === today.toDateString();
-  }).reduce((s, o) => s + (o.delivery_fee || 1.5), 0);
+    return d.toDateString() === new Date().toDateString();
+  });
+  const todayEarnings = todayHistory.reduce((s, o) => s + (o.delivery_fee || 1.5), 0);
+  const totalEarnings = myHistory.reduce((s, o) => s + (o.delivery_fee || 1.5), 0);
 
   if (!driver) return null;
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b border-gray-100 sticky top-0 z-50">
-        <div className="max-w-3xl mx-auto px-4 h-14 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-green-700 to-green-800 text-white sticky top-0 z-50">
+        <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <TiliGoLogo size="sm" />
+            <div className="relative">
+              {driver.image_url ? (
+                <img src={driver.image_url} className="w-10 h-10 rounded-xl object-cover border-2 border-white/30" />
+              ) : (
+                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">🛵</div>
+              )}
+              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${driver.is_available ? "bg-green-400" : "bg-gray-400"}`} />
+            </div>
             <div>
-              <p className="font-bold text-gray-900 text-sm leading-tight">{driver.name}</p>
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${driver.is_available ? "bg-green-500 animate-pulse" : "bg-gray-300"}`} />
-                <span className="text-xs text-gray-500">{driver.is_available ? "Aktiv" : "Jo aktiv"}</span>
-              </div>
+              <p className="font-black text-white text-sm">{driver.name}</p>
+              <p className="text-green-200 text-xs">{driver.vehicle === "motor" ? "🛵 Motor" : driver.vehicle === "biciklete" ? "🚲 Biçikletë" : "🚗 Makinë"} · {driver.is_available ? "Aktiv" : "Jo aktiv"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={toggleAvailable}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${driver.is_available ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
+              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${driver.is_available ? "bg-white text-green-700" : "bg-white/20 text-white hover:bg-white/30"}`}>
               {driver.is_available ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
               {driver.is_available ? "Aktiv" : "Jo aktiv"}
             </button>
-            <button onClick={logout} className="text-gray-400 hover:text-red-500 transition-colors p-1">
-              <LogOut size={18} />
+            <button onClick={logout} className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
+              <LogOut size={16} className="text-white" />
             </button>
           </div>
         </div>
@@ -128,41 +121,49 @@ export default function DeliveryDashboard() {
       {/* New order notification */}
       <AnimatePresence>
         {newOrder && (
-          <motion.div initial={{ y: -60 }} animate={{ y: 0 }} exit={{ y: -60 }}
-            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-6 py-3 rounded-2xl shadow-xl font-bold text-sm flex items-center gap-2">
-            🔔 Porosi e re gati për dorëzim!
+          <motion.div initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -80, opacity: 0 }}
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-orange-500 text-white px-6 py-3.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-3">
+            <Bell size={18} className="animate-bounce" /> 🔔 Porosi e re gati për dorëzim!
           </motion.div>
         )}
       </AnimatePresence>
 
       {/* Stats */}
       <div className="max-w-3xl mx-auto px-4 pt-5">
-        <div className="grid grid-cols-3 gap-3 mb-5">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           {[
-            { label: "Sot", value: `${todayEarnings.toFixed(2)}€`, emoji: "💰" },
-            { label: "Të gjitha", value: myHistory.length, emoji: "📦" },
-            { label: "Aktive", value: myOrders.length, emoji: "🛵" },
+            { icon: "💰", label: "Sot", value: `${todayEarnings.toFixed(2)}€`, sub: `${todayHistory.length} dërgesa`, color: "from-green-500 to-green-700" },
+            { icon: "📦", label: "Totale", value: myHistory.length, sub: "dërgesa", color: "from-blue-500 to-blue-700" },
+            { icon: "🛵", label: "Aktive", value: myOrders.length, sub: "tani", color: "from-purple-500 to-purple-700" },
+            { icon: "💵", label: "Të ardhura", value: `${totalEarnings.toFixed(2)}€`, sub: "gjithsej", color: "from-amber-500 to-orange-600" },
           ].map((s, i) => (
-            <div key={i} className="bg-white rounded-2xl p-4 shadow-sm text-center">
-              <div className="text-2xl mb-1">{s.emoji}</div>
-              <p className="font-black text-gray-900 text-lg">{s.value}</p>
-              <p className="text-xs text-gray-500">{s.label}</p>
-            </div>
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+              className={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-4 shadow-md`}>
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <p className="font-black text-xl">{s.value}</p>
+              <p className="text-white/60 text-xs">{s.label}</p>
+              <p className="text-white/40 text-xs">{s.sub}</p>
+            </motion.div>
           ))}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-100">
+      <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
         <div className="max-w-3xl mx-auto px-4 flex">
           {[
-            { key: "available", label: `Gati (${availableOrders.length})` },
-            { key: "mine", label: `Të Miat (${myOrders.length})` },
-            { key: "history", label: "Historiku" },
+            { key: "available", label: `📦 Gati`, badge: availableOrders.length },
+            { key: "mine", label: `🛵 Të Miat`, badge: myOrders.length },
+            { key: "history", label: "📋 Historiku" },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`px-5 py-3.5 text-sm font-semibold border-b-2 transition-colors ${tab === t.key ? "border-green-600 text-green-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+              className={`relative flex items-center gap-1.5 px-5 py-3.5 text-sm font-bold border-b-2 transition-colors ${tab === t.key ? "border-green-600 text-green-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
               {t.label}
+              {t.badge > 0 && (
+                <span className="ml-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-black text-[10px]">
+                  {t.badge}
+                </span>
+              )}
             </button>
           ))}
         </div>
@@ -173,42 +174,60 @@ export default function DeliveryDashboard() {
         {tab === "available" && (
           <>
             {loading ? (
-              <div className="space-y-3">{[1,2].map(i => <div key={i} className="bg-white rounded-2xl h-28 animate-pulse" />)}</div>
+              <div className="space-y-3">{[1,2].map(i => <div key={i} className="bg-white rounded-2xl h-32 animate-pulse" />)}</div>
             ) : availableOrders.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-5xl mb-3">📭</div>
-                <p className="text-gray-500 font-medium">Nuk ka porosi gati akoma</p>
-                <p className="text-gray-400 text-sm mt-1">Aktivizo statusin tuaj për të marrë porosi</p>
-              </div>
-            ) : availableOrders.map(order => (
-              <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-orange-400">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <span className="font-black text-lg text-amber-600">{order.order_code}</span>
-                    <p className="text-gray-900 font-semibold text-sm mt-0.5">{order.business_name}</p>
-                  </div>
-                  <span className="bg-orange-100 text-orange-700 text-xs font-bold px-3 py-1 rounded-full">Gati</span>
-                </div>
-                <div className="space-y-1.5 mb-3">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin size={14} className="text-blue-600 flex-shrink-0" />
-                    <span>{order.customer_address}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone size={14} className="text-green-600 flex-shrink-0" />
-                    <span>{order.customer_phone} – {order.customer_name}</span>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <span className="text-xs text-gray-500">Shpërblimi: </span>
-                    <span className="font-black text-green-600">{(order.delivery_fee || 1.5).toFixed(2)}€</span>
-                  </div>
-                  <button onClick={() => acceptOrder(order)}
-                    className="bg-green-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-green-700 transition-colors">
-                    🛵 Prano Dorëzimin
+              <div className="text-center py-24">
+                <div className="text-7xl mb-4">📭</div>
+                <p className="text-gray-600 font-bold text-lg">Nuk ka porosi gati</p>
+                <p className="text-gray-400 text-sm mt-1">
+                  {driver.is_available ? "Prisni porositë e reja..." : "Aktivizoni statusin për të marrë porosi"}
+                </p>
+                {!driver.is_available && (
+                  <button onClick={toggleAvailable}
+                    className="mt-5 bg-green-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-green-700 transition-colors">
+                    Aktivizo Tani →
                   </button>
+                )}
+              </div>
+            ) : availableOrders.map((order, idx) => (
+              <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                className="bg-white rounded-2xl shadow-sm overflow-hidden border-2 border-orange-200">
+                <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-3 border-b border-orange-100 flex items-center justify-between">
+                  <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
+                  <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">Gati për Dorëzim</span>
+                </div>
+                <div className="p-5">
+                  <div className="mb-4">
+                    <p className="font-bold text-gray-900 mb-1">🏪 {order.business_name}</p>
+                    <div className="space-y-1.5">
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <MapPin size={14} className="text-blue-600 flex-shrink-0" />
+                        <span>{order.customer_address}</span>
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-gray-600">
+                        <Phone size={14} className="text-green-600 flex-shrink-0" />
+                        <span className="font-medium">{order.customer_name}</span>
+                        <a href={`tel:${order.customer_phone}`} className="text-blue-600 font-bold">{order.customer_phone}</a>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Items summary */}
+                  <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                    {order.items?.map((item, i) => (
+                      <p key={i} className="text-xs text-gray-500">{item.qty}× {item.name}</p>
+                    ))}
+                    <p className="font-bold text-gray-900 text-sm mt-1 pt-1 border-t border-gray-200">{order.total?.toFixed(2)}€ cash</p>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="bg-green-50 px-4 py-2 rounded-xl">
+                      <p className="text-xs text-gray-500">Shpërblimi juaj</p>
+                      <p className="font-black text-green-600 text-lg">{(order.delivery_fee || 1.5).toFixed(2)}€</p>
+                    </div>
+                    <button onClick={() => acceptOrder(order)}
+                      className="bg-green-600 hover:bg-green-700 text-white font-black px-6 py-3.5 rounded-xl transition-all shadow-lg hover:shadow-green-200 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+                      <Bike size={18} /> Prano Dorëzimin
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             ))}
@@ -219,50 +238,64 @@ export default function DeliveryDashboard() {
         {tab === "mine" && (
           <>
             {myOrders.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-5xl mb-3">🛵</div>
-                <p className="text-gray-500 font-medium">Nuk keni dorëzime aktive</p>
+              <div className="text-center py-24">
+                <div className="text-7xl mb-4">🛵</div>
+                <p className="text-gray-600 font-bold text-lg">Nuk keni dorëzime aktive</p>
+                <p className="text-gray-400 text-sm mt-1">Pranoni një porosi nga lista "Gati"</p>
               </div>
-            ) : myOrders.map(order => (
-              <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-2xl p-5 shadow-sm border-l-4 border-purple-500">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <span className="font-black text-lg text-amber-600">{order.order_code}</span>
-                    <p className="text-gray-900 font-semibold text-sm">{order.business_name}</p>
-                  </div>
-                  <span className="bg-purple-100 text-purple-700 text-xs font-bold px-3 py-1 rounded-full">Në Rrugë</span>
+            ) : myOrders.map((order, idx) => (
+              <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
+                className="bg-white rounded-2xl shadow-sm overflow-hidden border-2 border-purple-200">
+                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 py-3 border-b border-purple-100 flex items-center justify-between">
+                  <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
+                  <span className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
+                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> Në Rrugë
+                  </span>
                 </div>
-                <div className="space-y-1.5 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin size={14} className="text-blue-600 flex-shrink-0" />
-                    <span>{order.customer_address}</span>
+                <div className="p-5">
+                  <p className="font-bold text-gray-900 mb-3">🏪 {order.business_name}</p>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-xl px-3 py-2">
+                      <MapPin size={14} className="text-blue-600 flex-shrink-0" />
+                      <span className="font-medium">{order.customer_address}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-sm bg-gray-50 rounded-xl px-3 py-2">
+                      <Phone size={14} className="text-green-600 flex-shrink-0" />
+                      <span className="text-gray-700 font-medium">{order.customer_name}</span>
+                      <a href={`tel:${order.customer_phone}`} className="text-blue-600 font-black">{order.customer_phone}</a>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Phone size={14} className="text-green-600 flex-shrink-0" />
-                    <span>{order.customer_phone} – {order.customer_name}</span>
+
+                  {/* Animated route */}
+                  <div className="bg-gradient-to-r from-purple-50 via-gray-50 to-green-50 rounded-xl p-4 mb-4 flex items-center gap-3">
+                    <div className="text-center">
+                      <div className="text-2xl">🏪</div>
+                      <p className="text-xs text-gray-500 mt-1">Biznesi</p>
+                    </div>
+                    <div className="flex-1 relative h-6 flex items-center">
+                      <div className="w-full border-t-2 border-dashed border-gray-300" />
+                      <motion.span
+                        className="absolute text-xl"
+                        animate={{ x: ["0%", "85%", "0%"] }}
+                        transition={{ repeat: Infinity, duration: 2.5, ease: "easeInOut" }}
+                      >🛵</motion.span>
+                    </div>
+                    <div className="text-center">
+                      <div className="text-2xl">🏠</div>
+                      <p className="text-xs text-gray-500 mt-1">Klienti</p>
+                    </div>
                   </div>
-                </div>
-                {/* Mini animated route */}
-                <div className="bg-gradient-to-r from-purple-50 to-green-50 rounded-xl p-3 mb-3 flex items-center gap-2 text-xs text-gray-500">
-                  <span>🏪 {order.business_name}</span>
-                  <div className="flex-1 border-t-2 border-dashed border-gray-300 relative">
-                    <motion.span
-                      animate={{ x: ["0%", "100%", "0%"] }}
-                      transition={{ repeat: Infinity, duration: 2 }}
-                      className="absolute -top-3 text-base">🛵</motion.span>
+
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-blue-700 font-black text-xl">{order.total?.toFixed(2)}€</p>
+                      <p className="text-xs text-gray-500">cash + <span className="text-green-600 font-bold">+{(order.delivery_fee || 1.5).toFixed(2)}€</span> shpërblim</p>
+                    </div>
+                    <button onClick={() => completeOrder(order)}
+                      className="bg-green-600 hover:bg-green-700 text-white font-black px-6 py-3.5 rounded-xl transition-all shadow-lg hover:shadow-green-200 flex items-center gap-2">
+                      <CheckCircle size={18} /> U Dorëzua!
+                    </button>
                   </div>
-                  <span>🏠 Klienti</span>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-blue-700 font-black">{order.total?.toFixed(2)}€ cash</p>
-                    <p className="text-xs text-green-600">+{(order.delivery_fee || 1.5).toFixed(2)}€ shpërblim</p>
-                  </div>
-                  <button onClick={() => completeOrder(order)}
-                    className="bg-green-600 text-white text-sm font-bold px-5 py-2.5 rounded-xl hover:bg-green-700 transition-colors flex items-center gap-2">
-                    <CheckCircle size={16} /> U Dorëzua
-                  </button>
                 </div>
               </motion.div>
             ))}
@@ -273,23 +306,46 @@ export default function DeliveryDashboard() {
         {tab === "history" && (
           <>
             {myHistory.length === 0 ? (
-              <div className="text-center py-20">
-                <div className="text-5xl mb-3">📋</div>
-                <p className="text-gray-500">Nuk ka historik akoma</p>
+              <div className="text-center py-24">
+                <div className="text-7xl mb-4">📋</div>
+                <p className="text-gray-600 font-bold">Nuk ka historik akoma</p>
               </div>
-            ) : myHistory.map(order => (
-              <div key={order.id} className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
-                <div>
-                  <p className="font-bold text-amber-600 text-sm">{order.order_code}</p>
-                  <p className="text-gray-700 text-sm">{order.customer_name}</p>
-                  <p className="text-gray-500 text-xs">{order.business_name}</p>
+            ) : (
+              <>
+                {/* Summary bar */}
+                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl p-5 mb-2">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-green-200 text-sm">Gjithsej të ardhura</p>
+                      <p className="font-black text-3xl">{totalEarnings.toFixed(2)}€</p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-green-200 text-sm">Dërgesa totale</p>
+                      <p className="font-black text-3xl">{myHistory.length}</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="text-right">
-                  <span className="bg-green-100 text-green-700 text-xs font-bold px-3 py-1 rounded-full">Dorëzuar</span>
-                  <p className="text-green-600 font-black mt-1 text-sm">+{(order.delivery_fee || 1.5).toFixed(2)}€</p>
+                <div className="space-y-2">
+                  {myHistory.map((order, i) => (
+                    <motion.div key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
+                      className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3">
+                      <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <CheckCircle size={18} className="text-green-600" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-amber-600 text-sm">#{order.order_code}</p>
+                        <p className="text-gray-700 text-sm font-medium">{order.customer_name}</p>
+                        <p className="text-gray-400 text-xs">{order.business_name} · {new Date(order.created_date).toLocaleDateString("sq-AL")}</p>
+                      </div>
+                      <div className="text-right">
+                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">Dorëzuar</span>
+                        <p className="text-green-600 font-black mt-1 text-base">+{(order.delivery_fee || 1.5).toFixed(2)}€</p>
+                      </div>
+                    </motion.div>
+                  ))}
                 </div>
-              </div>
-            ))}
+              </>
+            )}
           </>
         )}
       </div>

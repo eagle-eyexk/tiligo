@@ -337,9 +337,7 @@ export default function Home() {
             alt="TiliGo" className="h-12 mx-auto mb-4 object-contain"
           />
           <p className="text-gray-400 text-sm">© 2025 TiliGo · Prishtinë, Kosovë · Dorëzimi më i shpejtë</p>
-          <p className="text-gray-600 text-xs mt-2">
-            <a href="/download.zip" className="hover:text-gray-400 transition-colors">⬇ Shkarko projektin</a>
-          </p>
+
         </div>
       </footer>
     </div>
