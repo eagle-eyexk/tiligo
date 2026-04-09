@@ -18,7 +18,6 @@ const CATEGORIES = [
   { label: "Supermarket", emoji: "🛒", key: "Supermarket" },
 ];
 
-// Real TiliGo delivery photos
 const HERO_IMAGES = [
   "https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg",
   "https://media.base44.com/images/public/69d519273be8cf966434f77a/267962dbe_IMG_0103.jpg",
@@ -27,7 +26,6 @@ const HERO_IMAGES = [
   "https://media.base44.com/images/public/69d519273be8cf966434f77a/037c93d34_IMG_0099.jpg",
 ];
 
-// Short, emotional, human mottos
 const MOTTOS = [
   { text: "Porosit. Ne vrapojmë.", sub: "Ushqimi yt tek dera — brenda 30 minutave." },
   { text: "E freskët. E shpejtë. Vetëm për ty.", sub: "Sepse çdo minutë e kursyer ka vlerë." },
@@ -36,7 +34,6 @@ const MOTTOS = [
   { text: "Kënaqja jote, misioni ynë.", sub: "Mbi 10,000 porosi — çdo herë me buzëqeshje." },
 ];
 
-// Pull-to-Refresh hook
 function usePullToRefresh(onRefresh) {
   const startY = useRef(0);
   const [pulling, setPulling] = useState(false);
@@ -63,7 +60,6 @@ export default function Home() {
   const [userCity, setUserCity] = useState(null);
   const [mottoIdx, setMottoIdx] = useState(0);
   const [imgIdx, setImgIdx] = useState(0);
-  const [refreshing, setRefreshing] = useState(false);
   const { cart, addToCart, removeFromCart, clearCart } = useCart();
   const navigate = useNavigate();
 
@@ -99,7 +95,7 @@ export default function Home() {
     if (Notification.permission === 'default') await Notification.requestPermission();
   };
 
-  const handleRefresh = async () => { setRefreshing(true); await loadBusinesses(); setRefreshing(false); };
+  const handleRefresh = async () => { await loadBusinesses(); };
   const ptr = usePullToRefresh(handleRefresh);
 
   const loadBusinesses = async () => {
@@ -117,21 +113,14 @@ export default function Home() {
   });
 
   return (
-    <div
-      className="min-h-screen"
-      style={{ background: 'var(--bg-page)' }}
-      onTouchStart={ptr.onTouchStart}
-      onTouchMove={ptr.onTouchMove}
-      onTouchEnd={ptr.onTouchEnd}
-    >
+    <div className="min-h-screen" style={{ background: 'var(--bg-page)' }}
+      onTouchStart={ptr.onTouchStart} onTouchMove={ptr.onTouchMove} onTouchEnd={ptr.onTouchEnd}>
+
       <AnimatePresence>
         {ptr.pulling && (
           <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: ptr.pullDist }} exit={{ opacity: 0, height: 0 }}
             className="flex items-center justify-center overflow-hidden" style={{ background: 'var(--stat-bg)' }}>
             <RefreshCw size={18} className={`text-emerald-500 ${ptr.pullDist >= ptr.threshold ? "animate-spin" : ""}`} />
-            <span className="ml-2 text-sm font-bold" style={{ color: 'var(--text-muted)' }}>
-              {ptr.pullDist >= ptr.threshold ? "Lëshoni për rifreskim" : "Tërhiqni poshtë"}
-            </span>
           </motion.div>
         )}
       </AnimatePresence>
@@ -140,12 +129,9 @@ export default function Home() {
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)}
         cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClear={clearCart} />
 
-      {/* ═══════════════════════════════════════════════
-          HERO — Real photo crossfade background
-      ═══════════════════════════════════════════════ */}
+      {/* ═══ HERO ═══ */}
       <section className="relative overflow-hidden" style={{ minHeight: 580 }}>
-
-        {/* Photo crossfade layers */}
+        {/* Photo crossfade */}
         <div className="absolute inset-0">
           {HERO_IMAGES.map((src, i) => (
             <motion.div key={src} className="absolute inset-0"
@@ -154,18 +140,12 @@ export default function Home() {
               <img src={src} alt="TiliGo" className="w-full h-full object-cover object-center" />
             </motion.div>
           ))}
-
-          {/* Deep layered overlay — ensures text always readable */}
-          <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(180deg, rgba(2,10,22,0.62) 0%, rgba(2,10,22,0.28) 45%, rgba(2,10,22,0.75) 100%)' }} />
-          {/* Subtle teal tint */}
-          <div className="absolute inset-0"
-            style={{ background: 'linear-gradient(135deg, rgba(0,60,120,0.3) 0%, rgba(0,160,80,0.08) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, rgba(2,10,22,0.62) 0%, rgba(2,10,22,0.28) 45%, rgba(2,10,22,0.75) 100%)' }} />
+          <div className="absolute inset-0" style={{ background: 'linear-gradient(135deg, rgba(0,60,120,0.3) 0%, rgba(0,160,80,0.08) 100%)' }} />
         </div>
 
-        {/* Floating live badge top-left */}
-        <motion.div
-          initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+        {/* Live city badge */}
+        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
           className="absolute top-5 left-4 z-20 flex items-center gap-2 px-4 py-2 rounded-full text-xs font-semibold"
           style={{ background: 'rgba(0,0,0,0.45)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.15)', color: '#d1fae5' }}>
           <span className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
@@ -173,19 +153,16 @@ export default function Home() {
           {userCity && <MapPin size={11} className="text-emerald-300" />}
         </motion.div>
 
-        {/* Image progress dots — top right */}
+        {/* Image dots top-right */}
         <div className="absolute top-5 right-4 z-20 flex gap-1.5">
           {HERO_IMAGES.map((_, i) => (
-            <button key={i} onClick={() => setImgIdx(i)}
-              className="rounded-full transition-all duration-500"
+            <button key={i} onClick={() => setImgIdx(i)} className="rounded-full transition-all duration-500"
               style={{ width: i === imgIdx ? 20 : 6, height: 6, background: i === imgIdx ? '#00ff87' : 'rgba(255,255,255,0.35)' }} />
           ))}
         </div>
 
-        {/* ── HERO CONTENT ── */}
-        <div className="relative z-10 max-w-3xl mx-auto px-5 pt-20 pb-32 flex flex-col items-center text-center">
-
-          {/* Main motto — big, clean, white */}
+        {/* Hero content */}
+        <div className="relative z-10 max-w-3xl mx-auto px-5 pt-20 pb-28 flex flex-col items-center text-center">
           <div className="mb-7 min-h-[120px] flex flex-col items-center justify-center">
             <AnimatePresence mode="wait">
               <motion.div key={mottoIdx}
@@ -193,9 +170,7 @@ export default function Home() {
                 animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                 exit={{ opacity: 0, y: -18, filter: "blur(6px)" }}
                 transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-                className="text-center"
-              >
-                {/* Eyebrow label */}
+                className="text-center">
                 <p className="text-xs font-bold tracking-[0.2em] uppercase mb-3"
                   style={{ color: '#6ee7b7', textShadow: '0 0 20px rgba(0,255,135,0.6)' }}>
                   TiliGo — Dorëzim Express
@@ -210,70 +185,36 @@ export default function Home() {
                 </p>
               </motion.div>
             </AnimatePresence>
-            {/* Motto dots */}
             <div className="flex gap-1.5 mt-6">
               {MOTTOS.map((_, i) => (
-                <button key={i} onClick={() => setMottoIdx(i)}
-                  className="rounded-full transition-all duration-300"
+                <button key={i} onClick={() => setMottoIdx(i)} className="rounded-full transition-all duration-300"
                   style={{ width: i === mottoIdx ? 24 : 7, height: 7, background: i === mottoIdx ? '#fbbf24' : 'rgba(255,255,255,0.3)' }} />
               ))}
             </div>
           </div>
 
-          {/* Search bar */}
-          <div className="flex gap-2.5 w-full max-w-lg mb-6">
+          {/* Search */}
+          <div className="flex gap-2.5 w-full max-w-lg">
             <div className="flex-1 relative">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2" size={17}
-                style={{ color: 'rgba(255,255,255,0.5)' }} />
-              <input
-                value={search}
-                onChange={e => setSearch(e.target.value)}
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2" size={17} style={{ color: 'rgba(255,255,255,0.5)' }} />
+              <input value={search} onChange={e => setSearch(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && navigate(`/?search=${search}`)}
                 placeholder="Kërko ushqim ose restorante..."
                 className="w-full pl-11 pr-4 py-3.5 rounded-2xl text-sm outline-none"
-                style={{
-                  background: 'rgba(255,255,255,0.12)',
-                  backdropFilter: 'blur(16px)',
-                  border: '1px solid rgba(255,255,255,0.22)',
-                  color: '#ffffff',
-                }}
-              />
+                style={{ background: 'rgba(255,255,255,0.12)', backdropFilter: 'blur(16px)', border: '1px solid rgba(255,255,255,0.22)', color: '#ffffff' }} />
             </div>
-            <button
-              className="px-6 py-3.5 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 shadow-xl"
-              style={{ background: 'linear-gradient(135deg,#00ff87,#00b4d8)', color: '#020c1b', boxShadow: '0 0 22px rgba(0,255,135,0.45)' }}
-            >
+            <button className="px-6 py-3.5 rounded-2xl font-black text-sm transition-all hover:scale-105 active:scale-95 shadow-xl"
+              style={{ background: 'linear-gradient(135deg,#00ff87,#00b4d8)', color: '#020c1b', boxShadow: '0 0 22px rgba(0,255,135,0.45)' }}>
               Kërko
             </button>
           </div>
-
-          {/* App download buttons */}
-          <div className="flex items-center justify-center gap-3">
-            <Link to="/shkarko-app"
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
-              style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)', border: '1px solid rgba(255,255,255,0.18)', color: '#ffffff' }}>
-              <span className="text-lg">🍎</span>
-              <div className="text-left"><p className="text-[10px] opacity-60 leading-none">Shkarko për</p><p className="font-bold leading-tight">iPhone / iPad</p></div>
-            </Link>
-            <Link to="/shkarko-app"
-              className="flex items-center gap-2.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all hover:scale-105"
-              style={{ background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(14px)', border: '1px solid rgba(0,255,135,0.3)', color: '#ffffff' }}>
-              <span className="text-lg">🤖</span>
-              <div className="text-left"><p className="text-[10px] opacity-60 leading-none">Shkarko për</p><p className="font-bold leading-tight">Android</p></div>
-            </Link>
-          </div>
         </div>
 
-        {/* Subtle scooter emoji lane */}
+        {/* Scooter lane */}
         <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden pointer-events-none">
-          {[
-            { delay: 0, duration: 7, y: 8, scale: 1.1 },
-            { delay: 3, duration: 10, y: 0, scale: 0.8 },
-          ].map((s, i) => (
-            <motion.div key={i} className="absolute"
-              style={{ bottom: `${s.y}px`, scale: s.scale, opacity: 0.7 }}
-              initial={{ x: "-80px" }}
-              animate={{ x: "calc(100vw + 80px)" }}
+          {[{ delay: 0, duration: 7, y: 8, scale: 1.1 }, { delay: 3, duration: 10, y: 0, scale: 0.8 }].map((s, i) => (
+            <motion.div key={i} className="absolute" style={{ bottom: `${s.y}px`, scale: s.scale, opacity: 0.7 }}
+              initial={{ x: "-80px" }} animate={{ x: "calc(100vw + 80px)" }}
               transition={{ duration: s.duration, delay: s.delay, repeat: Infinity, repeatDelay: s.duration * 0.5, ease: "linear" }}>
               <span className="text-2xl">🛵</span>
             </motion.div>
@@ -291,8 +232,7 @@ export default function Home() {
           ].map((f, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 + i * 0.08 }}
               className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0"
-                style={{ background: 'var(--stat-bg)' }}>{f.icon}</div>
+              <div className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--stat-bg)' }}>{f.icon}</div>
               <div>
                 <p className="font-bold text-sm" style={{ color: 'var(--text-heading)' }}>{f.title}</p>
                 <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{f.sub}</p>
@@ -302,7 +242,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Main content */}
+      {/* Main */}
       <main className="max-w-7xl mx-auto px-4 py-8">
         {/* Category pills */}
         <div className="flex gap-2 overflow-x-auto pb-3 no-scrollbar mb-7">
@@ -350,44 +290,63 @@ export default function Home() {
         ) : (
           <div className="biz-grid">
             {filtered.map((biz, i) => (
-              <motion.div
-                key={biz.id}
+              <motion.div key={biz.id}
                 className={i === 0 || (i % 7 === 3) ? 'biz-featured' : ''}
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 28 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: '-40px' }}
-                transition={{ duration: 0.45, delay: (i % 4) * 0.07, ease: [0.16, 1, 0.3, 1] }}
-                whileHover={{ y: -4, scale: 1.015 }}
-              >
-                <Link to={`/dyqani/${biz.id}`} className="block h-full">
-                  <div className="tiligo-card rounded-2xl overflow-hidden h-full flex flex-col shadow-sm">
-                    <div className="relative overflow-hidden" style={{ height: i === 0 || (i % 7 === 3) ? 200 : 160 }}>
-                      <img
-                        src={biz.image_url || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=500&q=80`}
+                viewport={{ once: true, margin: '-30px' }}
+                transition={{ duration: 0.5, delay: (i % 4) * 0.08, ease: [0.16, 1, 0.3, 1] }}
+                whileHover={{ y: -6, scale: 1.02 }}>
+                <Link to={`/dyqani/${biz.id}`} className="block h-full group">
+                  <div className="rounded-2xl overflow-hidden h-full flex flex-col relative"
+                    style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)', boxShadow: '0 4px 20px rgba(0,0,0,0.12)', transition: 'border-color 0.3s, box-shadow 0.3s' }}
+                    onMouseEnter={e => { e.currentTarget.style.borderColor = 'rgba(0,255,135,0.35)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,255,135,0.12)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--card-border)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(0,0,0,0.12)'; }}>
+                    {/* Image */}
+                    <div className="relative overflow-hidden" style={{ height: i === 0 || (i % 7 === 3) ? 220 : 175 }}>
+                      <img src={biz.image_url || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=600&q=80`}
                         alt={biz.name}
-                        className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
-                      <span className="absolute top-2.5 right-2.5 bg-amber-500 text-white text-[11px] font-black px-2 py-0.5 rounded-full flex items-center gap-1 shadow">
-                        <Star size={9} fill="white" /> {biz.rating?.toFixed(1) || "4.5"}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" />
+                      <div className="absolute inset-0" style={{ background: 'linear-gradient(180deg, transparent 40%, rgba(0,0,0,0.6) 100%)' }} />
+
+                      {/* Category badge */}
+                      <span className="absolute top-2.5 left-2.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                        style={{ background: 'rgba(0,0,0,0.55)', color: '#e0f2fe', border: '1px solid rgba(255,255,255,0.15)', backdropFilter: 'blur(6px)' }}>
+                        {biz.category || "Ushqim"}
                       </span>
+
+                      {/* Rating */}
+                      <span className="absolute top-2.5 right-2.5 flex items-center gap-1 text-[11px] font-black px-2.5 py-1 rounded-full shadow-lg"
+                        style={{ background: 'rgba(251,191,36,0.95)', color: '#78350f' }}>
+                        <Star size={9} fill="currentColor" /> {biz.rating?.toFixed(1) || "4.8"}
+                      </span>
+
+                      {/* Open/Closed */}
                       {biz.is_open ? (
-                        <span className="absolute top-2.5 left-2.5 bg-emerald-500 text-white text-[11px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="absolute bottom-2.5 left-2.5 flex items-center gap-1.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(5,150,105,0.9)', color: '#ffffff' }}>
                           <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> Hapur
                         </span>
                       ) : (
-                        <span className="absolute top-2.5 left-2.5 bg-black/60 text-white text-[11px] font-bold px-2 py-0.5 rounded-full">Mbyllur</span>
+                        <span className="absolute bottom-2.5 left-2.5 text-[11px] font-bold px-2.5 py-1 rounded-full"
+                          style={{ background: 'rgba(0,0,0,0.7)', color: 'rgba(255,255,255,0.5)' }}>Mbyllur</span>
                       )}
                     </div>
-                    <div className="p-3 flex-1 flex flex-col justify-between">
+
+                    {/* Info */}
+                    <div className="p-3.5 flex-1 flex flex-col justify-between">
                       <div>
-                        <h3 className="font-black text-sm leading-tight mb-0.5" style={{ color: 'var(--text-heading)' }}>{biz.name}</h3>
-                        <p className="text-xs line-clamp-1" style={{ color: 'var(--text-muted)' }}>{biz.description}</p>
+                        <h3 className="font-black text-sm leading-tight mb-1" style={{ color: 'var(--text-heading)' }}>{biz.name}</h3>
+                        <p className="text-xs line-clamp-1 leading-relaxed" style={{ color: 'var(--text-muted)' }}>{biz.description || "Shije të zgjedhura për ty"}</p>
                       </div>
-                      <div className="flex items-center gap-2 mt-2 text-[11px] flex-wrap" style={{ color: 'var(--text-secondary)' }}>
-                        <span className="flex items-center gap-0.5 font-semibold"><Clock size={10} />{biz.delivery_time || "25 min"}</span>
-                        <span className="opacity-40">·</span>
-                        <span><strong>{biz.delivery_fee?.toFixed(2) || "1.50"}€</strong> dërgesa</span>
+                      <div className="flex items-center justify-between mt-2.5">
+                        <span className="flex items-center gap-1 text-[11px] font-semibold" style={{ color: 'var(--text-secondary)' }}>
+                          <Clock size={10} /> {biz.delivery_time || "25 min"}
+                        </span>
+                        <span className="text-[11px] font-black px-2 py-0.5 rounded-full"
+                          style={{ background: 'rgba(0,255,135,0.1)', color: 'var(--price-color)', border: '1px solid rgba(0,255,135,0.2)' }}>
+                          {biz.delivery_fee?.toFixed(2) || "1.50"}€ dërgesa
+                        </span>
                       </div>
                     </div>
                   </div>
@@ -399,8 +358,7 @@ export default function Home() {
 
         {/* Register CTA */}
         <div className="mt-16 grid md:grid-cols-2 gap-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
             className="rounded-3xl p-8 text-white relative overflow-hidden"
             style={{ background: 'linear-gradient(135deg,#020c1b 0%,#0a2a4a 50%,#0077b6 100%)', border: '1px solid rgba(0,229,255,0.25)' }}>
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
@@ -413,8 +371,7 @@ export default function Home() {
               Fillo Sot <ChevronRight size={16} />
             </Link>
           </motion.div>
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
+          <motion.div initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
             className="bg-gradient-to-br from-emerald-500 to-teal-700 rounded-3xl p-8 text-white relative overflow-hidden">
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="text-5xl mb-4">🛵</div>
@@ -429,14 +386,43 @@ export default function Home() {
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="mt-12 py-10 px-4 pb-28 md:pb-10" style={{ background: '#020c1b', borderTop: '1px solid rgba(0,180,216,0.1)' }}>
-        <div className="max-w-7xl mx-auto text-center">
+      {/* ═══ FOOTER ═══ */}
+      <footer className="mt-12 pb-28 md:pb-0" style={{ background: '#020c1b', borderTop: '1px solid rgba(0,180,216,0.1)' }}>
+        <div className="max-w-2xl mx-auto px-6 py-12 text-center">
           <img src="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png"
-            alt="TiliGo" className="h-12 mx-auto mb-4 object-contain opacity-90" />
+            alt="TiliGo" className="h-12 mx-auto mb-6 object-contain opacity-90" />
+
           {/* Social links */}
           <SocialLinks />
-          <p className="text-sm mt-4" style={{ color: 'rgba(255,255,255,0.4)' }}>© 2025 TiliGo · Prishtinë, Kosovë</p>
+
+          {/* App install — below social */}
+          <div className="mt-8">
+            <p className="text-[10px] font-bold tracking-[0.25em] uppercase mb-4" style={{ color: 'rgba(255,255,255,0.25)' }}>
+              Instalo Aplikacionin
+            </p>
+            <div className="flex items-center justify-center gap-3 flex-wrap">
+              <Link to="/shkarko-app"
+                className="flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(255,255,255,0.06)', backdropFilter: 'blur(12px)', border: '1px solid rgba(255,255,255,0.1)', color: '#ffffff' }}>
+                <span className="text-xl">🍎</span>
+                <div className="text-left">
+                  <p className="text-[10px] leading-none" style={{ color: 'rgba(255,255,255,0.45)' }}>Shkarko për</p>
+                  <p className="font-bold leading-tight">iPhone / iPad</p>
+                </div>
+              </Link>
+              <Link to="/shkarko-app"
+                className="flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-105 active:scale-95"
+                style={{ background: 'rgba(0,255,135,0.06)', backdropFilter: 'blur(12px)', border: '1px solid rgba(0,255,135,0.18)', color: '#ffffff' }}>
+                <span className="text-xl">🤖</span>
+                <div className="text-left">
+                  <p className="text-[10px] leading-none" style={{ color: 'rgba(255,255,255,0.45)' }}>Shkarko për</p>
+                  <p className="font-bold leading-tight">Android</p>
+                </div>
+              </Link>
+            </div>
+          </div>
+
+          <p className="text-xs mt-8" style={{ color: 'rgba(255,255,255,0.2)' }}>© 2025 TiliGo · Prishtinë, Kosovë</p>
         </div>
       </footer>
     </div>
@@ -452,21 +438,26 @@ function SocialLinks() {
       setLinks(prev => ({ ...prev, ...map }));
     });
   }, []);
-  const items = [
-    { key: "facebook", icon: <Facebook size={18} />, color: "#1877f2" },
-    { key: "instagram", icon: <Instagram size={18} />, color: "#e1306c" },
-    { key: "tiktok", icon: <span className="text-base leading-none">🎵</span>, color: "#ffffff" },
-    { key: "website", icon: <Globe size={18} />, color: "#00b4d8" },
-  ].filter(i => links[i.key]);
-  if (!items.length) return null;
+
+  const ICONS = [
+    { key: "facebook", icon: <Facebook size={20} />, color: "#1877f2", bg: "rgba(24,119,242,0.12)", border: "rgba(24,119,242,0.3)" },
+    { key: "instagram", icon: <Instagram size={20} />, color: "#e1306c", bg: "rgba(225,48,108,0.1)", border: "rgba(225,48,108,0.25)" },
+    { key: "tiktok", icon: <span className="text-lg leading-none">🎵</span>, color: "#ffffff", bg: "rgba(255,255,255,0.07)", border: "rgba(255,255,255,0.15)" },
+    { key: "website", icon: <Globe size={20} />, color: "#00b4d8", bg: "rgba(0,180,216,0.1)", border: "rgba(0,180,216,0.25)" },
+  ].filter(item => links[item.key]);
+
+  if (!ICONS.length) return null;
+
   return (
-    <div className="flex items-center justify-center gap-4 mt-2">
-      {items.map(({ key, icon, color }) => (
-        <a key={key} href={links[key]} target="_blank" rel="noopener noreferrer"
-          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
-          style={{ background: 'rgba(255,255,255,0.08)', color, border: '1px solid rgba(255,255,255,0.1)' }}>
+    <div className="flex items-center justify-center gap-3">
+      {ICONS.map(({ key, icon, color, bg, border }) => (
+        <motion.a key={key} href={links[key]} target="_blank" rel="noopener noreferrer"
+          whileHover={{ scale: 1.15, y: -3 }}
+          whileTap={{ scale: 0.95 }}
+          className="w-12 h-12 rounded-2xl flex items-center justify-center transition-all"
+          style={{ background: bg, color, border: `1px solid ${border}`, boxShadow: `0 4px 20px ${bg}` }}>
           {icon}
-        </a>
+        </motion.a>
       ))}
     </div>
   );
