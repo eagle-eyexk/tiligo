@@ -1,40 +1,84 @@
 import { motion } from "framer-motion";
 
-const sizes = {
-  sm: "h-9",
-  md: "h-13",
-  lg: "h-16",
-  xl: "h-24",
-};
+/* ─── Inline SVG wordmark ─────────────────────────────────── */
+function WordmarkSVG({ width }) {
+  return (
+    <svg width={width} height={width * 0.28} viewBox="0 0 320 90"
+      xmlns="http://www.w3.org/2000/svg" aria-label="TiliGo">
+      <defs>
+        <linearGradient id="lgBlue" x1="0%" y1="30%" x2="100%" y2="70%">
+          <stop offset="0%" stopColor="#00BFFF"/>
+          <stop offset="100%" stopColor="#0066FF"/>
+        </linearGradient>
+        <linearGradient id="lgGreen" x1="0%" y1="30%" x2="100%" y2="70%">
+          <stop offset="0%" stopColor="#7FFF00"/>
+          <stop offset="100%" stopColor="#00FF7F"/>
+        </linearGradient>
+      </defs>
+      <text x="0" y="68"
+        fontFamily="Arial Black, Helvetica, sans-serif"
+        fontSize="68" fontWeight="900" letterSpacing="-3"
+        fill="url(#lgBlue)">Tili</text>
+      <text x="185" y="68"
+        fontFamily="Arial Black, Helvetica, sans-serif"
+        fontSize="68" fontWeight="900" letterSpacing="-2.5"
+        fill="url(#lgGreen)">Go</text>
+    </svg>
+  );
+}
+
+/* ─── Icon badge (small square/circle logo) ──────────────── */
+export function TiliGoBadge({ size = 40 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 80 80"
+      xmlns="http://www.w3.org/2000/svg" aria-label="TiliGo badge">
+      <defs>
+        <linearGradient id="badgeBg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#0a2a4a"/>
+          <stop offset="100%" stopColor="#020c1b"/>
+        </linearGradient>
+        <linearGradient id="badgeBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#00BFFF"/>
+          <stop offset="100%" stopColor="#0066FF"/>
+        </linearGradient>
+        <linearGradient id="badgeGreen" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor="#7FFF00"/>
+          <stop offset="100%" stopColor="#00FF7F"/>
+        </linearGradient>
+      </defs>
+      {/* Background pill */}
+      <rect width="80" height="80" rx="20" fill="url(#badgeBg)"/>
+      {/* "T" blue */}
+      <text x="8" y="52"
+        fontFamily="Arial Black, Helvetica, sans-serif"
+        fontSize="46" fontWeight="900"
+        fill="url(#badgeBlue)">T</text>
+      {/* "G" green */}
+      <text x="40" y="52"
+        fontFamily="Arial Black, Helvetica, sans-serif"
+        fontSize="46" fontWeight="900"
+        fill="url(#badgeGreen)">G</text>
+      {/* bottom neon line accent */}
+      <rect x="8" y="62" width="28" height="3" rx="1.5" fill="url(#badgeBlue)" opacity="0.7"/>
+      <rect x="40" y="62" width="28" height="3" rx="1.5" fill="url(#badgeGreen)" opacity="0.7"/>
+    </svg>
+  );
+}
+
+/* ─── Main logo component ────────────────────────────────── */
+const widths = { sm: 130, md: 180, lg: 240, xl: 320 };
 
 export default function TiliGoLogo({ size = "md", className = "" }) {
-  const h = sizes[size] || sizes.md;
-
+  const w = widths[size] || widths.md;
   return (
     <motion.div
-      className={`flex items-center select-none ${className}`}
-      initial={{ opacity: 0, scale: 0.85 }}
+      className={`flex items-center gap-2 select-none ${className}`}
+      initial={{ opacity: 0, scale: 0.88 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: "spring", stiffness: 280, damping: 22, delay: 0.1 }}
+      transition={{ type: "spring", stiffness: 300, damping: 22 }}
     >
-      {/* White pill that frames the logo — hides bg seam on any navbar color */}
-      <div
-        style={{
-          background: "rgba(255,255,255,0.97)",
-          borderRadius: 14,
-          padding: "3px 10px",
-          boxShadow: "0 2px 16px rgba(0,191,255,0.18), 0 1px 4px rgba(0,0,0,0.12)",
-          display: "flex",
-          alignItems: "center",
-        }}
-      >
-        <img
-          src="https://media.base44.com/images/public/69d519273be8cf966434f77a/e19f2a0ad_IMG_0107.jpeg"
-          alt="TiliGo"
-          className={`${h} w-auto object-contain`}
-          style={{ maxWidth: 180, display: "block" }}
-        />
-      </div>
+      <TiliGoBadge size={w * 0.22} />
+      <WordmarkSVG width={w} />
     </motion.div>
   );
 }
