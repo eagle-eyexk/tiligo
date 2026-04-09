@@ -34,16 +34,18 @@ export default function Navbar({ cart = [], onCartClick }) {
     <nav className="sticky top-0 z-50 shadow-xl"
       style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--nav-border)', paddingTop: 'env(safe-area-inset-top)' }}>
       <MotoStrip />
-      <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-        <Link to="/" className="flex items-center gap-2">
-          <TiliGoLogo size="md" />
+      <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/">
+            <TiliGoLogo size="lg" />
+          </Link>
           {city && (
-            <span className="hidden sm:flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full"
+            <span className="flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full"
               style={{ background: 'rgba(0,191,255,0.12)', color: 'var(--text-secondary)', border: '1px solid rgba(0,191,255,0.25)' }}>
               <MapPin size={10} style={{ color: '#39FF6B' }} />{city}
             </span>
           )}
-        </Link>
+        </div>
 
         {/* Desktop nav */}
         <div className="hidden md:flex items-center gap-6">
