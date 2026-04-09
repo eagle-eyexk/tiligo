@@ -74,32 +74,28 @@ export default function DownloadApp() {
               </div>
             </div>
 
+            <div className="space-y-3 mb-5">
+              {[
+                { step: "1", text: "Hap faqen në Chrome" },
+                { step: "2", text: 'Kliko menunë ⋮ (lart djathtas)' },
+                { step: "3", text: '"Shto në Ekranin Kryesor"' },
+                { step: "4", text: "Kliko Shto dhe TiliGo është gati!" },
+              ].map(s => (
+                <div key={s.step} className="flex items-center gap-3">
+                  <span className="w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-black flex-shrink-0">{s.step}</span>
+                  <p className="text-gray-700 dark:text-gray-300 text-sm">{s.text}</p>
+                </div>
+              ))}
+            </div>
             {installPrompt ? (
               <button onClick={handleAndroidInstall}
                 className="flex items-center justify-center gap-2 w-full bg-green-600 hover:bg-green-700 text-white font-black py-4 rounded-xl transition-colors text-base shadow-md">
                 <Smartphone size={20} /> Instalo Tani në Android
               </button>
-            ) : (
-              <>
-                <div className="space-y-3 mb-5">
-                  {[
-                    { step: "1", text: "Hap faqen në Chrome" },
-                    { step: "2", text: 'Kliko menunë ⋮ (lart djathtas)' },
-                    { step: "3", text: '"Shto në Ekranin Kryesor"' },
-                    { step: "4", text: "Kliko Shto dhe TiliGo është gati!" },
-                  ].map(s => (
-                    <div key={s.step} className="flex items-center gap-3">
-                      <span className="w-7 h-7 bg-green-600 text-white rounded-full flex items-center justify-center text-xs font-black flex-shrink-0">{s.step}</span>
-                      <p className="text-gray-700 dark:text-gray-300 text-sm">{s.text}</p>
-                    </div>
-                  ))}
-                </div>
-                {isAndroid && (
-                  <p className="text-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-xl py-2 px-3">
-                    💡 Hap faqen direkt në Chrome për të parë butonin e instalimit automatik
-                  </p>
-                )}
-              </>
+            ) : isAndroid && (
+              <p className="text-center text-xs text-amber-600 bg-amber-50 dark:bg-amber-900/20 rounded-xl py-2 px-3">
+                💡 Hap faqen direkt në Chrome për të parë butonin e instalimit automatik
+              </p>
             )}
           </motion.div>
 

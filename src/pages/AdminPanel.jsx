@@ -32,9 +32,14 @@ export default function AdminPanel() {
   const [editForm, setEditForm] = useState({});
   const [uploading, setUploading] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState(null);
+  const [orderSearch, setOrderSearch] = useState("");
+  const [orderStatusFilter, setOrderStatusFilter] = useState("all");
 
   useEffect(() => {
-    if (authed) loadAll();
+    if (!authed) return;
+    loadAll();
+    const unsub = base44.entities.Order.subscribe(() => loadAll());
+    return unsub;
   }, [authed]);
 
   const loadAll = async () => {
@@ -128,6 +133,12 @@ export default function AdminPanel() {
   const pendingDrivers = deliveries.filter(d => d.status === "pending").length;
   const activeOrders = orders.filter(o => !["dorezuar", "anuluar"].includes(o.status)).length;
   const totalRevenue = orders.filter(o => o.status === "dorezuar").reduce((s, o) => s + (o.total || 0), 0);
+  const todayRevenue = orders.filter(o => o.status === "dorezuar" && new Date(o.created_date).toDateString() === new Date().toDateString()).reduce((s, o) => s + (o.total || 0), 0);
+  const filteredOrders = orders.filter(o => {
+    const matchSearch = !orderSearch || o.order_code?.toLowerCase().includes(orderSearch.toLowerCase()) || o.customer_name?.toLowerCase().includes(orderSearch.toLowerCase()) || o.business_name?.toLowerCase().includes(orderSearch.toLowerCase());
+    const matchStatus = orderStatusFilter === "all" || o.status === orderStatusFilter;
+    return matchSearch && matchStatus;
+  });
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
@@ -161,7 +172,7 @@ export default function AdminPanel() {
             { label: "Biznese", value: businesses.length, sub: `${businesses.filter(b => b.status === "approved").length} aktive`, emoji: "🏪", gradient: "from-blue-500 to-blue-700" },
             { label: "Dorëzues", value: deliveries.length, sub: `${deliveries.filter(d => d.status === "approved").length} aprovuar`, emoji: "🛵", gradient: "from-green-500 to-green-700" },
             { label: "Porosi Aktive", value: activeOrders, sub: `${orders.length} totale`, emoji: "📦", gradient: "from-amber-500 to-orange-600" },
-            { label: "Të ardhura", value: `${totalRevenue.toFixed(0)}€`, sub: `${orders.filter(o => o.status === "dorezuar").length} dorëzuar`, emoji: "💰", gradient: "from-purple-500 to-purple-700" },
+            { label: "Të ardhura Sot", value: `${todayRevenue.toFixed(0)}€`, sub: `${orders.filter(o => o.status === "dorezuar" && new Date(o.created_date).toDateString() === new Date().toDateString()).length} sot`, emoji: "💰", gradient: "from-purple-500 to-purple-700" },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
               className={`bg-gradient-to-br ${s.gradient} text-white rounded-2xl p-5 shadow-md`}>
@@ -436,9 +447,28 @@ export default function AdminPanel() {
             {/* ORDERS */}
             {tab === "orders" && (
               <div className="space-y-3">
-                {orders.length === 0 ? (
+                {/* Search + Filter */}
+                <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3">
+                  <input
+                    value={orderSearch}
+                    onChange={e => setOrderSearch(e.target.value)}
+                    placeholder="Kërko porosi, klient, biznes..."
+                    className="flex-1 border-2 border-gray-100 focus:border-gray-400 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors"
+                  />
+                  <div className="flex gap-1.5 flex-wrap">
+                    {["all", "e_re", "ne_pergatitje", "gati_per_dorezim", "ne_rruge", "dorezuar", "anuluar"].map(s => (
+                      <button key={s} onClick={() => setOrderStatusFilter(s)}
+                        className={`text-xs px-3 py-1.5 rounded-full font-bold transition-colors whitespace-nowrap ${
+                          orderStatusFilter === s ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                        }`}>
+                        {s === "all" ? `Të gjitha (${orders.length})` : STATUS_LABELS[s]}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {filteredOrders.length === 0 ? (
                   <div className="text-center py-16 text-gray-400">Nuk ka porosi</div>
-                ) : orders.map((order, i) => (
+                ) : filteredOrders.map((order, i) => (
                   <motion.div key={order.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
                     className="bg-white rounded-2xl shadow-sm overflow-hidden">
                     <div className="p-4 flex items-center justify-between cursor-pointer"
@@ -468,7 +498,7 @@ export default function AdminPanel() {
                             <div className="grid grid-cols-2 gap-2 text-sm">
                               <div className="bg-gray-50 rounded-xl p-3">
                                 <p className="text-gray-400 text-xs mb-0.5">Telefoni</p>
-                                <p className="font-bold text-gray-900">{order.customer_phone}</p>
+                                <a href={`tel:${order.customer_phone}`} className="font-bold text-blue-700">{order.customer_phone}</a>
                               </div>
                               <div className="bg-gray-50 rounded-xl p-3">
                                 <p className="text-gray-400 text-xs mb-0.5">Adresa</p>
@@ -478,6 +508,9 @@ export default function AdminPanel() {
                             {order.delivery_name && (
                               <p className="text-sm text-gray-600 bg-purple-50 px-3 py-2 rounded-xl">🛵 <strong>Dorëzuesi:</strong> {order.delivery_name}</p>
                             )}
+                            {order.notes && (
+                              <p className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-xl">📝 {order.notes}</p>
+                            )}
                             <div className="bg-gray-50 rounded-xl p-3">
                               {order.items?.map((item, i) => (
                                 <div key={i} className="flex justify-between text-sm py-0.5">
@@ -485,6 +518,9 @@ export default function AdminPanel() {
                                   <span className="font-semibold text-gray-900">{(item.price * item.qty).toFixed(2)}€</span>
                                 </div>
                               ))}
+                              <div className="border-t border-gray-200 mt-1 pt-1 flex justify-between font-black text-sm">
+                                <span>Total</span><span>{order.total?.toFixed(2)}€</span>
+                              </div>
                             </div>
                             <div className="flex flex-wrap gap-1.5">
                               {Object.keys(STATUS_LABELS).map(s => (
