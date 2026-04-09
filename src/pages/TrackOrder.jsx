@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { ArrowLeft, Copy, CheckCircle, Clock, ChefHat, Bike, Package, MapPin, Navigation, Phone } from "lucide-react";
+import { ArrowLeft, Copy, CheckCircle, Clock, ChefHat, Bike, Package, MapPin, Navigation, Phone, Download } from "lucide-react";
+import { generateOrderPDF } from "@/lib/pdfGenerator";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from "react-leaflet";
@@ -82,6 +83,7 @@ export default function TrackOrder() {
   const [deliveryCoords, setDeliveryCoords] = useState(null);
   const [etaSeconds, setEtaSeconds] = useState(null);
   const [distanceKm, setDistanceKm] = useState(null);
+  const countdownRef = useRef(null);
 
   // Delivery "live" simulation — moves toward user
   const deliveryMoveRef = useRef(null);
@@ -162,6 +164,17 @@ export default function TrackOrder() {
     setOrder(orders[0] || null);
     setLoading(false);
   };
+
+  // Tick countdown every second
+  useEffect(() => {
+    if (countdownRef.current) clearInterval(countdownRef.current);
+    if (etaSeconds !== null && etaSeconds > 0 && order?.status !== "dorezuar") {
+      countdownRef.current = setInterval(() => {
+        setEtaSeconds(s => (s > 0 ? s - 1 : 0));
+      }, 1000);
+    }
+    return () => clearInterval(countdownRef.current);
+  }, [order?.status, Math.floor((etaSeconds ?? 0) / 30)]);
 
   const currentStep = STATUS_STEPS.findIndex(s => s.key === order?.status);
 
@@ -245,6 +258,70 @@ export default function TrackOrder() {
 
         {order && (
           <>
+            {/* ─── HERO: Logo circle + Countdown + Receipt ─── */}
+            <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
+              className="rounded-3xl overflow-hidden shadow-xl"
+              style={{ background: 'linear-gradient(135deg,#020c1b,#0a2a4a)', border: '1.5px solid rgba(0,191,255,0.3)' }}>
+              <div className="flex flex-col items-center pt-7 pb-5 px-5">
+
+                {/* Animated TiliGo logo circle */}
+                <div className="relative mb-4">
+                  {[1,2,3].map((r, i) => (
+                    <motion.div key={i}
+                      className="absolute rounded-full border"
+                      style={{ inset: -(r*10), borderColor: i===0 ? '#39FF6B' : '#00BFFF', opacity: 0.25 - i*0.06 }}
+                      animate={{ scale: [1, 1.1, 1], opacity: [0.25-i*0.06, 0.08, 0.25-i*0.06] }}
+                      transition={{ repeat: Infinity, duration: 2 + i*0.5, delay: i*0.4 }}
+                    />
+                  ))}
+                  <motion.div
+                    className="w-20 h-20 rounded-full flex items-center justify-center overflow-hidden relative z-10"
+                    style={{ background: 'linear-gradient(135deg,#39FF6B22,#00BFFF22)', border: '2.5px solid #39FF6B', boxShadow: '0 0 28px rgba(57,255,107,0.5)' }}
+                    animate={{ rotate: order?.status === "ne_rruge" ? 360 : 0 }}
+                    transition={{ repeat: order?.status === "ne_rruge" ? Infinity : 0, duration: 8, ease: "linear" }}
+                  >
+                    <picture>
+                      <source srcSet="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ff7c0a46_IMG_0106.jpeg" media="(prefers-color-scheme: dark)" />
+                      <img src="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ff7c0a46_IMG_0106.jpeg" alt="TiliGo" className="w-16 h-16 object-cover rounded-full" />
+                    </picture>
+                  </motion.div>
+                </div>
+
+                {/* Status label */}
+                <p className="text-xs font-bold tracking-widest uppercase mb-1" style={{ color: '#00BFFF' }}>
+                  {order.status === "dorezuar" ? "✅ Dorëzuar me sukses!" : "⚡ Duke gjurmuar live..."}
+                </p>
+
+                {/* Countdown */}
+                {etaSeconds !== null && order.status !== "dorezuar" && order.status !== "anuluar" && (
+                  <div className="text-center mb-3">
+                    <motion.p
+                      key={Math.floor(etaSeconds / 60)}
+                      initial={{ scale: 1.2, opacity: 0.7 }} animate={{ scale: 1, opacity: 1 }}
+                      className="font-black leading-none"
+                      style={{ fontSize: 56, color: '#39FF6B', textShadow: '0 0 30px rgba(57,255,107,0.6)', fontVariantNumeric: 'tabular-nums' }}
+                    >
+                      {etaSeconds <= 0 ? "00:00" : `${String(Math.floor(etaSeconds / 60)).padStart(2,"0")}:${String(etaSeconds % 60).padStart(2,"0")}`}
+                    </motion.p>
+                    <p className="text-xs font-bold mt-1" style={{ color: 'rgba(125,211,252,0.7)' }}>minuta të mbetur</p>
+                  </div>
+                )}
+
+                {order.status === "dorezuar" && (
+                  <p className="text-4xl mb-2">🎉</p>
+                )}
+
+                {/* Receipt download button */}
+                <button
+                  onClick={() => generateOrderPDF(order)}
+                  className="flex items-center gap-2 px-5 py-2.5 rounded-2xl font-bold text-sm transition-all hover:scale-105 active:scale-95 mt-1"
+                  style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 20px rgba(57,255,107,0.3)' }}
+                >
+                  <Download size={15} /> Shkarko Faturën PDF
+                </button>
+              </div>
+            </motion.div>
+
             {/* Order header */}
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
               className="bg-white rounded-2xl overflow-hidden shadow-sm">

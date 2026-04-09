@@ -36,8 +36,6 @@ export default function Checkout() {
     }, () => setGpsLoading(false));
   };
   const [loading, setLoading] = useState(false);
-  const [done, setDone] = useState(null);
-  const [copied, setCopied] = useState(false);
 
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
   const deliveryFee = cart.length > 0 ? (cart[0]?.delivery_fee ?? 1.5) : 1.5;
@@ -69,75 +67,12 @@ export default function Checkout() {
       payment_method: "cash",
     };
 
-    const saved = await base44.entities.Order.create(order);
+    await base44.entities.Order.create(order);
     clearCart();
-    setDone({ ...order, id: saved.id });
-
-    // Auto-download PDF
-    setTimeout(() => generateOrderPDF({ ...order }), 800);
+    setTimeout(() => generateOrderPDF(order), 800);
     setLoading(false);
+    navigate(`/gjurmo/${code}`);
   };
-
-  const copyCode = () => {
-    navigator.clipboard.writeText(done.order_code);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  if (done) return (
-    <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4">
-      <motion.div
-        initial={{ scale: 0.8, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl"
-      >
-        <motion.div
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.2, type: "spring" }}
-          className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4"
-        >
-          <CheckCircle size={40} className="text-green-600" />
-        </motion.div>
-        <h2 className="text-2xl font-black text-gray-900 mb-1">Porosia u dërgua! 🎉</h2>
-        <p className="text-gray-500 text-sm mb-6">Biznesi do ta konfirmojë porosinë shumë shpejt.</p>
-
-        <div className="bg-amber-50 border-2 border-amber-200 rounded-2xl p-4 mb-6">
-          <p className="text-xs text-amber-700 font-medium mb-1">Kodi i Porosisë</p>
-          <p className="text-3xl font-black text-amber-600 tracking-wider">{done.order_code}</p>
-          <button onClick={copyCode}
-            className="mt-2 flex items-center gap-1.5 text-xs text-amber-700 hover:text-amber-800 mx-auto font-medium">
-            <Copy size={12} />
-            {copied ? "U kopjua!" : "Kopjo kodin"}
-          </button>
-        </div>
-
-        <div className="text-left space-y-2 mb-6 bg-gray-50 rounded-xl p-4">
-          <p className="text-sm"><span className="font-semibold">Emri:</span> {done.customer_name}</p>
-          <p className="text-sm"><span className="font-semibold">Telefoni:</span> {done.customer_phone}</p>
-          <p className="text-sm"><span className="font-semibold">Adresa:</span> {done.customer_address}</p>
-          <p className="text-sm font-bold text-blue-700">Totali: {done.total?.toFixed(2)}€ (Cash)</p>
-        </div>
-
-        <p className="text-xs text-gray-400 mb-4">PDF u shkarkua automatikisht</p>
-
-        <div className="space-y-2">
-          <button
-            onClick={() => navigate(`/gjurmo/${done.order_code}`)}
-            className="w-full bg-blue-700 text-white font-bold py-3 rounded-xl hover:bg-blue-800 transition-colors"
-          >
-            🗺️ Gjurmo Porosinë
-          </button>
-          <button
-            onClick={() => navigate("/")}
-            className="w-full bg-gray-100 text-gray-700 font-bold py-3 rounded-xl hover:bg-gray-200 transition-colors"
-          >
-            Kthehu në Faqen Kryesore
-          </button>
-        </div>
-      </motion.div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen bg-[#f0f4f8]">
