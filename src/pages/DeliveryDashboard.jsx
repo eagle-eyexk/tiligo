@@ -217,13 +217,14 @@ export default function DeliveryDashboard() {
             ) : availableOrders.length === 0 ? (
               <div className="text-center py-24">
                 <div className="text-7xl mb-4">📭</div>
-                <p className="text-gray-600 font-bold text-lg">Nuk ka porosi gati</p>
-                <p className="text-gray-400 text-sm mt-1">
+                <p className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Nuk ka porosi gati</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>
                   {driver.is_available ? "Prisni porositë e reja..." : "Aktivizoni statusin për të marrë porosi"}
                 </p>
                 {!driver.is_available && (
                   <button onClick={toggleAvailable}
-                    className="mt-5 bg-green-600 text-white font-bold px-6 py-3 rounded-xl hover:bg-green-700 transition-colors">
+                    className="mt-5 font-bold px-6 py-3 rounded-xl transition-colors"
+                    style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b' }}>
                     Aktivizo Tani →
                   </button>
                 )}
@@ -295,23 +296,26 @@ export default function DeliveryDashboard() {
                   </span>
                 </div>
                 <div className="p-5">
-                  <p className="font-bold text-gray-900 mb-3">🏪 {order.business_name}</p>
+                  <p className="font-bold mb-3" style={{ color: 'var(--text-heading)' }}>🏪 {order.business_name}</p>
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
-                      <MapPin size={14} className="text-blue-600 flex-shrink-0" />
+                    <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2"
+                      style={{ background: 'rgba(0,40,80,0.4)', border: '1px solid var(--divider)', color: 'var(--text-secondary)' }}>
+                      <MapPin size={14} style={{ color: '#00BFFF' }} className="flex-shrink-0" />
                       <span className="font-medium">{order.customer_address}</span>
                       {order.customer_lat && (
                         <a href={`https://www.google.com/maps/dir/?api=1&destination=${order.customer_lat},${order.customer_lng}`}
                           target="_blank" rel="noopener noreferrer"
-                          className="ml-auto bg-blue-600 text-white text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1 hover:bg-blue-700">
+                          className="ml-auto text-xs font-bold px-2.5 py-1 rounded-lg flex items-center gap-1"
+                          style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b' }}>
                           <Navigation size={10} /> Navigate
                         </a>
                       )}
                     </div>
-                    <div className="flex items-center gap-2 text-sm bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
-                      <Phone size={14} className="text-green-600 flex-shrink-0" />
-                      <span className="text-gray-700 font-medium">{order.customer_name}</span>
-                      <a href={`tel:${order.customer_phone}`} className="text-blue-600 font-black">{order.customer_phone}</a>
+                    <div className="flex items-center gap-2 text-sm rounded-xl px-3 py-2"
+                      style={{ background: 'rgba(0,40,80,0.4)', border: '1px solid var(--divider)' }}>
+                      <Phone size={14} style={{ color: '#39FF6B' }} className="flex-shrink-0" />
+                      <span className="font-medium" style={{ color: 'var(--text-primary)' }}>{order.customer_name}</span>
+                      <a href={`tel:${order.customer_phone}`} style={{ color: '#00BFFF' }} className="font-black">{order.customer_phone}</a>
                     </div>
                   </div>
 
@@ -327,20 +331,22 @@ export default function DeliveryDashboard() {
                     </div>
                   )}
                   {order.customer_lat && driverCoords && (
-                    <div className="bg-purple-50 rounded-xl px-4 py-2 mb-3 flex items-center justify-between text-sm">
-                      <span className="text-purple-700 font-medium">📍 Distanca nga klienti</span>
-                      <span className="font-black text-purple-800">{haversineKm(driverCoords[0],driverCoords[1],order.customer_lat,order.customer_lng).toFixed(2)} km · ~{Math.ceil(haversineKm(driverCoords[0],driverCoords[1],order.customer_lat,order.customer_lng)/30*60)} min</span>
+                    <div className="rounded-xl px-4 py-2 mb-3 flex items-center justify-between text-sm"
+                      style={{ background: 'rgba(139,92,246,0.12)', border: '1px solid rgba(139,92,246,0.25)' }}>
+                      <span className="font-medium" style={{ color: '#A78BFA' }}>📍 Distanca nga klienti</span>
+                      <span className="font-black" style={{ color: 'var(--text-heading)' }}>{haversineKm(driverCoords[0],driverCoords[1],order.customer_lat,order.customer_lng).toFixed(2)} km · ~{Math.ceil(haversineKm(driverCoords[0],driverCoords[1],order.customer_lat,order.customer_lng)/30*60)} min</span>
                     </div>
                   )}
 
                   {/* Animated route */}
-                  <div className="bg-gradient-to-r from-purple-50 via-gray-50 to-green-50 rounded-xl p-4 mb-4 flex items-center gap-3">
+                  <div className="rounded-xl p-4 mb-4 flex items-center gap-3"
+                    style={{ background: 'linear-gradient(135deg,rgba(139,92,246,0.12),rgba(0,40,80,0.3),rgba(57,255,107,0.08))', border: '1px solid var(--divider)' }}>
                     <div className="text-center">
                       <div className="text-2xl">🏪</div>
-                      <p className="text-xs text-gray-500 mt-1">Biznesi</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Biznesi</p>
                     </div>
                     <div className="flex-1 relative h-6 flex items-center">
-                      <div className="w-full border-t-2 border-dashed border-gray-300" />
+                      <div className="w-full border-t-2 border-dashed" style={{ borderColor: 'rgba(0,191,255,0.3)' }} />
                       <motion.span
                         className="absolute text-xl"
                         animate={{ x: ["0%", "85%", "0%"] }}
@@ -349,14 +355,14 @@ export default function DeliveryDashboard() {
                     </div>
                     <div className="text-center">
                       <div className="text-2xl">🏠</div>
-                      <p className="text-xs text-gray-500 mt-1">Klienti</p>
+                      <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>Klienti</p>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-blue-700 font-black text-xl">{order.total?.toFixed(2)}€</p>
-                      <p className="text-xs text-gray-500">cash + <span className="text-green-600 font-bold">+{(order.delivery_fee || 1.5).toFixed(2)}€</span> shpërblim</p>
+                      <p className="font-black text-xl" style={{ color: '#39FF6B' }}>{order.total?.toFixed(2)}€</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>cash + <span style={{ color: '#39FF6B' }} className="font-bold">+{(order.delivery_fee || 1.5).toFixed(2)}€</span> shpërblim</p>
                     </div>
                     <button onClick={() => completeOrder(order)}
                       className="font-black px-6 py-3.5 rounded-xl transition-all flex items-center gap-2 active:scale-95"

@@ -6,13 +6,13 @@ import { motion, AnimatePresence } from "framer-motion";
 import TiliGoLogo from "@/components/TiliGoLogo";
 
 const ORDER_STATUS_MAP = {
-  e_re: { label: "E Re", color: "bg-blue-100 text-blue-700", dot: "bg-blue-500" },
-  pranuar: { label: "Pranuar", color: "bg-indigo-100 text-indigo-700", dot: "bg-indigo-500" },
-  ne_pergatitje: { label: "Në Përgatitje", color: "bg-amber-100 text-amber-700", dot: "bg-amber-500" },
-  gati_per_dorezim: { label: "Gati", color: "bg-orange-100 text-orange-700", dot: "bg-orange-500" },
-  ne_rruge: { label: "Në Rrugë", color: "bg-purple-100 text-purple-700", dot: "bg-purple-500" },
-  dorezuar: { label: "Dorëzuar", color: "bg-green-100 text-green-700", dot: "bg-green-500" },
-  anuluar: { label: "Anuluar", color: "bg-red-100 text-red-700", dot: "bg-red-500" },
+  e_re:             { label: "E Re",           dot: "bg-blue-500",   style: { background: 'rgba(59,130,246,0.18)',  color: '#60A5FA' } },
+  pranuar:          { label: "Pranuar",         dot: "bg-indigo-500", style: { background: 'rgba(99,102,241,0.18)', color: '#818CF8' } },
+  ne_pergatitje:    { label: "Në Përgatitje",   dot: "bg-amber-500",  style: { background: 'rgba(245,158,11,0.18)', color: '#FCD34D' } },
+  gati_per_dorezim: { label: "Gati",            dot: "bg-orange-500", style: { background: 'rgba(249,115,22,0.18)', color: '#FB923C' } },
+  ne_rruge:         { label: "Në Rrugë",        dot: "bg-purple-500", style: { background: 'rgba(139,92,246,0.18)', color: '#A78BFA' } },
+  dorezuar:         { label: "Dorëzuar",        dot: "bg-green-500",  style: { background: 'rgba(57,255,107,0.15)', color: '#39FF6B' } },
+  anuluar:          { label: "Anuluar",          dot: "bg-red-500",    style: { background: 'rgba(239,68,68,0.18)',  color: '#F87171' } },
 };
 
 const NEXT_STATUS = {
@@ -259,7 +259,7 @@ export default function BusinessDashboard() {
         {tab === "orders" && (
           <div className="space-y-4">
             {loading ? (
-              <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="bg-white rounded-2xl p-5 animate-pulse h-32" />)}</div>
+              <div className="space-y-3">{[1,2,3].map(i => <div key={i} className="rounded-2xl p-5 animate-pulse h-32" style={{ background: 'var(--card-bg)' }} />)}</div>
             ) : pendingOrders.length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">📭</div>
@@ -278,7 +278,7 @@ export default function BusinessDashboard() {
                     <div>
                       <div className="flex items-center gap-2 mb-1">
                         <span className="font-black text-xl" style={{ color: '#FBBF24' }}>#{order.order_code}</span>
-                        <span className={`text-xs font-bold px-3 py-1 rounded-full ${ORDER_STATUS_MAP[order.status]?.color}`}>
+                        <span className="text-xs font-bold px-3 py-1 rounded-full" style={ORDER_STATUS_MAP[order.status]?.style}>
                           {ORDER_STATUS_MAP[order.status]?.label}
                         </span>
                       </div>
@@ -520,7 +520,7 @@ export default function BusinessDashboard() {
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className={`text-xs font-bold px-2 py-1 rounded-full ${ORDER_STATUS_MAP[order.status]?.color}`}>
+                    <span className="text-xs font-bold px-2 py-1 rounded-full" style={ORDER_STATUS_MAP[order.status]?.style}>
                       {ORDER_STATUS_MAP[order.status]?.label}
                     </span>
                     <p className="font-black mt-1" style={{ color: '#39FF6B' }}>{order.total?.toFixed(2)}€</p>
