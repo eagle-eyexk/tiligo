@@ -1,21 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { ToggleLeft, ToggleRight, LogOut, Bell, CheckCircle, MapPin, Phone, TrendingUp, Star, Bike, Clock, Package, Settings, AlertTriangle, Navigation } from "lucide-react";
-import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
+import { ToggleLeft, ToggleRight, LogOut, Bell, CheckCircle, MapPin, Phone, Bike, AlertTriangle, Navigation } from "lucide-react";
+import { base44 } from "@/api/base44Client";
+import { motion, AnimatePresence } from "framer-motion";
+import LiveRouteMap from "@/components/LiveRouteMap";
 import "leaflet/dist/leaflet.css";
-import L from "leaflet";
-
-delete L.Icon.Default.prototype._getIconUrl;
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png",
-  iconUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png",
-  shadowUrl: "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
-});
-
-const makeIcon = (emoji, size = 36) => L.divIcon({
-  html: `<div style="font-size:${size}px;line-height:1;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.4))">${emoji}</div>`,
-  className: "", iconAnchor: [size/2, size], popupAnchor: [0, -size],
-});
 
 function haversineKm(lat1, lng1, lat2, lng2) {
   const R = 6371;
@@ -24,15 +13,6 @@ function haversineKm(lat1, lng1, lat2, lng2) {
   const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLng/2)**2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
-
-function MapCenter({ center }) {
-  const map = useMap();
-  useEffect(() => { if (center) map.flyTo(center, 15, { duration: 1 }); }, [center?.toString()]);
-  return null;
-}
-import { base44 } from "@/api/base44Client";
-import { motion, AnimatePresence } from "framer-motion";
-import TiliGoLogo from "@/components/TiliGoLogo";
 
 const STATUS_LABELS = {
   e_re: "E Re", pranuar: "Pranuar", ne_pergatitje: "Në Përgatitje",
@@ -321,22 +301,15 @@ export default function DeliveryDashboard() {
                     </div>
                   </div>
 
-                  {/* Live customer map */}
+                  {/* Live route map */}
                   {order.customer_lat && (
-                    <div className="rounded-xl overflow-hidden mb-4" style={{ height: 200 }}>
-                      <MapContainer center={[order.customer_lat, order.customer_lng]} zoom={16}
-                        style={{ height: "100%", width: "100%" }} zoomControl={true} scrollWheelZoom={false}>
-                        <TileLayer url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" attribution="" />
-                        <Marker position={[order.customer_lat, order.customer_lng]} icon={makeIcon("🏠", 32)}>
-                          <Popup><strong>{order.customer_name}</strong><br />{order.customer_address}</Popup>
-                        </Marker>
-                        {driverCoords && (
-                          <Marker position={driverCoords} icon={makeIcon("🛵", 36)}>
-                            <Popup>Pozicioni Juaj</Popup>
-                          </Marker>
-                        )}
-                        {driverCoords && <MapCenter center={undefined} />}
-                      </MapContainer>
+                    <div className="mb-4">
+                      <LiveRouteMap
+                        driverCoords={driverCoords}
+                        customerCoords={[order.customer_lat, order.customer_lng]}
+                        customerName={order.customer_name}
+                        customerAddress={order.customer_address}
+                      />
                     </div>
                   )}
                   {order.customer_lat && driverCoords && (
