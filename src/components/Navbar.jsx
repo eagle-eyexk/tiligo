@@ -1,17 +1,24 @@
 import { useState } from "react";
-import { Link, useLocation } from "react-router-dom";
-import { ShoppingCart, Package, User, Menu, X, ChevronDown } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { ShoppingCart, Package, User, Menu, X, ChevronDown, ArrowLeft } from "lucide-react";
 import TiliGoLogo from "./TiliGoLogo";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Root screens show logo; child screens show back button on mobile
+const ROOT_PATHS = ["/", "/porositjet-e-mia", "/biznesi/login", "/dorezuesi/login",
+  "/biznesi/register", "/dorezuesi/register", "/admin", "/shkarko-app"];
 
 export default function Navbar({ cart = [], onCartClick }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const [hyrjaOpen, setHyrjaOpen] = useState(false);
   const location = useLocation();
+  const navigate = useNavigate();
   const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const isRoot = ROOT_PATHS.includes(location.pathname);
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100">
+    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100"
+      style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/">
           <TiliGoLogo size="md" />
@@ -77,6 +84,12 @@ export default function Navbar({ cart = [], onCartClick }) {
 
         {/* Mobile */}
         <div className="flex md:hidden items-center gap-3">
+          {!isRoot && (
+            <button onClick={() => navigate(-1)}
+              className="w-9 h-9 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-700 transition-colors -ml-1">
+              <ArrowLeft size={22} />
+            </button>
+          )}
           <button onClick={onCartClick} className="relative text-gray-600">
             <ShoppingCart size={24} />
             {cartCount > 0 && (
@@ -85,9 +98,11 @@ export default function Navbar({ cart = [], onCartClick }) {
               </span>
             )}
           </button>
-          <button onClick={() => setMenuOpen(!menuOpen)} className="text-gray-600">
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
+          {isRoot && (
+            <button onClick={() => setMenuOpen(!menuOpen)} className="text-gray-600">
+              {menuOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+          )}
         </div>
       </div>
 

@@ -55,17 +55,16 @@ export default function DeliveryDashboard() {
   };
 
   const acceptOrder = async (order) => {
-    await base44.entities.Order.update(order.id, {
-      status: "ne_rruge",
-      delivery_id: driver.id,
-      delivery_name: driver.name,
-    });
-    loadOrders();
+    // Optimistic update
+    const updated = { ...order, status: "ne_rruge", delivery_id: driver.id, delivery_name: driver.name };
+    setOrders(prev => prev.map(o => o.id === order.id ? updated : o));
+    await base44.entities.Order.update(order.id, { status: "ne_rruge", delivery_id: driver.id, delivery_name: driver.name });
   };
 
   const completeOrder = async (order) => {
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: "dorezuar" } : o));
     await base44.entities.Order.update(order.id, { status: "dorezuar" });
-    loadOrders();
   };
 
   const logout = () => {

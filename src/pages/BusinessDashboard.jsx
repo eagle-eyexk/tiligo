@@ -87,8 +87,9 @@ export default function BusinessDashboard() {
   const updateOrderStatus = async (order) => {
     const next = NEXT_STATUS[order.status];
     if (!next) return;
+    // Optimistic update
+    setOrders(prev => prev.map(o => o.id === order.id ? { ...o, status: next } : o));
     await base44.entities.Order.update(order.id, { status: next });
-    loadOrders();
   };
 
   const handleImageUpload = async (e) => {
