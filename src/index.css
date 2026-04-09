@@ -22,25 +22,25 @@
     --card-foreground: 224 242 254;
     --popover: 8 22 48;
     --popover-foreground: 224 242 254;
-    --primary: 0 200 120;
+    --primary: 57 255 20;
     --primary-foreground: 4 12 28;
     --secondary: 0 40 80;
     --secondary-foreground: 224 242 254;
     --muted: 0 30 60;
     --muted-foreground: 100 180 220;
-    --accent: 0 229 255;
+    --accent: 41 170 255;
     --accent-foreground: 4 12 28;
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
     --border: 0 60 120;
     --input: 0 40 80;
-    --ring: 0 200 120;
+    --ring: 57 255 20;
     --radius: 1rem;
 
-    --tiligo-neon:  #00ff87;
-    --tiligo-ocean: #00b4d8;
+    --tiligo-neon:  #39ff14;
+    --tiligo-ocean: #29aaff;
     --tiligo-deep:  #0a2a4a;
-    --tiligo-cyan:  #00e5ff;
+    --tiligo-cyan:  #29aaff;
     --tiligo-lime:  #39ff14;
 
     /* semantic tokens - dark */
@@ -63,8 +63,8 @@
     --section-bg:          rgba(4,12,28,0.6);
     --stat-bg:             rgba(8,22,48,0.8);
     --input-bg:            rgba(0,40,80,0.6);
-    --price-color:         #00ff87;
-    --btn-add-bg:          linear-gradient(135deg,#00ff87,#00b4d8);
+    --price-color:         #39ff14;
+    --btn-add-bg:          linear-gradient(135deg,#39ff14,#29aaff);
     --btn-add-text:        #020c1b;
     --divider:             rgba(0,180,216,0.12);
   }
@@ -79,19 +79,19 @@
     --card-foreground: 15 23 42;
     --popover: 255 255 255;
     --popover-foreground: 15 23 42;
-    --primary: 0 145 110;
-    --primary-foreground: 255 255 255;
+    --primary: 34 197 94;
+    --primary-foreground: 4 4 4;
     --secondary: 241 245 249;
     --secondary-foreground: 15 23 42;
     --muted: 241 245 249;
     --muted-foreground: 71 85 105;
-    --accent: 0 160 216;
+    --accent: 41 170 255;
     --accent-foreground: 255 255 255;
     --destructive: 220 38 38;
     --destructive-foreground: 255 255 255;
     --border: 226 232 240;
     --input: 241 245 249;
-    --ring: 0 145 110;
+    --ring: 34 197 94;
     --radius: 1rem;
 
     /* semantic tokens - light */
@@ -114,8 +114,8 @@
     --section-bg:          #ffffff;
     --stat-bg:             #f8fafc;
     --input-bg:            #f1f5f9;
-    --price-color:         #059669;
-    --btn-add-bg:          linear-gradient(135deg,#059669,#0284c7);
+    --price-color:         #16a34a;
+    --btn-add-bg:          linear-gradient(135deg,#22c55e,#29aaff);
     --btn-add-text:        #ffffff;
     --divider:             rgba(0,0,0,0.07);
   }
@@ -144,17 +144,17 @@
 
 /* ─── Brand gradients ─────────────────────────────────────── */
 .tiligo-gradient {
-  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 40%, #00ff87 100%);
+  background: linear-gradient(135deg, #29aaff 0%, #0077b6 40%, #39ff14 100%);
 }
 
 /* Hero: dark always – it's a full bleed image section */
 .hero-gradient {
-  background: linear-gradient(150deg,#020c1b 0%,#0a2a4a 30%,#0077b6 65%,#00b4d8 85%,#00ff87 100%);
+  background: linear-gradient(150deg,#020c1b 0%,#0a2a4a 30%,#0077b6 65%,#29aaff 85%,#39ff14 100%);
 }
 
 @media (prefers-color-scheme: light) {
   .hero-gradient {
-    background: linear-gradient(150deg,#0077b6 0%,#00b4d8 40%,#00c896 75%,#e0fdf4 100%);
+    background: linear-gradient(150deg,#0077b6 0%,#29aaff 40%,#39ff14 75%,#f0fff0 100%);
   }
 }
 
@@ -232,18 +232,18 @@
   @apply scale-105 shadow-md;
 }
 .category-pill.active {
-  background: linear-gradient(135deg,#00ff87,#00b4d8);
+  background: linear-gradient(135deg,#39ff14,#29aaff);
   color: #020c1b;
   border-color: transparent;
-  box-shadow: 0 0 18px rgba(0,255,135,0.4), 0 0 36px rgba(0,180,216,0.25);
+  box-shadow: 0 0 18px rgba(57,255,20,0.45), 0 0 36px rgba(41,170,255,0.3);
   @apply scale-105;
 }
 
 @media (prefers-color-scheme: light) {
   .category-pill.active {
-    background: linear-gradient(135deg,#059669,#0284c7);
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(5,150,105,0.35);
+    background: linear-gradient(135deg,#39ff14,#29aaff);
+    color: #020c1b;
+    box-shadow: 0 4px 14px rgba(57,255,20,0.4);
   }
 }
 
@@ -264,8 +264,8 @@
 }
 
 /* ─── Neon glow ──────────────────────────────────────────── */
-.neon-green { box-shadow: 0 0 15px rgba(0,255,135,0.6),0 0 30px rgba(0,255,135,0.3); }
-.neon-cyan  { box-shadow: 0 0 15px rgba(0,229,255,0.6),0 0 30px rgba(0,229,255,0.3); }
+.neon-green { box-shadow: 0 0 15px rgba(57,255,20,0.7),0 0 30px rgba(57,255,20,0.35); }
+.neon-cyan  { box-shadow: 0 0 15px rgba(41,170,255,0.7),0 0 30px rgba(41,170,255,0.35); }
 .ocean-card {
   background: linear-gradient(135deg,rgba(8,22,48,0.95) 0%,rgba(0,40,80,0.9) 100%);
   border: 1px solid rgba(0,180,216,0.25);
