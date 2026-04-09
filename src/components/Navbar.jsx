@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import { ShoppingCart, Package, User, Menu, X, ChevronDown, ArrowLeft, MapPin } from "lucide-react";
 import TiliGoLogo from "./TiliGoLogo";
-import MotoStrip from "./MotoStrip";
+
 import { motion, AnimatePresence } from "framer-motion";
 
 // Root screens show logo; child screens show back button on mobile
@@ -33,7 +33,7 @@ export default function Navbar({ cart = [], onCartClick }) {
   return (
     <nav className="sticky top-0 z-50 shadow-xl"
       style={{ background: 'var(--nav-bg)', backdropFilter: 'blur(20px)', borderBottom: '1px solid var(--nav-border)', paddingTop: 'env(safe-area-inset-top)' }}>
-      <MotoStrip />
+
       <div className="max-w-7xl mx-auto px-4 h-20 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/">
