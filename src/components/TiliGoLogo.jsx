@@ -1,131 +1,96 @@
 import { motion } from "framer-motion";
 
 const LETTERS = ["T", "i", "l", "i", "G", "o"];
-const LETTER_COLORS = ["#00BFFF", "#00BFFF", "#00BFFF", "#00BFFF", "#39FF6B", "#39FF6B"];
+const COLORS  = ["#00BFFF","#00BFFF","#00BFFF","#00BFFF","#39FF6B","#39FF6B"];
 
 const sizes = {
-  sm: { imgH: "h-7",  font: 13, moto: 16, gap: 6 },
-  md: { imgH: "h-9",  font: 17, moto: 20, gap: 8 },
-  lg: { imgH: "h-14", font: 28, moto: 34, gap: 12 },
-  xl: { imgH: "h-20", font: 42, moto: 50, gap: 16 },
+  sm: { imgH: "h-7",  font: 13, moto: 17 },
+  md: { imgH: "h-9",  font: 17, moto: 22 },
+  lg: { imgH: "h-14", font: 28, moto: 36 },
+  xl: { imgH: "h-20", font: 42, moto: 52 },
 };
-
-// Staggered wave: each letter lags behind the one before it
-function LetterWave({ letter, index, color, font }) {
-  return (
-    <motion.span
-      animate={{
-        y: [0, -5, 1, -3, 0],
-        rotate: [-4, 0, -5, 1, -4],
-        skewX: [-6, -2, -7, -1, -6],
-      }}
-      transition={{
-        duration: 1.6,
-        repeat: Infinity,
-        ease: "easeInOut",
-        delay: index * 0.09,
-      }}
-      style={{
-        fontSize: font,
-        fontWeight: 900,
-        fontFamily: "'Poppins','Inter',sans-serif",
-        color,
-        textShadow: `0 0 14px ${color}cc, 0 2px 8px rgba(0,0,0,0.4)`,
-        lineHeight: 1,
-        display: "inline-block",
-        transformOrigin: "bottom left",
-        letterSpacing: "-0.01em",
-      }}
-    >
-      {letter}
-    </motion.span>
-  );
-}
 
 export default function TiliGoLogo({ size = "md", className = "" }) {
   const s = sizes[size] || sizes.md;
 
   return (
-    <div className={`flex items-center gap-2 select-none ${className}`}>
+    <div className={`flex items-center gap-2 select-none overflow-hidden ${className}`}>
 
-      {/* ── Logo image — static ── */}
+      {/* Logo image — static */}
       <picture className="flex-shrink-0">
-        <source
-          srcSet="https://media.base44.com/images/public/69d519273be8cf966434f77a/51149fad3_IMG_0106.jpeg"
-          media="(prefers-color-scheme: dark)"
-        />
-        <img
-          src="https://media.base44.com/images/public/69d519273be8cf966434f77a/f678192b5_IMG_0105.jpeg"
-          alt="TiliGo"
-          className={`${s.imgH} w-auto object-contain rounded-lg flex-shrink-0`}
-        />
+        <source srcSet="https://media.base44.com/images/public/69d519273be8cf966434f77a/51149fad3_IMG_0106.jpeg" media="(prefers-color-scheme: dark)" />
+        <img src="https://media.base44.com/images/public/69d519273be8cf966434f77a/f678192b5_IMG_0105.jpeg"
+          alt="TiliGo" className={`${s.imgH} w-auto object-contain rounded-lg flex-shrink-0`} />
       </picture>
 
-      {/* ── Animated unit: letters → rope → moto ── */}
-      <motion.div
-        className="flex items-center"
-        animate={{ y: [0, -3, 0, -2, 0] }}
-        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        {/* Letters trailing, skewed back like dragged by speed */}
-        <div className="flex items-end pb-0.5" style={{ gap: 1 }}>
-          {LETTERS.map((letter, i) => (
-            <LetterWave key={i} letter={letter} index={i} color={LETTER_COLORS[i]} font={s.font} />
-          ))}
-        </div>
+      {/* Animated wordmark + moto */}
+      <div className="flex items-center gap-0.5">
 
-        {/* Tow rope — a glowing dashed line */}
-        <motion.div
-          animate={{ opacity: [0.7, 1, 0.6, 1, 0.7], scaleX: [1, 0.88, 1, 0.92, 1] }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          style={{
-            width: s.gap,
-            height: 2,
-            transformOrigin: "left center",
-            background: `linear-gradient(90deg, #39FF6B, #00BFFF)`,
-            borderRadius: 2,
-            boxShadow: "0 0 6px #00BFFF88",
-            flexShrink: 0,
-          }}
-        />
+        {/* Letters: each drops in from above, bounces, then idles */}
+        {LETTERS.map((letter, i) => (
+          <motion.span
+            key={i}
+            initial={{ y: -40, opacity: 0, scale: 0.6 }}
+            animate={[
+              // Phase 1: drop in with bounce
+              { y: 0, opacity: 1, scale: 1,
+                transition: { type: "spring", stiffness: 500, damping: 18, delay: 0.3 + i * 0.08 } },
+            ]}
+            style={{
+              fontSize: s.font,
+              fontWeight: 900,
+              fontFamily: "'Poppins','Inter',sans-serif",
+              color: COLORS[i],
+              textShadow: `0 0 18px ${COLORS[i]}bb`,
+              lineHeight: 1,
+              display: "inline-block",
+            }}
+          >
+            {/* Idle float after landing */}
+            <motion.span
+              animate={{ y: [0, -3, 0] }}
+              transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut", delay: 0.9 + i * 0.1 }}
+              style={{ display: "inline-block" }}
+            >
+              {letter}
+            </motion.span>
+          </motion.span>
+        ))}
 
-        {/* 🛵 Motorcycle — faces right, leaning forward */}
+        {/* Motorcycle: blasts in from the right, decelerates sharply, then idles */}
         <motion.span
-          animate={{
-            rotate: [-3, 0, -4, 1, -3],
-            scaleY: [1, 1.05, 1, 1.03, 1],
-          }}
-          transition={{ duration: 1.6, repeat: Infinity, ease: "easeInOut" }}
-          style={{
-            fontSize: s.moto,
-            lineHeight: 1,
-            display: "inline-block",
-            filter: `drop-shadow(0 0 8px #39FF6Baa) drop-shadow(0 2px 4px rgba(0,0,0,0.5))`,
-            transformOrigin: "bottom center",
-          }}
+          initial={{ x: 160, opacity: 0, scaleX: 1.5 }}
+          animate={{ x: 0, opacity: 1, scaleX: 1 }}
+          transition={{ type: "spring", stiffness: 220, damping: 20, delay: 0.1 }}
+          style={{ fontSize: s.moto, lineHeight: 1, display: "inline-block", marginLeft: 4 }}
         >
-          🛵
+          <motion.span
+            animate={{ y: [0, -3, 0], rotate: [0, -2, 0, 2, 0] }}
+            transition={{ duration: 2, repeat: Infinity, ease: "easeInOut", delay: 0.8 }}
+            style={{ display: "inline-block", filter: "drop-shadow(0 0 10px #39FF6B99)" }}
+          >
+            🛵
+          </motion.span>
         </motion.span>
 
-        {/* Speed streaks — tiny exhaust lines */}
-        <div className="flex flex-col gap-0.5 ml-0.5 opacity-70">
-          {[8, 14, 6].map((w, i) => (
+        {/* Speed lines — burst out then fade */}
+        <div className="flex flex-col gap-0.5 ml-0.5">
+          {[10, 16, 8].map((w, i) => (
             <motion.div
               key={i}
-              animate={{ scaleX: [1, 0.3, 1, 0.5, 1], opacity: [0.7, 0.2, 0.8, 0.3, 0.7] }}
-              transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut", delay: i * 0.15 }}
+              initial={{ scaleX: 0, opacity: 0 }}
+              animate={{ scaleX: [0, 1, 0], opacity: [0, 0.9, 0] }}
+              transition={{ duration: 0.5, delay: 0.18 + i * 0.06, repeat: Infinity, repeatDelay: 3.5, ease: "easeOut" }}
               style={{
-                width: w,
-                height: 1.5,
-                borderRadius: 2,
+                width: w, height: 2, borderRadius: 2,
                 background: i % 2 === 0 ? "#00BFFF" : "#39FF6B",
-                transformOrigin: "right center",
+                transformOrigin: "left center",
                 boxShadow: `0 0 4px ${i % 2 === 0 ? "#00BFFF" : "#39FF6B"}`,
               }}
             />
           ))}
         </div>
-      </motion.div>
+      </div>
     </div>
   );
 }
