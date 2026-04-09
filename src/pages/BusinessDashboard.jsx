@@ -144,40 +144,54 @@ export default function BusinessDashboard() {
   const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950">
+    <div className="min-h-screen" style={{ background: 'var(--bg-body)' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-blue-800 to-blue-900 text-white sticky top-0 z-50">
+      <div className="sticky top-0 z-50 shadow-xl" style={{ background: 'var(--nav-bg)', borderBottom: '1px solid var(--nav-border)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-              <ChefHat size={20} className="text-white" />
+            {/* Business photo as icon */}
+            <div className="relative flex-shrink-0">
+              {biz.image_url ? (
+                <img src={biz.image_url} alt={biz.name}
+                  className="w-11 h-11 rounded-2xl object-cover"
+                  style={{ border: '2px solid rgba(57,255,107,0.5)', boxShadow: '0 0 12px rgba(57,255,107,0.3)' }} />
+              ) : (
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center"
+                  style={{ background: 'linear-gradient(135deg,rgba(57,255,107,0.2),rgba(0,191,255,0.2))', border: '2px solid rgba(57,255,107,0.4)' }}>
+                  <ChefHat size={20} style={{ color: '#39FF6B' }} />
+                </div>
+              )}
+              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${biz.is_open ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}
+                style={{ borderColor: 'var(--bg-body)' }} />
             </div>
             <div>
-              <p className="font-black text-white text-sm leading-tight">{biz.name}</p>
-              <div className="flex items-center gap-1.5">
-                <span className={`w-2 h-2 rounded-full ${biz.is_open ? "bg-green-400 animate-pulse" : "bg-gray-400"}`} />
-                <span className="text-xs text-blue-200">{biz.is_open ? "I hapur · Pranon porosi" : "I mbyllur"}</span>
-              </div>
+              <p className="font-black text-sm leading-tight" style={{ color: 'var(--text-heading)' }}>{biz.name}</p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{biz.is_open ? '✅ I hapur · Pranon porosi' : '🔴 I mbyllur'}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={toggleOpen}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${biz.is_open ? "bg-green-500 hover:bg-green-600 text-white" : "bg-white/20 hover:bg-white/30 text-white"}`}>
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all"
+              style={biz.is_open
+                ? { background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 12px rgba(57,255,107,0.4)' }
+                : { background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid var(--nav-border)' }}>
               {biz.is_open ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
-              {biz.is_open ? "Hapur" : "Mbyllur"}
+              {biz.is_open ? 'Hapur' : 'Mbyllur'}
             </button>
             {pendingOrders.length > 0 && (
               <div className="relative">
-                <div className="w-9 h-9 bg-amber-500 rounded-xl flex items-center justify-center">
-                  <Bell size={18} className="text-white" />
+                <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                  style={{ background: 'rgba(251,191,36,0.2)', border: '1px solid rgba(251,191,36,0.4)' }}>
+                  <Bell size={18} style={{ color: '#FBBF24' }} />
                 </div>
                 <span className="absolute -top-1.5 -right-1.5 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-black">
                   {pendingOrders.length}
                 </span>
               </div>
             )}
-            <button onClick={logout} className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
-              <LogOut size={16} className="text-white" />
+            <button onClick={logout} className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--nav-border)' }}>
+              <LogOut size={16} style={{ color: 'var(--text-secondary)' }} />
             </button>
           </div>
         </div>
@@ -187,7 +201,8 @@ export default function BusinessDashboard() {
       <AnimatePresence>
         {newOrder && (
           <motion.div initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -80, opacity: 0 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-green-600 text-white px-6 py-3.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-3">
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-3"
+            style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 30px rgba(57,255,107,0.5)' }}>
             <Bell size={18} className="animate-bounce" /> 🔔 Porosi e re ka ardhur!
           </motion.div>
         )}
@@ -197,24 +212,24 @@ export default function BusinessDashboard() {
       <div className="max-w-5xl mx-auto px-4 pt-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           {[
-            { icon: "📦", label: "Porosi Aktive", value: pendingOrders.length, color: "text-blue-700", bg: "bg-blue-50" },
-            { icon: "💰", label: "Sot", value: `${todayRevenue.toFixed(2)}€`, color: "text-green-700", bg: "bg-green-50" },
-            { icon: "✅", label: "Të Dorëzuara", value: completedOrders.length, color: "text-indigo-700", bg: "bg-indigo-50" },
-            { icon: "🍽️", label: "Produkte", value: products.length, color: "text-orange-700", bg: "bg-orange-50" },
+            { icon: "📦", label: "Porosi Aktive", value: pendingOrders.length, grad: 'from-blue-500 to-blue-700' },
+            { icon: "💰", label: "Sot", value: `${todayRevenue.toFixed(2)}€`, grad: 'from-green-500 to-green-700' },
+            { icon: "✅", label: "Të Dorëzuara", value: completedOrders.length, grad: 'from-indigo-500 to-indigo-700' },
+            { icon: "🍽️", label: "Produkte", value: products.length, grad: 'from-orange-500 to-orange-700' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
-              <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center text-xl mb-2`}>{s.icon}</div>
-              <p className={`font-black text-xl ${s.color}`}>{s.value}</p>
-              <p className="text-gray-500 text-xs">{s.label}</p>
+              className={`bg-gradient-to-br ${s.grad} text-white rounded-2xl p-4 shadow-lg`}>
+              <div className="text-2xl mb-1">{s.icon}</div>
+              <p className="font-black text-xl">{s.value}</p>
+              <p className="text-white/60 text-xs">{s.label}</p>
             </motion.div>
           ))}
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-16 z-40">
-        <div className="max-w-5xl mx-auto px-4 flex">
+      <div className="sticky top-16 z-40" style={{ background: 'var(--nav-bg)', borderBottom: '1px solid var(--nav-border)', backdropFilter: 'blur(20px)' }}>
+        <div className="max-w-5xl mx-auto px-4 flex overflow-x-auto no-scrollbar">
           {[
             { key: "orders", icon: <Package size={15} />, label: `Porositë`, badge: pendingOrders.length },
             { key: "products", icon: <ChefHat size={15} />, label: `Produktet` },
@@ -223,7 +238,10 @@ export default function BusinessDashboard() {
             { key: "settings", icon: <Settings size={15} />, label: "Cilësimet" },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold border-b-2 transition-colors ${tab === t.key ? "border-blue-700 text-blue-700 dark:text-blue-400 dark:border-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}>
+              className="relative flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold border-b-2 transition-colors whitespace-nowrap"
+              style={tab === t.key
+                ? { borderColor: '#39FF6B', color: '#39FF6B' }
+                : { borderColor: 'transparent', color: 'var(--text-muted)' }}>
               {t.icon} {t.label}
               {t.badge > 0 && (
                 <span className="ml-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-black text-[10px]">
@@ -251,47 +269,50 @@ export default function BusinessDashboard() {
             ) : pendingOrders.map((order, idx) => (
               <motion.div key={order.id}
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
-                {/* Status bar */}
+                className="rounded-2xl shadow-lg overflow-hidden"
+                style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+                {/* Color top bar */}
                 <div className={`h-1.5 ${ORDER_STATUS_MAP[order.status]?.dot}`} />
                 <div className="p-5">
                   <div className="flex items-start justify-between mb-3">
                     <div>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
+                        <span className="font-black text-xl" style={{ color: '#FBBF24' }}>#{order.order_code}</span>
                         <span className={`text-xs font-bold px-3 py-1 rounded-full ${ORDER_STATUS_MAP[order.status]?.color}`}>
                           {ORDER_STATUS_MAP[order.status]?.label}
                         </span>
                       </div>
-                      <p className="text-gray-900 font-bold">{order.customer_name}</p>
-                      <p className="text-gray-500 text-sm">{order.customer_phone}</p>
-                      <p className="text-gray-400 text-xs">{order.customer_address}</p>
+                      <p className="font-bold" style={{ color: 'var(--text-heading)' }}>{order.customer_name}</p>
+                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>{order.customer_phone}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.customer_address}</p>
                     </div>
                     <div className="text-right">
-                      <p className="font-black text-blue-700 text-xl">{order.total?.toFixed(2)}€</p>
-                      <p className="text-gray-400 text-xs">cash</p>
+                      <p className="font-black text-xl" style={{ color: '#39FF6B' }}>{order.total?.toFixed(2)}€</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>cash</p>
                     </div>
                   </div>
                   {/* Items */}
-                  <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 mb-3">
+                  <div className="rounded-xl p-3 mb-3" style={{ background: 'rgba(0,40,80,0.4)', border: '1px solid var(--divider)' }}>
                     {order.items?.map((item, i) => (
                       <div key={i} className="flex justify-between text-sm py-0.5">
-                        <span className="text-gray-700">{item.qty}× {item.name}</span>
-                        <span className="text-gray-900 font-semibold">{(item.price * item.qty).toFixed(2)}€</span>
+                        <span style={{ color: 'var(--text-secondary)' }}>{item.qty}× {item.name}</span>
+                        <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>{(item.price * item.qty).toFixed(2)}€</span>
                       </div>
                     ))}
                     {order.notes && (
-                      <p className="text-amber-600 text-xs mt-2 border-t border-gray-200 pt-2">📝 {order.notes}</p>
+                      <p className="text-xs mt-2 pt-2" style={{ color: '#FBBF24', borderTop: '1px solid var(--divider)' }}>📝 {order.notes}</p>
                     )}
                   </div>
                   {NEXT_STATUS[order.status] && (
                     <button onClick={() => updateOrderStatus(order)}
-                      className="w-full bg-blue-700 hover:bg-blue-800 text-white font-black py-3 rounded-xl transition-all text-sm hover:shadow-lg active:scale-95">
+                      className="w-full font-black py-3 rounded-xl transition-all text-sm active:scale-95"
+                      style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 16px rgba(57,255,107,0.3)' }}>
                       {NEXT_LABEL[order.status]}
                     </button>
                   )}
                   {order.status === "gati_per_dorezim" && (
-                    <div className="bg-orange-50 border border-orange-200 rounded-xl py-3 text-center text-orange-700 font-bold text-sm">
+                    <div className="rounded-xl py-3 text-center font-bold text-sm"
+                      style={{ background: 'rgba(251,146,60,0.15)', border: '1px solid rgba(251,146,60,0.4)', color: '#FB923C' }}>
                       <Bike size={16} className="inline mr-2" />
                       Gati · Pret dorëzuesin
                     </div>
@@ -307,11 +328,12 @@ export default function BusinessDashboard() {
           <div>
             <div className="flex justify-between items-center mb-4">
               <div>
-                <h2 className="font-black text-gray-900">Produktet Tuaja</h2>
-                <p className="text-gray-500 text-sm">{products.length} produkte aktive</p>
+                <h2 className="font-black" style={{ color: 'var(--text-heading)' }}>Produktet Tuaja</h2>
+                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>{products.length} produkte aktive</p>
               </div>
               <button onClick={() => { setEditProduct(null); setProductForm({ name: "", description: "", price: "", category: "", image_url: "" }); setShowProductForm(true); }}
-                className="flex items-center gap-2 bg-blue-700 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-blue-800 transition-colors shadow-md">
+                className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl transition-all"
+                style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 14px rgba(57,255,107,0.35)' }}>
                 <Plus size={16} /> Shto Produkt
               </button>
             </div>
@@ -387,32 +409,36 @@ export default function BusinessDashboard() {
             {products.length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">🍽️</div>
-                <p className="text-gray-600 font-bold">Nuk keni shtuar produkte akoma</p>
-                <p className="text-gray-400 text-sm mt-1">Shtoni produktin e parë tani</p>
+                <p className="font-bold" style={{ color: 'var(--text-primary)' }}>Nuk keni shtuar produkte akoma</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Shtoni produktin e parë tani</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {products.map((prod, i) => (
                   <motion.div key={prod.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm flex items-center gap-0 overflow-hidden hover:shadow-md transition-shadow">
+                    className="rounded-2xl flex items-center overflow-hidden transition-all"
+                    style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
                     {prod.image_url ? (
                       <img src={prod.image_url} alt={prod.name} className="w-24 h-24 object-cover flex-shrink-0" />
                     ) : (
-                      <div className="w-24 h-24 bg-gray-100 flex items-center justify-center flex-shrink-0 text-3xl">🍽️</div>
+                      <div className="w-24 h-24 flex items-center justify-center flex-shrink-0 text-3xl"
+                        style={{ background: 'rgba(0,40,80,0.5)' }}>🍽️</div>
                     )}
                     <div className="flex-1 px-4 py-3 min-w-0">
-                      <p className="font-bold text-gray-900 text-sm">{prod.name}</p>
-                      {prod.category && <span className="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded-full font-medium">{prod.category}</span>}
-                      <p className="text-gray-400 text-xs line-clamp-1 mt-0.5">{prod.description}</p>
-                      <p className="text-blue-700 font-black text-base mt-1">{prod.price?.toFixed(2)}€</p>
+                      <p className="font-bold text-sm" style={{ color: 'var(--text-heading)' }}>{prod.name}</p>
+                      {prod.category && <span className="text-xs px-2 py-0.5 rounded-full font-medium" style={{ background: 'rgba(0,191,255,0.15)', color: '#00BFFF' }}>{prod.category}</span>}
+                      <p className="text-xs line-clamp-1 mt-0.5" style={{ color: 'var(--text-muted)' }}>{prod.description}</p>
+                      <p className="font-black text-base mt-1" style={{ color: '#39FF6B' }}>{prod.price?.toFixed(2)}€</p>
                     </div>
                     <div className="flex flex-col items-center gap-2 pr-3">
                       <button onClick={() => openEditProduct(prod)}
-                        className="w-9 h-9 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-700 flex items-center justify-center transition-colors">
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+                        style={{ background: 'rgba(0,191,255,0.15)', color: '#00BFFF' }}>
                         <Edit2 size={15} />
                       </button>
                       <button onClick={() => deleteProduct(prod.id)}
-                        className="w-9 h-9 rounded-xl bg-red-50 hover:bg-red-100 text-red-600 flex items-center justify-center transition-colors">
+                        className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+                        style={{ background: 'rgba(239,68,68,0.15)', color: '#EF4444' }}>
                         <Trash2 size={15} />
                       </button>
                     </div>
@@ -428,38 +454,38 @@ export default function BusinessDashboard() {
           <div className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               {[
-                { label: "Të ardhura Totale", value: `${totalRevenue.toFixed(2)}€`, icon: "💰", color: "from-green-400 to-green-600" },
-                { label: "Porosi Dorëzuara", value: completedOrders.length, icon: "✅", color: "from-blue-400 to-blue-600" },
-                { label: "Të Anuluara", value: cancelledOrders.length, icon: "❌", color: "from-red-400 to-red-600" },
-                { label: "Mesatare/Porosi", value: completedOrders.length ? `${(totalRevenue / completedOrders.length).toFixed(2)}€` : "—", icon: "📊", color: "from-purple-400 to-purple-600" },
+                { label: "Të ardhura Totale", value: `${totalRevenue.toFixed(2)}€`, icon: "💰", grad: 'from-green-500 to-green-700' },
+                { label: "Porosi Dorëzuara", value: completedOrders.length, icon: "✅", grad: 'from-blue-500 to-blue-700' },
+                { label: "Të Anuluara", value: cancelledOrders.length, icon: "❌", grad: 'from-red-500 to-red-700' },
+                { label: "Mesatare/Porosi", value: completedOrders.length ? `${(totalRevenue / completedOrders.length).toFixed(2)}€` : "—", icon: "📊", grad: 'from-purple-500 to-purple-700' },
               ].map((s, i) => (
                 <motion.div key={i} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: i * 0.1 }}
-                  className={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-5`}>
+                  className={`bg-gradient-to-br ${s.grad} text-white rounded-2xl p-5 shadow-lg`}>
                   <div className="text-3xl mb-2">{s.icon}</div>
                   <p className="font-black text-2xl">{s.value}</p>
                   <p className="text-white/70 text-xs mt-1">{s.label}</p>
                 </motion.div>
               ))}
             </div>
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
-                <TrendingUp size={18} className="text-blue-600" /> Statusi i Biznesit
+            <div className="rounded-2xl p-5 shadow-sm" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <h3 className="font-bold mb-4 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                <TrendingUp size={18} style={{ color: '#00BFFF' }} /> Statusi i Biznesit
               </h3>
               <div className="space-y-3">
                 {[
-                  { label: "Produktet aktive", val: products.length, max: Math.max(products.length, 10), color: "bg-blue-500" },
-                  { label: "Porosi të dorëzuara", val: completedOrders.length, max: Math.max(orders.length, 1), color: "bg-green-500" },
-                  { label: "Porosi të anuluara", val: cancelledOrders.length, max: Math.max(orders.length, 1), color: "bg-red-400" },
+                  { label: "Produktet aktive", val: products.length, max: Math.max(products.length, 10), color: "#00BFFF" },
+                  { label: "Porosi të dorëzuara", val: completedOrders.length, max: Math.max(orders.length, 1), color: "#39FF6B" },
+                  { label: "Porosi të anuluara", val: cancelledOrders.length, max: Math.max(orders.length, 1), color: "#EF4444" },
                 ].map((item, i) => (
                   <div key={i}>
                     <div className="flex justify-between text-sm mb-1">
-                      <span className="text-gray-600">{item.label}</span>
-                      <span className="font-bold text-gray-900">{item.val}</span>
+                      <span style={{ color: 'var(--text-secondary)' }}>{item.label}</span>
+                      <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{item.val}</span>
                     </div>
-                    <div className="bg-gray-100 rounded-full h-2">
+                    <div className="rounded-full h-2" style={{ background: 'rgba(0,60,120,0.5)' }}>
                       <motion.div initial={{ width: 0 }} animate={{ width: `${Math.min((item.val / item.max) * 100, 100)}%` }}
                         transition={{ delay: 0.3, duration: 0.8 }}
-                        className={`${item.color} h-2 rounded-full`} />
+                        className="h-2 rounded-full" style={{ background: item.color }} />
                     </div>
                   </div>
                 ))}
@@ -474,27 +500,30 @@ export default function BusinessDashboard() {
             {orders.filter(o => ["dorezuar", "anuluar"].includes(o.status)).length === 0 ? (
               <div className="text-center py-20">
                 <div className="text-6xl mb-4">📋</div>
-                <p className="text-gray-600 font-bold">Nuk ka historik akoma</p>
+                <p className="font-bold" style={{ color: 'var(--text-primary)' }}>Nuk ka historik akoma</p>
               </div>
             ) : orders.filter(o => ["dorezuar", "anuluar"].includes(o.status)).map((order, i) => (
               <motion.div key={order.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
+                className="rounded-2xl p-4" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${order.status === "dorezuar" ? "bg-green-100" : "bg-red-100"}`}>
-                      {order.status === "dorezuar" ? <CheckCircle2 size={18} className="text-green-600" /> : <XCircle size={18} className="text-red-500" />}
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center"
+                      style={{ background: order.status === 'dorezuar' ? 'rgba(57,255,107,0.15)' : 'rgba(239,68,68,0.15)' }}>
+                      {order.status === "dorezuar"
+                        ? <CheckCircle2 size={18} style={{ color: '#39FF6B' }} />
+                        : <XCircle size={18} style={{ color: '#EF4444' }} />}
                     </div>
                     <div>
-                      <p className="font-bold text-amber-600 text-sm">#{order.order_code}</p>
-                      <p className="text-gray-700 text-sm font-medium">{order.customer_name}</p>
-                      <p className="text-gray-400 text-xs">{order.items?.length} artikuj · {new Date(order.created_date).toLocaleDateString("sq-AL")}</p>
+                      <p className="font-bold text-sm" style={{ color: '#FBBF24' }}>#{order.order_code}</p>
+                      <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{order.customer_name}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.items?.length} artikuj · {new Date(order.created_date).toLocaleDateString("sq-AL")}</p>
                     </div>
                   </div>
                   <div className="text-right">
                     <span className={`text-xs font-bold px-2 py-1 rounded-full ${ORDER_STATUS_MAP[order.status]?.color}`}>
                       {ORDER_STATUS_MAP[order.status]?.label}
                     </span>
-                    <p className="text-blue-700 font-black mt-1">{order.total?.toFixed(2)}€</p>
+                    <p className="font-black mt-1" style={{ color: '#39FF6B' }}>{order.total?.toFixed(2)}€</p>
                   </div>
                 </div>
               </motion.div>
@@ -505,37 +534,40 @@ export default function BusinessDashboard() {
         {/* SETTINGS TAB */}
         {tab === "settings" && (
           <div className="space-y-4 max-w-lg">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1">Informacionet e Llogarisë</h3>
-              <p className="text-gray-500 text-sm mb-4">Të dhënat e biznesit tuaj</p>
+            <div className="rounded-2xl p-5" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              {/* Business profile pic */}
+              {biz.image_url && (
+                <div className="flex justify-center mb-4">
+                  <img src={biz.image_url} alt={biz.name}
+                    className="w-20 h-20 rounded-2xl object-cover"
+                    style={{ border: '2.5px solid rgba(57,255,107,0.5)', boxShadow: '0 0 20px rgba(57,255,107,0.3)' }} />
+                </div>
+              )}
+              <h3 className="font-bold mb-1" style={{ color: 'var(--text-heading)' }}>Informacionet e Llogarisë</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Të dhënat e biznesit tuaj</p>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Emri</span>
-                  <span className="font-bold text-gray-900">{biz.name}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Telefoni</span>
-                  <span className="font-bold text-gray-900">{biz.phone}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-500">Adresa</span>
-                  <span className="font-bold text-gray-900 text-right max-w-[60%]">{biz.address}</span>
-                </div>
+                {[['Emri', biz.name], ['Telefoni', biz.phone], ['Adresa', biz.address]].map(([k, v]) => (
+                  <div key={k} className="flex justify-between py-2" style={{ borderBottom: '1px solid var(--divider)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{k}</span>
+                    <span className="font-bold text-right max-w-[60%]" style={{ color: 'var(--text-primary)' }}>{v}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
-                <LogOut size={16} className="text-gray-500" /> Dil nga Llogaria
+            <div className="rounded-2xl p-5" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <h3 className="font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                <LogOut size={16} style={{ color: 'var(--text-muted)' }} /> Dil nga Llogaria
               </h3>
-              <p className="text-gray-500 text-sm mb-4">Do të ridrejtoheni në faqen kryesore.</p>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Do të ridrejtoheni në faqen kryesore.</p>
               <button onClick={logout}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl transition-colors text-sm">
+                className="w-full font-bold py-3 rounded-xl transition-colors text-sm"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-primary)', border: '1px solid var(--nav-border)' }}>
                 Dil nga Llogaria
               </button>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
+            <div className="rounded-2xl p-5" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
               <h3 className="font-bold text-red-700 mb-1 flex items-center gap-2">
                 <AlertTriangle size={16} /> Fshij Llogarinë
               </h3>

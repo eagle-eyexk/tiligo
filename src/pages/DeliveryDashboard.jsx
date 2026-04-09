@@ -114,32 +114,39 @@ export default function DeliveryDashboard() {
   if (!driver) return null;
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950">
+    <div className="min-h-screen" style={{ background: 'var(--bg-body)' }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-green-700 to-green-800 text-white sticky top-0 z-50">
+      <div className="sticky top-0 z-50 shadow-xl" style={{ background: 'var(--nav-bg)', borderBottom: '1px solid var(--nav-border)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="relative">
+            <div className="relative flex-shrink-0">
               {driver.image_url ? (
-                <img src={driver.image_url} className="w-10 h-10 rounded-xl object-cover border-2 border-white/30" />
+                <img src={driver.image_url} className="w-11 h-11 rounded-2xl object-cover"
+                  style={{ border: '2px solid rgba(57,255,107,0.5)', boxShadow: '0 0 12px rgba(57,255,107,0.3)' }} />
               ) : (
-                <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center text-xl">🛵</div>
+                <div className="w-11 h-11 rounded-2xl flex items-center justify-center text-xl"
+                  style={{ background: 'linear-gradient(135deg,rgba(57,255,107,0.2),rgba(0,191,255,0.2))', border: '2px solid rgba(57,255,107,0.4)' }}>🛵</div>
               )}
-              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-white ${driver.is_available ? "bg-green-400" : "bg-gray-400"}`} />
+              <span className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 ${driver.is_available ? 'bg-green-400 animate-pulse' : 'bg-gray-500'}`}
+                style={{ borderColor: 'var(--bg-body)' }} />
             </div>
             <div>
-              <p className="font-black text-white text-sm">{driver.name}</p>
-              <p className="text-green-200 text-xs">{driver.vehicle === "motor" ? "🛵 Motor" : driver.vehicle === "biciklete" ? "🚲 Biçikletë" : "🚗 Makinë"} · {driver.is_available ? "Aktiv" : "Jo aktiv"}</p>
+              <p className="font-black text-sm" style={{ color: 'var(--text-heading)' }}>{driver.name}</p>
+              <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>{driver.vehicle === "motor" ? "🛵 Motor" : driver.vehicle === "biciklete" ? "🚲 Biçikletë" : "🚗 Makinë"} · {driver.is_available ? "✅ Aktiv" : "🔴 Jo aktiv"}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
             <button onClick={toggleAvailable}
-              className={`flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all ${driver.is_available ? "bg-white text-green-700" : "bg-white/20 text-white hover:bg-white/30"}`}>
+              className="flex items-center gap-1.5 text-xs font-bold px-3 py-2 rounded-xl transition-all"
+              style={driver.is_available
+                ? { background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 12px rgba(57,255,107,0.4)' }
+                : { background: 'rgba(255,255,255,0.1)', color: 'var(--text-primary)', border: '1px solid var(--nav-border)' }}>
               {driver.is_available ? <ToggleRight size={16} /> : <ToggleLeft size={16} />}
               {driver.is_available ? "Aktiv" : "Jo aktiv"}
             </button>
-            <button onClick={logout} className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors">
-              <LogOut size={16} className="text-white" />
+            <button onClick={logout} className="w-9 h-9 rounded-xl flex items-center justify-center transition-colors"
+              style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid var(--nav-border)' }}>
+              <LogOut size={16} style={{ color: 'var(--text-secondary)' }} />
             </button>
           </div>
         </div>
@@ -149,7 +156,8 @@ export default function DeliveryDashboard() {
       <AnimatePresence>
         {newOrder && (
           <motion.div initial={{ y: -80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: -80, opacity: 0 }}
-            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 bg-orange-500 text-white px-6 py-3.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-3">
+            className="fixed top-20 left-1/2 -translate-x-1/2 z-50 px-6 py-3.5 rounded-2xl shadow-2xl font-bold text-sm flex items-center gap-3"
+            style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 30px rgba(57,255,107,0.5)' }}>
             <Bell size={18} className="animate-bounce" /> 🔔 Porosi e re gati për dorëzim!
           </motion.div>
         )}
@@ -159,13 +167,13 @@ export default function DeliveryDashboard() {
       <div className="max-w-3xl mx-auto px-4 pt-5">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-5">
           {[
-            { icon: "💰", label: "Sot", value: `${todayEarnings.toFixed(2)}€`, sub: `${todayHistory.length} dërgesa`, color: "from-green-500 to-green-700" },
-            { icon: "📦", label: "Totale", value: myHistory.length, sub: "dërgesa", color: "from-blue-500 to-blue-700" },
-            { icon: "🛵", label: "Aktive", value: myOrders.length, sub: "tani", color: "from-purple-500 to-purple-700" },
-            { icon: "💵", label: "Të ardhura", value: `${totalEarnings.toFixed(2)}€`, sub: "gjithsej", color: "from-amber-500 to-orange-600" },
+            { icon: "💰", label: "Sot", value: `${todayEarnings.toFixed(2)}€`, sub: `${todayHistory.length} dërgesa`, grad: 'from-green-500 to-green-700' },
+            { icon: "📦", label: "Totale", value: myHistory.length, sub: "dërgesa", grad: 'from-blue-500 to-blue-700' },
+            { icon: "🛵", label: "Aktive", value: myOrders.length, sub: "tani", grad: 'from-purple-500 to-purple-700' },
+            { icon: "💵", label: "Të ardhura", value: `${totalEarnings.toFixed(2)}€`, sub: "gjithsej", grad: 'from-amber-500 to-orange-600' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-              className={`bg-gradient-to-br ${s.color} text-white rounded-2xl p-4 shadow-md`}>
+              className={`bg-gradient-to-br ${s.grad} text-white rounded-2xl p-4 shadow-lg`}>
               <div className="text-2xl mb-1">{s.icon}</div>
               <p className="font-black text-xl">{s.value}</p>
               <p className="text-white/60 text-xs">{s.label}</p>
@@ -176,7 +184,7 @@ export default function DeliveryDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-16 z-40">
+      <div className="sticky top-16 z-40" style={{ background: 'var(--nav-bg)', borderBottom: '1px solid var(--nav-border)', backdropFilter: 'blur(20px)' }}>
         <div className="max-w-3xl mx-auto px-4 flex">
           {[
             { key: "available", label: `📦 Gati`, badge: availableOrders.length },
@@ -185,7 +193,10 @@ export default function DeliveryDashboard() {
             { key: "settings", label: "⚙️ Cilësimet" },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-1.5 px-5 py-3.5 text-sm font-bold border-b-2 transition-colors ${tab === t.key ? "border-green-600 text-green-700 dark:text-green-400 dark:border-green-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}>
+              className="relative flex items-center gap-1.5 px-5 py-3.5 text-sm font-bold border-b-2 transition-colors"
+              style={tab === t.key
+                ? { borderColor: '#39FF6B', color: '#39FF6B' }
+                : { borderColor: 'transparent', color: 'var(--text-muted)' }}>
               {t.label}
               {t.badge > 0 && (
                 <span className="ml-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-black text-[10px]">
@@ -202,7 +213,7 @@ export default function DeliveryDashboard() {
         {tab === "available" && (
           <>
             {loading ? (
-              <div className="space-y-3">{[1,2].map(i => <div key={i} className="bg-white rounded-2xl h-32 animate-pulse" />)}</div>
+              <div className="space-y-3">{[1,2].map(i => <div key={i} className="rounded-2xl h-32 animate-pulse" style={{ background: 'var(--card-bg)' }} />)}</div>
             ) : availableOrders.length === 0 ? (
               <div className="text-center py-24">
                 <div className="text-7xl mb-4">📭</div>
@@ -219,40 +230,41 @@ export default function DeliveryDashboard() {
               </div>
             ) : availableOrders.map((order, idx) => (
               <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border-2 border-orange-200 dark:border-orange-800">
-                <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-3 border-b border-orange-100 flex items-center justify-between">
-                  <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
-                  <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">Gati për Dorëzim</span>
+                className="rounded-2xl shadow-lg overflow-hidden"
+                style={{ background: 'var(--card-bg)', border: '1.5px solid rgba(251,146,60,0.4)' }}>
+                <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(251,146,60,0.1)', borderBottom: '1px solid rgba(251,146,60,0.2)' }}>
+                  <span className="font-black text-xl" style={{ color: '#FBBF24' }}>#{order.order_code}</span>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full" style={{ background: 'rgba(251,146,60,0.25)', color: '#FB923C' }}>Gati për Dorëzim</span>
                 </div>
                 <div className="p-5">
                   <div className="mb-4">
-                    <p className="font-bold text-gray-900 mb-1">🏪 {order.business_name}</p>
+                    <p className="font-bold mb-1" style={{ color: 'var(--text-heading)' }}>🏪 {order.business_name}</p>
                     <div className="space-y-1.5">
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <MapPin size={14} className="text-blue-600 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        <MapPin size={14} style={{ color: '#00BFFF' }} className="flex-shrink-0" />
                         <span>{order.customer_address}</span>
                       </div>
-                      <div className="flex items-center gap-2 text-sm text-gray-600">
-                        <Phone size={14} className="text-green-600 flex-shrink-0" />
+                      <div className="flex items-center gap-2 text-sm" style={{ color: 'var(--text-secondary)' }}>
+                        <Phone size={14} style={{ color: '#39FF6B' }} className="flex-shrink-0" />
                         <span className="font-medium">{order.customer_name}</span>
-                        <a href={`tel:${order.customer_phone}`} className="text-blue-600 font-bold">{order.customer_phone}</a>
+                        <a href={`tel:${order.customer_phone}`} style={{ color: '#00BFFF' }} className="font-bold">{order.customer_phone}</a>
                       </div>
                     </div>
                   </div>
-                  {/* Items summary */}
-                  <div className="bg-gray-50 rounded-xl p-3 mb-4">
+                  <div className="rounded-xl p-3 mb-4" style={{ background: 'rgba(0,40,80,0.4)', border: '1px solid var(--divider)' }}>
                     {order.items?.map((item, i) => (
-                      <p key={i} className="text-xs text-gray-500">{item.qty}× {item.name}</p>
+                      <p key={i} className="text-xs" style={{ color: 'var(--text-muted)' }}>{item.qty}× {item.name}</p>
                     ))}
-                    <p className="font-bold text-gray-900 text-sm mt-1 pt-1 border-t border-gray-200">{order.total?.toFixed(2)}€ cash</p>
+                    <p className="font-bold text-sm mt-1 pt-1" style={{ color: 'var(--text-primary)', borderTop: '1px solid var(--divider)' }}>{order.total?.toFixed(2)}€ cash</p>
                   </div>
                   <div className="flex items-center justify-between">
-                    <div className="bg-green-50 px-4 py-2 rounded-xl">
-                      <p className="text-xs text-gray-500">Shpërblimi juaj</p>
-                      <p className="font-black text-green-600 text-lg">{(order.delivery_fee || 1.5).toFixed(2)}€</p>
+                    <div className="px-4 py-2 rounded-xl" style={{ background: 'rgba(57,255,107,0.1)', border: '1px solid rgba(57,255,107,0.25)' }}>
+                      <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Shpërblimi juaj</p>
+                      <p className="font-black text-lg" style={{ color: '#39FF6B' }}>{(order.delivery_fee || 1.5).toFixed(2)}€</p>
                     </div>
                     <button onClick={() => acceptOrder(order)}
-                      className="bg-green-600 hover:bg-green-700 text-white font-black px-6 py-3.5 rounded-xl transition-all shadow-lg hover:shadow-green-200 hover:-translate-y-0.5 active:translate-y-0 flex items-center gap-2">
+                      className="font-black px-6 py-3.5 rounded-xl transition-all flex items-center gap-2 active:scale-95"
+                      style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 16px rgba(57,255,107,0.4)' }}>
                       <Bike size={18} /> Prano Dorëzimin
                     </button>
                   </div>
@@ -268,16 +280,18 @@ export default function DeliveryDashboard() {
             {myOrders.length === 0 ? (
               <div className="text-center py-24">
                 <div className="text-7xl mb-4">🛵</div>
-                <p className="text-gray-600 font-bold text-lg">Nuk keni dorëzime aktive</p>
-                <p className="text-gray-400 text-sm mt-1">Pranoni një porosi nga lista "Gati"</p>
+                <p className="font-bold text-lg" style={{ color: 'var(--text-primary)' }}>Nuk keni dorëzime aktive</p>
+                <p className="text-sm mt-1" style={{ color: 'var(--text-muted)' }}>Pranoni një porosi nga lista "Gati"</p>
               </div>
             ) : myOrders.map((order, idx) => (
               <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border-2 border-purple-200 dark:border-purple-800">
-                <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 py-3 border-b border-purple-100 flex items-center justify-between">
-                  <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
-                  <span className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
-                    <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" /> Në Rrugë
+                className="rounded-2xl shadow-lg overflow-hidden"
+                style={{ background: 'var(--card-bg)', border: '1.5px solid rgba(139,92,246,0.4)' }}>
+                <div className="px-5 py-3 flex items-center justify-between" style={{ background: 'rgba(139,92,246,0.1)', borderBottom: '1px solid rgba(139,92,246,0.2)' }}>
+                  <span className="font-black text-xl" style={{ color: '#FBBF24' }}>#{order.order_code}</span>
+                  <span className="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5"
+                    style={{ background: 'rgba(139,92,246,0.25)', color: '#A78BFA' }}>
+                    <span className="w-1.5 h-1.5 bg-purple-400 rounded-full animate-pulse" /> Në Rrugë
                   </span>
                 </div>
                 <div className="p-5">
@@ -345,7 +359,8 @@ export default function DeliveryDashboard() {
                       <p className="text-xs text-gray-500">cash + <span className="text-green-600 font-bold">+{(order.delivery_fee || 1.5).toFixed(2)}€</span> shpërblim</p>
                     </div>
                     <button onClick={() => completeOrder(order)}
-                      className="bg-green-600 hover:bg-green-700 text-white font-black px-6 py-3.5 rounded-xl transition-all shadow-lg hover:shadow-green-200 flex items-center gap-2">
+                      className="font-black px-6 py-3.5 rounded-xl transition-all flex items-center gap-2 active:scale-95"
+                      style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b', boxShadow: '0 0 16px rgba(57,255,107,0.4)' }}>
                       <CheckCircle size={18} /> U Dorëzua!
                     </button>
                   </div>
@@ -361,11 +376,11 @@ export default function DeliveryDashboard() {
             {myHistory.length === 0 ? (
               <div className="text-center py-24">
                 <div className="text-7xl mb-4">📋</div>
-                <p className="text-gray-600 font-bold">Nuk ka historik akoma</p>
+                <p className="font-bold" style={{ color: 'var(--text-primary)' }}>Nuk ka historik akoma</p>
               </div>
             ) : (
               <>
-                <div className="bg-gradient-to-r from-green-600 to-green-700 text-white rounded-2xl p-5 mb-2">
+                <div className="rounded-2xl p-5 mb-2 text-white" style={{ background: 'linear-gradient(135deg,#059669,#10B981)', boxShadow: '0 0 20px rgba(57,255,107,0.2)' }}>
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-green-200 text-sm">Gjithsej të ardhura</p>
@@ -380,18 +395,19 @@ export default function DeliveryDashboard() {
                 <div className="space-y-2">
                   {myHistory.map((order, i) => (
                     <motion.div key={order.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                      className="bg-white rounded-2xl p-4 shadow-sm flex items-center gap-3">
-                      <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center flex-shrink-0">
-                        <CheckCircle size={18} className="text-green-600" />
+                      className="rounded-2xl p-4 flex items-center gap-3" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ background: 'rgba(57,255,107,0.15)' }}>
+                        <CheckCircle size={18} style={{ color: '#39FF6B' }} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="font-bold text-amber-600 text-sm">#{order.order_code}</p>
-                        <p className="text-gray-700 text-sm font-medium">{order.customer_name}</p>
-                        <p className="text-gray-400 text-xs">{order.business_name} · {new Date(order.created_date).toLocaleDateString("sq-AL")}</p>
+                        <p className="font-bold text-sm" style={{ color: '#FBBF24' }}>#{order.order_code}</p>
+                        <p className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{order.customer_name}</p>
+                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{order.business_name} · {new Date(order.created_date).toLocaleDateString("sq-AL")}</p>
                       </div>
                       <div className="text-right">
-                        <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full">Dorëzuar</span>
-                        <p className="text-green-600 font-black mt-1 text-base">+{(order.delivery_fee || 1.5).toFixed(2)}€</p>
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full" style={{ background: 'rgba(57,255,107,0.15)', color: '#39FF6B' }}>Dorëzuar</span>
+                        <p className="font-black mt-1 text-base" style={{ color: '#39FF6B' }}>+{(order.delivery_fee || 1.5).toFixed(2)}€</p>
                       </div>
                     </motion.div>
                   ))}
@@ -404,41 +420,43 @@ export default function DeliveryDashboard() {
         {/* SETTINGS */}
         {tab === "settings" && (
           <div className="space-y-4 max-w-lg">
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1">Informacionet e Llogarisë</h3>
-              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Të dhënat e profilit tuaj</p>
+            <div className="rounded-2xl p-5" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              {driver.image_url && (
+                <div className="flex justify-center mb-4">
+                  <img src={driver.image_url} alt={driver.name}
+                    className="w-20 h-20 rounded-2xl object-cover"
+                    style={{ border: '2.5px solid rgba(57,255,107,0.5)', boxShadow: '0 0 20px rgba(57,255,107,0.3)' }} />
+                </div>
+              )}
+              <h3 className="font-bold mb-1" style={{ color: 'var(--text-heading)' }}>Informacionet e Llogarisë</h3>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Të dhënat e profilit tuaj</p>
               <div className="space-y-3 text-sm">
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Emri</span>
-                  <span className="font-bold text-gray-900">{driver.name}</span>
-                </div>
-                <div className="flex justify-between py-2 border-b border-gray-50">
-                  <span className="text-gray-500">Telefoni</span>
-                  <span className="font-bold text-gray-900">{driver.phone}</span>
-                </div>
-                <div className="flex justify-between py-2">
-                  <span className="text-gray-500">Mjeti</span>
-                  <span className="font-bold text-gray-900">{driver.vehicle === "motor" ? "🛵 Motor" : driver.vehicle === "biciklete" ? "🚲 Biçikletë" : "🚗 Makinë"}</span>
-                </div>
+                {[['Emri', driver.name], ['Telefoni', driver.phone], ['Mjeti', driver.vehicle === 'motor' ? '🛵 Motor' : driver.vehicle === 'biciklete' ? '🚲 Biçikletë' : '🚗 Makinë']].map(([k, v]) => (
+                  <div key={k} className="flex justify-between py-2" style={{ borderBottom: '1px solid var(--divider)' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>{k}</span>
+                    <span className="font-bold" style={{ color: 'var(--text-primary)' }}>{v}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
-            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
-                <LogOut size={16} className="text-gray-500" /> Dil nga Llogaria
+            <div className="rounded-2xl p-5" style={{ background: 'var(--card-bg)', border: '1px solid var(--card-border)' }}>
+              <h3 className="font-bold mb-1 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
+                <LogOut size={16} style={{ color: 'var(--text-muted)' }} /> Dil nga Llogaria
               </h3>
-              <p className="text-gray-500 text-sm mb-4">Do të ridrejtoheni në faqen kryesore.</p>
+              <p className="text-sm mb-4" style={{ color: 'var(--text-muted)' }}>Do të ridrejtoheni në faqen kryesore.</p>
               <button onClick={logout}
-                className="w-full bg-gray-100 hover:bg-gray-200 text-gray-800 font-bold py-3 rounded-xl transition-colors text-sm">
+                className="w-full font-bold py-3 rounded-xl transition-colors text-sm"
+                style={{ background: 'rgba(255,255,255,0.08)', color: 'var(--text-primary)', border: '1px solid var(--nav-border)' }}>
                 Dil nga Llogaria
               </button>
             </div>
 
-            <div className="bg-red-50 border border-red-200 rounded-2xl p-5">
-              <h3 className="font-bold text-red-700 mb-1 flex items-center gap-2">
+            <div className="rounded-2xl p-5" style={{ background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.3)' }}>
+              <h3 className="font-bold mb-1 flex items-center gap-2" style={{ color: '#EF4444' }}>
                 <AlertTriangle size={16} /> Fshij Llogarinë
               </h3>
-              <p className="text-red-500 text-sm mb-4">Ky veprim është i pakthyeshëm. E gjithë historia dhe të dhënat tuaja do të fshihen.</p>
+              <p className="text-sm mb-4" style={{ color: 'rgba(239,68,68,0.8)' }}>Ky veprim është i pakthyeshëm. E gjithë historia dhe të dhënat tuaja do të fshihen.</p>
               <button
                 onClick={async () => {
                   if (!confirm("Jeni absolutisht i sigurt? Kjo nuk mund të kthehet mbrapsht!")) return;
@@ -446,7 +464,8 @@ export default function DeliveryDashboard() {
                   localStorage.removeItem("tiligo_delivery");
                   navigate("/");
                 }}
-                className="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded-xl transition-colors text-sm">
+                className="w-full text-white font-bold py-3 rounded-xl transition-colors text-sm"
+                style={{ background: '#DC2626' }}>
                 🗑️ Fshij Llogarinë Përgjithmonë
               </button>
             </div>
