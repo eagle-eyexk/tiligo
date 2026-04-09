@@ -17,7 +17,7 @@ export default function Navbar({ cart = [], onCartClick }) {
   const isRoot = ROOT_PATHS.includes(location.pathname);
 
   return (
-    <nav className="bg-white shadow-sm sticky top-0 z-50 border-b border-gray-100"
+    <nav className="bg-white dark:bg-gray-900 shadow-sm sticky top-0 z-50 border-b border-gray-100 dark:border-gray-800"
       style={{ paddingTop: "env(safe-area-inset-top)" }}>
       <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
         <Link to="/">
@@ -28,7 +28,7 @@ export default function Navbar({ cart = [], onCartClick }) {
         <div className="hidden md:flex items-center gap-6">
           <button
             onClick={onCartClick}
-            className="relative flex items-center gap-2 text-gray-600 hover:text-blue-700 font-medium transition-colors"
+            className="relative flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition-colors"
           >
             <ShoppingCart size={20} />
             <span>Shporta</span>
@@ -41,7 +41,7 @@ export default function Navbar({ cart = [], onCartClick }) {
 
           <Link
             to="/porositjet-e-mia"
-            className="flex items-center gap-2 text-gray-600 hover:text-blue-700 font-medium transition-colors"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-300 hover:text-blue-700 dark:hover:text-blue-400 font-medium transition-colors"
           >
             <Package size={20} />
             <span>Porositë</span>
@@ -62,18 +62,18 @@ export default function Navbar({ cart = [], onCartClick }) {
                   initial={{ opacity: 0, y: -8 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0, y: -8 }}
-                  className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-50"
+                  className="absolute right-0 mt-2 w-52 bg-white dark:bg-gray-800 rounded-xl shadow-xl border border-gray-100 dark:border-gray-700 overflow-hidden z-50"
                 >
                   <Link to="/biznesi/login" onClick={() => setHyrjaOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-gray-700 font-medium transition-colors">
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors">
                     🏪 Hyrja Biznesit
                   </Link>
                   <Link to="/dorezuesi/login" onClick={() => setHyrjaOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-gray-700 font-medium transition-colors">
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors">
                     🛵 Hyrja Dorëzuesit
                   </Link>
                   <Link to="/admin" onClick={() => setHyrjaOpen(false)}
-                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 text-gray-700 font-medium transition-colors border-t border-gray-100">
+                    className="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-200 font-medium transition-colors border-t border-gray-100 dark:border-gray-700">
                     🔐 Paneli Admin
                   </Link>
                 </motion.div>
@@ -112,11 +112,11 @@ export default function Navbar({ cart = [], onCartClick }) {
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: "auto", opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
-            className="md:hidden bg-white border-t border-gray-100 overflow-hidden"
+            className="md:hidden bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800 overflow-hidden"
           >
             <div className="px-4 py-3 space-y-1">
               <Link to="/porositjet-e-mia" onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 text-gray-700 font-medium">
+                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200 font-medium">
                 <Package size={20} />Porositë e Mia
               </Link>
               <Link to="/biznesi/login" onClick={() => setMenuOpen(false)}

@@ -144,7 +144,7 @@ export default function BusinessDashboard() {
   const totalRevenue = completedOrders.reduce((s, o) => s + (o.total || 0), 0);
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950">
       {/* Header */}
       <div className="bg-gradient-to-r from-blue-800 to-blue-900 text-white sticky top-0 z-50">
         <div className="max-w-5xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -203,7 +203,7 @@ export default function BusinessDashboard() {
             { icon: "🍽️", label: "Produkte", value: products.length, color: "text-orange-700", bg: "bg-orange-50" },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-              className="bg-white rounded-2xl p-4 shadow-sm">
+              className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
               <div className={`w-10 h-10 ${s.bg} rounded-xl flex items-center justify-center text-xl mb-2`}>{s.icon}</div>
               <p className={`font-black text-xl ${s.color}`}>{s.value}</p>
               <p className="text-gray-500 text-xs">{s.label}</p>
@@ -213,7 +213,7 @@ export default function BusinessDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-16 z-40">
         <div className="max-w-5xl mx-auto px-4 flex">
           {[
             { key: "orders", icon: <Package size={15} />, label: `Porositë`, badge: pendingOrders.length },
@@ -223,7 +223,7 @@ export default function BusinessDashboard() {
             { key: "settings", icon: <Settings size={15} />, label: "Cilësimet" },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold border-b-2 transition-colors ${tab === t.key ? "border-blue-700 text-blue-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+              className={`relative flex items-center gap-1.5 px-4 py-3.5 text-xs font-bold border-b-2 transition-colors ${tab === t.key ? "border-blue-700 text-blue-700 dark:text-blue-400 dark:border-blue-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}>
               {t.icon} {t.label}
               {t.badge > 0 && (
                 <span className="ml-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-black text-[10px]">
@@ -251,7 +251,7 @@ export default function BusinessDashboard() {
             ) : pendingOrders.map((order, idx) => (
               <motion.div key={order.id}
                 initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border border-gray-100 dark:border-gray-700">
                 {/* Status bar */}
                 <div className={`h-1.5 ${ORDER_STATUS_MAP[order.status]?.dot}`} />
                 <div className="p-5">
@@ -273,7 +273,7 @@ export default function BusinessDashboard() {
                     </div>
                   </div>
                   {/* Items */}
-                  <div className="bg-gray-50 rounded-xl p-3 mb-3">
+                  <div className="bg-gray-50 dark:bg-gray-700 rounded-xl p-3 mb-3">
                     {order.items?.map((item, i) => (
                       <div key={i} className="flex justify-between text-sm py-0.5">
                         <span className="text-gray-700">{item.qty}× {item.name}</span>
@@ -321,7 +321,7 @@ export default function BusinessDashboard() {
                 <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                   className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4 backdrop-blur-sm">
                   <motion.div initial={{ scale: 0.9, opacity: 0, y: 20 }} animate={{ scale: 1, opacity: 1, y: 0 }} exit={{ scale: 0.9, opacity: 0 }}
-                    className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
+                    className="bg-white dark:bg-gray-800 rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
                     <h3 className="font-black text-xl text-gray-900 mb-5">
                       {editProduct ? "✏️ Ndrysho Produktin" : "➕ Produkt i Ri"}
                     </h3>
@@ -330,10 +330,10 @@ export default function BusinessDashboard() {
                         <label className="text-sm font-bold text-gray-700 mb-1.5 block">Emri *</label>
                         <input value={productForm.name} onChange={e => setProductForm({...productForm, name: e.target.value})}
                           placeholder="p.sh. Pizza Margherita" required
-                          className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors" />
+                          className="w-full border-2 border-gray-100 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 focus:border-blue-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors" />
                       </div>
                       <div>
-                        <label className="text-sm font-bold text-gray-700 mb-1.5 block">Përshkrimi</label>
+                        <label className="text-sm font-bold text-gray-700 dark:text-gray-300 mb-1.5 block">Përshkrimi</label>
                         <textarea value={productForm.description} onChange={e => setProductForm({...productForm, description: e.target.value})}
                           placeholder="Përshkruani produktin..." rows={2}
                           className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-4 py-3 text-sm outline-none transition-colors resize-none" />
@@ -394,7 +394,7 @@ export default function BusinessDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 {products.map((prod, i) => (
                   <motion.div key={prod.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    className="bg-white rounded-2xl shadow-sm flex items-center gap-0 overflow-hidden hover:shadow-md transition-shadow">
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm flex items-center gap-0 overflow-hidden hover:shadow-md transition-shadow">
                     {prod.image_url ? (
                       <img src={prod.image_url} alt={prod.name} className="w-24 h-24 object-cover flex-shrink-0" />
                     ) : (
@@ -441,8 +441,8 @@ export default function BusinessDashboard() {
                 </motion.div>
               ))}
             </div>
-            <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-4 flex items-center gap-2">
                 <TrendingUp size={18} className="text-blue-600" /> Statusi i Biznesit
               </h3>
               <div className="space-y-3">
@@ -478,7 +478,7 @@ export default function BusinessDashboard() {
               </div>
             ) : orders.filter(o => ["dorezuar", "anuluar"].includes(o.status)).map((order, i) => (
               <motion.div key={order.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
-                className="bg-white rounded-2xl p-4 shadow-sm">
+                className="bg-white dark:bg-gray-800 rounded-2xl p-4 shadow-sm">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3">
                     <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${order.status === "dorezuar" ? "bg-green-100" : "bg-red-100"}`}>
@@ -505,8 +505,8 @@ export default function BusinessDashboard() {
         {/* SETTINGS TAB */}
         {tab === "settings" && (
           <div className="space-y-4 max-w-lg">
-            <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-1">Informacionet e Llogarisë</h3>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1">Informacionet e Llogarisë</h3>
               <p className="text-gray-500 text-sm mb-4">Të dhënat e biznesit tuaj</p>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between py-2 border-b border-gray-50">
@@ -524,8 +524,8 @@ export default function BusinessDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-1 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
                 <LogOut size={16} className="text-gray-500" /> Dil nga Llogaria
               </h3>
               <p className="text-gray-500 text-sm mb-4">Do të ridrejtoheni në faqen kryesore.</p>

@@ -5,7 +5,6 @@ import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
-import MobileBottomNav from "@/components/MobileBottomNav";
 import { useCart } from "@/lib/useCart";
 
 const CATEGORIES = [
@@ -335,7 +334,7 @@ export default function Home() {
       </section>
 
       {/* Stats bar */}
-      <section className="bg-white border-b border-gray-100 shadow-sm">
+      <section className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-4 grid grid-cols-3 gap-4">
           {[
             { icon: <Zap size={20} className="text-amber-500" />, title: "Dërgim Express", sub: "20–35 min mesatarisht" },
@@ -344,10 +343,10 @@ export default function Home() {
           ].map((f, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 + i * 0.1 }}
               className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center flex-shrink-0">{f.icon}</div>
+              <div className="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">{f.icon}</div>
               <div>
-                <p className="font-bold text-gray-900 text-sm">{f.title}</p>
-                <p className="text-xs text-gray-500">{f.sub}</p>
+                <p className="font-bold text-gray-900 dark:text-gray-100 text-sm">{f.title}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{f.sub}</p>
               </div>
             </motion.div>
           ))}
@@ -371,7 +370,7 @@ export default function Home() {
 
         {/* Store grid */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-black text-gray-900">
+          <h2 className="text-xl font-black text-gray-900 dark:text-gray-100">
             Të gjitha Dyqanet
             <span className="ml-2 text-gray-400 font-normal text-base">({filtered.length})</span>
           </h2>
@@ -385,7 +384,7 @@ export default function Home() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="bg-white rounded-2xl overflow-hidden animate-pulse">
+              <div key={i} className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden animate-pulse">
                 <div className="h-44 bg-gray-200" />
                 <div className="p-4 space-y-2">
                   <div className="h-5 bg-gray-200 rounded w-2/3" />
@@ -412,7 +411,7 @@ export default function Home() {
                 whileHover={{ y: -4 }}
               >
                 <Link to={`/dyqani/${biz.id}`} className="block">
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100">
+                  <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-gray-100 dark:border-gray-700">
                     <div className="relative h-44 overflow-hidden">
                       <img
                         src={biz.image_url || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80`}
@@ -436,8 +435,8 @@ export default function Home() {
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-black text-gray-900 text-base mb-1">{biz.name}</h3>
-                      <p className="text-gray-500 text-sm line-clamp-2 mb-3">{biz.description}</p>
+                      <h3 className="font-black text-gray-900 dark:text-gray-100 text-base mb-1">{biz.name}</h3>
+                      <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-2 mb-3">{biz.description}</p>
                       <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
                         <span className="flex items-center gap-1 font-medium text-gray-600">
                           <Clock size={11} />{biz.delivery_time || "20-35 min"}
@@ -487,7 +486,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="bg-gray-950 text-white mt-12 py-12 px-4 pb-24 md:pb-12">
+      <footer className="bg-gray-950 text-white mt-12 py-12 px-4 pb-28 md:pb-12">
         <div className="max-w-7xl mx-auto text-center">
           <img
             src="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png"
@@ -497,7 +496,6 @@ export default function Home() {
           <p className="text-gray-600 text-xs mt-2">Bukuria e ushqimit, shpejtësia e teknologjisë.</p>
         </div>
       </footer>
-      <MobileBottomNav cart={cart} />
     </div>
   );
 }

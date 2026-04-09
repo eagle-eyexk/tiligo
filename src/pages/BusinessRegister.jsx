@@ -4,6 +4,7 @@ import { ArrowLeft, Upload, Store } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
 import TiliGoLogo from "@/components/TiliGoLogo";
+import SelectDrawer from "@/components/SelectDrawer";
 
 const CATEGORIES = ["Ushqim", "Pica", "Sushi", "Burgera", "Kafe & Ëmbëlsira", "Farmaci", "Supermarket", "Tjeter"];
 
@@ -40,13 +41,13 @@ export default function BusinessRegister() {
   };
 
   if (done) return (
-    <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950 flex items-center justify-center px-4">
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl">
+        className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-xl">
         <div className="text-6xl mb-4">🎉</div>
-        <h2 className="text-2xl font-black text-gray-900 mb-2">Regjistrimi u bë!</h2>
-        <p className="text-gray-500 text-sm mb-2">Aplikimi juaj po shqyrtohet nga administratori.</p>
-        <p className="text-gray-500 text-sm mb-6">Do të njoftoheni kur biznesi juaj të aprovohet.</p>
+        <h2 className="text-2xl font-black text-gray-900 dark:text-gray-100 mb-2">Regjistrimi u bë!</h2>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-2">Aplikimi juaj po shqyrtohet nga administratori.</p>
+        <p className="text-gray-500 dark:text-gray-400 text-sm mb-6">Do të njoftoheni kur biznesi juaj të aprovohet.</p>
         <Link to="/biznesi/login"
           className="block w-full bg-blue-700 text-white font-bold py-3 rounded-xl hover:bg-blue-800 transition-colors">
           Shko tek Hyrja
@@ -56,22 +57,22 @@ export default function BusinessRegister() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
-      <div className="bg-white shadow-sm border-b border-gray-100 px-4 h-14 flex items-center gap-3 sticky top-0 z-50">
-        <Link to="/" className="text-gray-500 hover:text-gray-700"><ArrowLeft size={22} /></Link>
+    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950">
+      <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-100 dark:border-gray-800 px-4 h-14 flex items-center gap-3 sticky top-0 z-50">
+        <Link to="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700"><ArrowLeft size={22} /></Link>
         <TiliGoLogo size="sm" />
-        <h1 className="font-bold text-gray-900">Regjistro Biznesin</h1>
+        <h1 className="font-bold text-gray-900 dark:text-gray-100">Regjistro Biznesin</h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-blue-100 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-2xl flex items-center justify-center">
               <Store size={24} className="text-blue-700" />
             </div>
             <div>
-              <h2 className="font-black text-xl text-gray-900">Krijoni Llogarinë</h2>
-              <p className="text-gray-500 text-sm">Bashkohuni me TiliGo sot</p>
+              <h2 className="font-black text-xl text-gray-900 dark:text-gray-100">Krijoni Llogarinë</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Bashkohuni me TiliGo sot</p>
             </div>
           </div>
 
@@ -97,11 +98,13 @@ export default function BusinessRegister() {
                   className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50" />
               </div>
               <div>
-                <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Kategoria *</label>
-                <select value={form.category} onChange={e => setForm({...form, category: e.target.value})}
-                  className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50">
-                  {CATEGORIES.map(c => <option key={c}>{c}</option>)}
-                </select>
+                <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Kategoria *</label>
+                <SelectDrawer
+                  value={form.category}
+                  onChange={val => setForm({...form, category: val})}
+                  options={CATEGORIES.map(c => ({ value: c, label: c }))}
+                  label="Zgjidhni Kategorinë"
+                />
               </div>
             </div>
 

@@ -86,7 +86,7 @@ export default function DeliveryDashboard() {
   if (!driver) return null;
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950">
       {/* Header */}
       <div className="bg-gradient-to-r from-green-700 to-green-800 text-white sticky top-0 z-50">
         <div className="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
@@ -148,7 +148,7 @@ export default function DeliveryDashboard() {
       </div>
 
       {/* Tabs */}
-      <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
+      <div className="bg-white dark:bg-gray-900 border-b border-gray-100 dark:border-gray-800 sticky top-16 z-40">
         <div className="max-w-3xl mx-auto px-4 flex">
           {[
             { key: "available", label: `📦 Gati`, badge: availableOrders.length },
@@ -157,7 +157,7 @@ export default function DeliveryDashboard() {
             { key: "settings", label: "⚙️ Cilësimet" },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`relative flex items-center gap-1.5 px-5 py-3.5 text-sm font-bold border-b-2 transition-colors ${tab === t.key ? "border-green-600 text-green-700" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+              className={`relative flex items-center gap-1.5 px-5 py-3.5 text-sm font-bold border-b-2 transition-colors ${tab === t.key ? "border-green-600 text-green-700 dark:text-green-400 dark:border-green-400" : "border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700"}`}>
               {t.label}
               {t.badge > 0 && (
                 <span className="ml-0.5 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-black text-[10px]">
@@ -191,7 +191,7 @@ export default function DeliveryDashboard() {
               </div>
             ) : availableOrders.map((order, idx) => (
               <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden border-2 border-orange-200">
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border-2 border-orange-200 dark:border-orange-800">
                 <div className="bg-gradient-to-r from-orange-50 to-amber-50 px-5 py-3 border-b border-orange-100 flex items-center justify-between">
                   <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
                   <span className="bg-orange-500 text-white text-xs font-bold px-3 py-1 rounded-full">Gati për Dorëzim</span>
@@ -245,7 +245,7 @@ export default function DeliveryDashboard() {
               </div>
             ) : myOrders.map((order, idx) => (
               <motion.div key={order.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}
-                className="bg-white rounded-2xl shadow-sm overflow-hidden border-2 border-purple-200">
+                className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden border-2 border-purple-200 dark:border-purple-800">
                 <div className="bg-gradient-to-r from-purple-50 to-indigo-50 px-5 py-3 border-b border-purple-100 flex items-center justify-between">
                   <span className="font-black text-xl text-amber-600">#{order.order_code}</span>
                   <span className="bg-purple-600 text-white text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
@@ -255,11 +255,11 @@ export default function DeliveryDashboard() {
                 <div className="p-5">
                   <p className="font-bold text-gray-900 mb-3">🏪 {order.business_name}</p>
                   <div className="space-y-2 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600 bg-gray-50 rounded-xl px-3 py-2">
+                    <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
                       <MapPin size={14} className="text-blue-600 flex-shrink-0" />
                       <span className="font-medium">{order.customer_address}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm bg-gray-50 rounded-xl px-3 py-2">
+                    <div className="flex items-center gap-2 text-sm bg-gray-50 dark:bg-gray-700 rounded-xl px-3 py-2">
                       <Phone size={14} className="text-green-600 flex-shrink-0" />
                       <span className="text-gray-700 font-medium">{order.customer_name}</span>
                       <a href={`tel:${order.customer_phone}`} className="text-blue-600 font-black">{order.customer_phone}</a>
@@ -351,9 +351,9 @@ export default function DeliveryDashboard() {
         {/* SETTINGS */}
         {tab === "settings" && (
           <div className="space-y-4 max-w-lg">
-            <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-1">Informacionet e Llogarisë</h3>
-              <p className="text-gray-500 text-sm mb-4">Të dhënat e profilit tuaj</p>
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1">Informacionet e Llogarisë</h3>
+              <p className="text-gray-500 dark:text-gray-400 text-sm mb-4">Të dhënat e profilit tuaj</p>
               <div className="space-y-3 text-sm">
                 <div className="flex justify-between py-2 border-b border-gray-50">
                   <span className="text-gray-500">Emri</span>
@@ -370,8 +370,8 @@ export default function DeliveryDashboard() {
               </div>
             </div>
 
-            <div className="bg-white rounded-2xl p-5 shadow-sm">
-              <h3 className="font-bold text-gray-900 mb-1 flex items-center gap-2">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 shadow-sm">
+              <h3 className="font-bold text-gray-900 dark:text-gray-100 mb-1 flex items-center gap-2">
                 <LogOut size={16} className="text-gray-500" /> Dil nga Llogaria
               </h3>
               <p className="text-gray-500 text-sm mb-4">Do të ridrejtoheni në faqen kryesore.</p>

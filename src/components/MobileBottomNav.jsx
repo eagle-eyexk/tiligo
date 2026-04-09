@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import { Home, Package, User } from "lucide-react";
 import { motion } from "framer-motion";
+import { useCart } from "@/lib/useCart";
 
 const TABS = [
   { path: "/", label: "Kryefaqja", icon: Home },
@@ -8,9 +9,10 @@ const TABS = [
   { path: "/biznesi/login", label: "Profili", icon: User },
 ];
 
-export default function MobileBottomNav({ cart = [] }) {
+export default function MobileBottomNav() {
   const location = useLocation();
-  const cartCount = cart.reduce((s, i) => s + i.qty, 0);
+  const { cart } = useCart();
+  const cartCount = (cart || []).reduce((s, i) => s + i.qty, 0);
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-100 dark:border-gray-800"

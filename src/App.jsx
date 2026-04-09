@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 // TiliGo Pages
+import CustomerLayout from './components/CustomerLayout';
 import Home from './pages/Home';
 import BusinessPage from './pages/BusinessPage';
 import Checkout from './pages/Checkout';
@@ -50,12 +51,17 @@ const AuthenticatedApp = () => {
 
   return (
     <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/dyqani/:id" element={<BusinessPage />} />
-      <Route path="/checkout" element={<Checkout />} />
-      <Route path="/gjurmo/:code" element={<TrackOrder />} />
-      <Route path="/gjurmo" element={<TrackOrder />} />
-      <Route path="/porositjet-e-mia" element={<MyOrders />} />
+      {/* Customer screens — persistent MobileBottomNav via CustomerLayout */}
+      <Route element={<CustomerLayout />}>
+        <Route path="/" element={<Home />} />
+        <Route path="/dyqani/:id" element={<BusinessPage />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/gjurmo/:code" element={<TrackOrder />} />
+        <Route path="/gjurmo" element={<TrackOrder />} />
+        <Route path="/porositjet-e-mia" element={<MyOrders />} />
+        <Route path="/shkarko-app" element={<DownloadApp />} />
+      </Route>
+      {/* Staff/business screens — no bottom nav */}
       <Route path="/biznesi/register" element={<BusinessRegister />} />
       <Route path="/biznesi/login" element={<BusinessLogin />} />
       <Route path="/biznesi/dashboard" element={<BusinessDashboard />} />
@@ -63,7 +69,6 @@ const AuthenticatedApp = () => {
       <Route path="/dorezuesi/login" element={<DeliveryLogin />} />
       <Route path="/dorezuesi/dashboard" element={<DeliveryDashboard />} />
       <Route path="/admin" element={<AdminPanel />} />
-      <Route path="/shkarko-app" element={<DownloadApp />} />
       <Route path="/download.zip" element={<DownloadProject />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>

@@ -29,13 +29,13 @@ export default function CartDrawer({ open, onClose, cart, onAdd, onRemove, onCle
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
             transition={{ type: "spring", damping: 25, stiffness: 200 }}
-            className="fixed right-0 top-0 h-full w-full max-w-sm bg-white z-50 flex flex-col shadow-2xl"
+            className="fixed right-0 top-0 h-full w-full max-w-sm bg-white dark:bg-gray-900 z-50 flex flex-col shadow-2xl"
           >
             {/* Header */}
-            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100 dark:border-gray-800">
               <div className="flex items-center gap-2">
                 <ShoppingBag size={22} className="text-blue-700" />
-                <h2 className="text-lg font-bold text-gray-900">Shporta</h2>
+                <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Shporta</h2>
                 <span className="bg-blue-100 text-blue-700 text-xs px-2 py-0.5 rounded-full font-medium">
                   {cart.reduce((s, i) => s + i.qty, 0)} artikuj
                 </span>
@@ -61,14 +61,14 @@ export default function CartDrawer({ open, onClose, cart, onAdd, onRemove, onCle
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, x: -50 }}
-                    className="flex items-center gap-3 bg-gray-50 rounded-xl p-3"
+                    className="flex items-center gap-3 bg-gray-50 dark:bg-gray-800 rounded-xl p-3"
                   >
                     {item.image_url && (
                       <img src={item.image_url} alt={item.name}
                         className="w-14 h-14 rounded-lg object-cover flex-shrink-0" />
                     )}
                     <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-900 text-sm truncate">{item.name}</p>
+                      <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm truncate">{item.name}</p>
                       <p className="text-blue-700 font-bold text-sm">{(item.price * item.qty).toFixed(2)}€</p>
                     </div>
                     <div className="flex items-center gap-2">
@@ -89,7 +89,7 @@ export default function CartDrawer({ open, onClose, cart, onAdd, onRemove, onCle
 
             {/* Footer */}
             {cart.length > 0 && (
-              <div className="px-5 py-4 border-t border-gray-100 space-y-3 bg-white">
+              <div className="px-5 py-4 border-t border-gray-100 dark:border-gray-800 space-y-3 bg-white dark:bg-gray-900">
                 <div className="space-y-1">
                   <div className="flex justify-between text-sm text-gray-500">
                     <span>Nëntotali</span>

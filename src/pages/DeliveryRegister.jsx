@@ -4,6 +4,7 @@ import { ArrowLeft, Bike, Upload } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import TiliGoLogo from "@/components/TiliGoLogo";
 import { motion } from "framer-motion";
+import SelectDrawer from "@/components/SelectDrawer";
 
 export default function DeliveryRegister() {
   const navigate = useNavigate();
@@ -35,9 +36,9 @@ export default function DeliveryRegister() {
   };
 
   if (done) return (
-    <div className="min-h-screen bg-[#f0f4f8] flex items-center justify-center px-4">
+    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950 flex items-center justify-center px-4">
       <motion.div initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-3xl p-8 max-w-sm w-full text-center shadow-xl">
+        className="bg-white dark:bg-gray-800 rounded-3xl p-8 max-w-sm w-full text-center shadow-xl">
         <div className="text-6xl mb-4">🛵</div>
         <h2 className="text-2xl font-black text-gray-900 mb-2">Aplikimi u dërgua!</h2>
         <p className="text-gray-500 text-sm mb-6">Administratori do të shqyrtojë aplikimin tuaj së shpejti.</p>
@@ -50,22 +51,22 @@ export default function DeliveryRegister() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
-      <div className="bg-white shadow-sm border-b border-gray-100 px-4 h-14 flex items-center gap-3 sticky top-0 z-50">
-        <Link to="/" className="text-gray-500 hover:text-gray-700"><ArrowLeft size={22} /></Link>
+    <div className="min-h-screen bg-[#f0f4f8] dark:bg-gray-950">
+      <div className="bg-white dark:bg-gray-900 shadow-sm border-b border-gray-100 dark:border-gray-800 px-4 h-14 flex items-center gap-3 sticky top-0 z-50">
+        <Link to="/" className="text-gray-500 dark:text-gray-400 hover:text-gray-700"><ArrowLeft size={22} /></Link>
         <TiliGoLogo size="sm" />
-        <h1 className="font-bold text-gray-900">Regjistrohu si Dorëzues</h1>
+        <h1 className="font-bold text-gray-900 dark:text-gray-100">Regjistrohu si Dorëzues</h1>
       </div>
 
       <div className="max-w-lg mx-auto px-4 py-8">
-        <div className="bg-white rounded-2xl p-6 shadow-sm">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-sm">
           <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-green-100 rounded-2xl flex items-center justify-center">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-2xl flex items-center justify-center">
               <Bike size={24} className="text-green-700" />
             </div>
             <div>
-              <h2 className="font-black text-xl text-gray-900">Bëhu Dorëzues</h2>
-              <p className="text-gray-500 text-sm">Fito para çdo ditë!</p>
+              <h2 className="font-black text-xl text-gray-900 dark:text-gray-100">Bëhu Dorëzues</h2>
+              <p className="text-gray-500 dark:text-gray-400 text-sm">Fito para çdo ditë!</p>
             </div>
           </div>
 
@@ -87,13 +88,18 @@ export default function DeliveryRegister() {
                 className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50" />
             </div>
             <div>
-              <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Mjeti i Transportit</label>
-              <select value={form.vehicle} onChange={e => setForm({...form, vehicle: e.target.value})}
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50">
-                <option value="motor">🛵 Motor</option>
-                <option value="biciklete">🚲 Biçikletë</option>
-                <option value="makine">🚗 Makinë</option>
-              </select>
+              <label className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1.5 block">Mjeti i Transportit</label>
+              <SelectDrawer
+                value={form.vehicle}
+                onChange={val => setForm({...form, vehicle: val})}
+                options={[
+                  { value: "motor", label: "🛵 Motor" },
+                  { value: "biciklete", label: "🚲 Biçikletë" },
+                  { value: "makine", label: "🚗 Makinë" },
+                ]}
+                label="Zgjidhni Mjetin"
+                accentColor="green"
+              />
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-700 mb-1.5 block">Foto Profile</label>
