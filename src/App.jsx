@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
 
 // TiliGo Pages
+import LocationPermissionPrompt from './components/LocationPermissionPrompt';
 import CustomerLayout from './components/CustomerLayout';
 import Home from './pages/Home';
 import BusinessPage from './pages/BusinessPage';
@@ -50,6 +51,8 @@ const AuthenticatedApp = () => {
   }
 
   return (
+    <>
+    <LocationPermissionPrompt />
     <Routes>
       {/* Customer screens — persistent MobileBottomNav via CustomerLayout */}
       <Route element={<CustomerLayout />}>
@@ -72,6 +75,7 @@ const AuthenticatedApp = () => {
       <Route path="/download.zip" element={<DownloadProject />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+    </>  
   );
 };
 

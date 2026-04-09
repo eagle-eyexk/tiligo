@@ -304,16 +304,16 @@ export default function TrackOrder() {
                     </span>
                   )}
                 </div>
-                <div style={{ height: 300 }}>
+                <div style={{ height: 340 }}>
                   <MapContainer
                     center={mapCenter}
-                    zoom={13}
+                    zoom={15}
                     style={{ height: "100%", width: "100%" }}
-                    zoomControl={false}
-                    scrollWheelZoom={false}
+                    zoomControl={true}
+                    scrollWheelZoom={true}
                   >
                     <TileLayer
-                      url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                      url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}"
                       attribution=""
                     />
                     <MapUpdater center={mapCenter} />

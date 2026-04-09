@@ -324,9 +324,9 @@ export default function DeliveryDashboard() {
                   {/* Live customer map */}
                   {order.customer_lat && (
                     <div className="rounded-xl overflow-hidden mb-4" style={{ height: 200 }}>
-                      <MapContainer center={[order.customer_lat, order.customer_lng]} zoom={15}
-                        style={{ height: "100%", width: "100%" }} zoomControl={false} scrollWheelZoom={false}>
-                        <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" attribution="" />
+                      <MapContainer center={[order.customer_lat, order.customer_lng]} zoom={16}
+                        style={{ height: "100%", width: "100%" }} zoomControl={true} scrollWheelZoom={false}>
+                        <TileLayer url="https://mt1.google.com/vt/lyrs=y&x={x}&y={y}&z={z}" attribution="" />
                         <Marker position={[order.customer_lat, order.customer_lng]} icon={makeIcon("🏠", 32)}>
                           <Popup><strong>{order.customer_name}</strong><br />{order.customer_address}</Popup>
                         </Marker>
