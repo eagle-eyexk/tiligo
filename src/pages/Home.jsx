@@ -52,13 +52,13 @@ const FOOD_ITEMS = [
   { emoji: "🥗", delay: 0.8, duration: 14, y: 70,  size: "text-3xl", lane: 3 },
 ];
 
-// Summer-edition warm neon colors
+// Ocean neon colors
 const NEON_COLORS = [
-  "text-amber-300 drop-shadow-[0_0_24px_rgba(252,211,77,1)]",
-  "text-orange-300 drop-shadow-[0_0_24px_rgba(253,186,116,1)]",
-  "text-yellow-200 drop-shadow-[0_0_24px_rgba(254,240,138,1)]",
-  "text-cyan-300 drop-shadow-[0_0_24px_rgba(103,232,249,1)]",
-  "text-lime-300 drop-shadow-[0_0_24px_rgba(190,242,100,1)]",
+  "drop-shadow-[0_0_28px_rgba(0,255,135,1)]" + " text-emerald-300",
+  "drop-shadow-[0_0_28px_rgba(0,229,255,1)]" + " text-cyan-300",
+  "drop-shadow-[0_0_28px_rgba(57,255,20,1)]" + " text-lime-300",
+  "drop-shadow-[0_0_28px_rgba(0,180,216,1)]" + " text-sky-300",
+  "drop-shadow-[0_0_28px_rgba(0,255,135,1)]" + " text-teal-200",
 ];
 
 // Pull-to-Refresh hook
@@ -187,23 +187,26 @@ export default function Home() {
       {/* HERO */}
       <section className="hero-gradient relative overflow-hidden" style={{ minHeight: 540 }}>
 
-        {/* ☀️ Summer sun */}
+        {/* 🌊 Deep ocean glow orbs */}
         <motion.div
-          className="absolute -top-16 -right-16 w-64 h-64 rounded-full opacity-20 pointer-events-none"
-          style={{ background: 'radial-gradient(circle, #ffd700 0%, #ff8c00 50%, transparent 70%)' }}
-          animate={{ scale: [1, 1.08, 1], opacity: [0.18, 0.26, 0.18] }}
-          transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut' }}
+          className="absolute -top-20 -right-20 w-72 h-72 rounded-full pointer-events-none"
+          style={{ background: 'radial-gradient(circle, rgba(0,229,255,0.25) 0%, rgba(0,119,182,0.15) 50%, transparent 70%)' }}
+          animate={{ scale: [1, 1.12, 1], opacity: [0.6, 1, 0.6] }}
+          transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
         />
-        {/* Soft warm haze blobs */}
-        <motion.div className="absolute top-10 left-1/4 w-96 h-40 rounded-full blur-3xl opacity-15 pointer-events-none"
-          style={{ background: '#ffb347' }}
-          animate={{ x: [-20, 20, -20] }}
-          transition={{ duration: 10, repeat: Infinity, ease: 'easeInOut' }}
+        <motion.div className="absolute top-8 left-0 w-[500px] h-48 rounded-full blur-3xl opacity-20 pointer-events-none"
+          style={{ background: 'linear-gradient(90deg, #00ff87, #00b4d8)' }}
+          animate={{ x: [-30, 30, -30], scaleX: [1, 1.1, 1] }}
+          transition={{ duration: 9, repeat: Infinity, ease: 'easeInOut' }}
         />
-        <motion.div className="absolute bottom-20 right-1/4 w-80 h-32 rounded-full blur-3xl opacity-10 pointer-events-none"
-          style={{ background: '#06b6d4' }}
+        <motion.div className="absolute bottom-16 right-0 w-96 h-36 rounded-full blur-3xl opacity-15 pointer-events-none"
+          style={{ background: '#0077b6' }}
           animate={{ x: [20, -20, 20] }}
-          transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
+          transition={{ duration: 11, repeat: Infinity, ease: 'easeInOut' }}
+        />
+        {/* Neon grid lines */}
+        <div className="absolute inset-0 pointer-events-none opacity-5"
+          style={{ backgroundImage: 'linear-gradient(rgba(0,229,255,0.8) 1px, transparent 1px), linear-gradient(90deg, rgba(0,229,255,0.8) 1px, transparent 1px)', backgroundSize: '60px 60px' }}
         />
 
         {/* ===== ROLLING FOOD & FRUITS (full-hero parallax layers) ===== */}
@@ -280,7 +283,8 @@ export default function Home() {
               initial={{ opacity: 0, scale: 0.85 }}
               animate={{ opacity: 1, scale: 1 }}
               transition={{ delay: 0.2 }}
-              className="inline-flex items-center gap-2 bg-white/15 text-white text-sm px-5 py-2 rounded-full mb-7 backdrop-blur border border-white/20 shadow-lg"
+              className="inline-flex items-center gap-2 text-cyan-200 text-sm px-5 py-2 rounded-full mb-7 backdrop-blur border border-cyan-500/40 shadow-lg"
+              style={{ background: 'rgba(0,180,216,0.12)', boxShadow: '0 0 20px rgba(0,229,255,0.2)' }}
             >
               <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
               Aktiv tani · {userCity || "Prishtinë & Kosovë"}
@@ -318,18 +322,19 @@ export default function Home() {
             {/* Search */}
             <div className="flex gap-3 max-w-lg mx-auto mb-6">
               <div className="flex-1 relative">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-cyan-400" size={18} />
                 <input
                   value={search}
                   onChange={e => setSearch(e.target.value)}
                   onKeyDown={e => e.key === "Enter" && navigate(`/?search=${search}`)}
                   placeholder="Kërko ushqim, restorante..."
-                  className="w-full pl-11 pr-4 py-4 rounded-2xl text-gray-900 bg-white shadow-xl focus:outline-none focus:ring-2 focus:ring-amber-400 text-sm"
+                  className="w-full pl-11 pr-4 py-4 rounded-2xl text-white bg-white/10 backdrop-blur border border-cyan-500/30 shadow-xl focus:outline-none focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/30 text-sm placeholder-sky-300/50"
                 />
               </div>
               <button
                 onClick={() => {}}
-                className="bg-amber-500 hover:bg-amber-400 text-white font-black px-7 py-4 rounded-2xl transition-all shadow-xl hover:shadow-amber-400/40 hover:scale-105 active:scale-95 whitespace-nowrap"
+                className="font-black px-7 py-4 rounded-2xl transition-all shadow-xl hover:scale-105 active:scale-95 whitespace-nowrap text-[#020c1b]"
+                style={{ background: 'linear-gradient(135deg,#00ff87,#00b4d8)', boxShadow: '0 0 24px rgba(0,255,135,0.5)' }}
               >
                 Kërko
               </button>
@@ -338,12 +343,14 @@ export default function Home() {
             {/* App download */}
             <div className="flex items-center justify-center gap-3">
               <Link to="/shkarko-app"
-                className="flex items-center gap-2 bg-black/70 backdrop-blur text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-black transition-colors border border-white/10 shadow-lg">
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border"
+                style={{ background: 'rgba(0,40,80,0.7)', borderColor: 'rgba(0,229,255,0.3)', color: '#e0f2fe', backdropFilter: 'blur(12px)' }}>
                 <span className="text-xl">🍎</span>
                 <div className="text-left"><p className="text-xs opacity-60">Shkarko për</p><p className="font-bold">iPhone / iPad</p></div>
               </Link>
               <Link to="/shkarko-app"
-                className="flex items-center gap-2 bg-black/70 backdrop-blur text-white px-4 py-3 rounded-xl text-sm font-medium hover:bg-black transition-colors border border-white/10 shadow-lg">
+                className="flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-all border"
+                style={{ background: 'rgba(0,40,80,0.7)', borderColor: 'rgba(0,255,135,0.3)', color: '#e0f2fe', backdropFilter: 'blur(12px)' }}>
                 <span className="text-xl">🤖</span>
                 <div className="text-left"><p className="text-xs opacity-60">Shkarko për</p><p className="font-bold">Android</p></div>
               </Link>
@@ -353,7 +360,7 @@ export default function Home() {
       </section>
 
       {/* Stats bar */}
-      <section className="bg-gradient-to-r from-orange-50 via-white to-amber-50 dark:from-gray-900 dark:via-gray-900 dark:to-gray-900 border-b border-orange-100 dark:border-gray-800 shadow-sm">
+      <section className="border-b shadow-sm" style={{ background: 'linear-gradient(90deg, #020c1b 0%, #0a2a4a 50%, #020c1b 100%)', borderColor: 'rgba(0,180,216,0.2)' }}>
         <div className="max-w-5xl mx-auto px-4 py-4 grid grid-cols-3 gap-4">
           {[
             { icon: <Zap size={20} className="text-amber-500" />, title: "Dërgim Express", sub: "20–35 min mesatarisht" },
@@ -389,7 +396,7 @@ export default function Home() {
 
         {/* Store grid */}
         <div className="mb-6 flex items-center justify-between">
-          <h2 className="text-xl font-black text-gray-900 dark:text-gray-100 flex items-center gap-2">
+          <h2 className="text-xl font-black text-sky-100 flex items-center gap-2">
             <span className="text-2xl">🏪</span> Të gjitha Dyqanet
             <span className="ml-2 text-gray-400 font-normal text-base">({filtered.length})</span>
           </h2>
@@ -403,7 +410,7 @@ export default function Home() {
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {[1,2,3,4,5,6].map(i => (
-              <div key={i} className="bg-white/80 dark:bg-gray-800 rounded-2xl overflow-hidden animate-pulse">
+              <div key={i} className="rounded-2xl overflow-hidden animate-pulse" style={{ background: 'rgba(8,22,48,0.8)' }}>
                 <div className="h-44 bg-gray-200" />
                 <div className="p-4 space-y-2">
                   <div className="h-5 bg-gray-200 rounded w-2/3" />
@@ -430,7 +437,7 @@ export default function Home() {
                 whileHover={{ y: -4 }}
               >
                 <Link to={`/dyqani/${biz.id}`} className="block">
-                  <div className="bg-white dark:bg-gray-800 rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-300 border border-orange-50 dark:border-gray-700 hover:border-orange-200">
+                  <div className="rounded-2xl overflow-hidden shadow-md hover:shadow-2xl transition-all duration-500" style={{ background: 'rgba(8,22,48,0.9)', border: '1px solid rgba(0,180,216,0.2)' }}>
                     <div className="relative h-44 overflow-hidden">
                       <img
                         src={biz.image_url || `https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=400&q=80`}
@@ -454,16 +461,16 @@ export default function Home() {
                       )}
                     </div>
                     <div className="p-4">
-                      <h3 className="font-black text-gray-900 dark:text-gray-100 text-base mb-1">{biz.name}</h3>
-                      <p className="text-gray-500 dark:text-gray-400 text-sm line-clamp-2 mb-3">{biz.description}</p>
+                      <h3 className="font-black text-sky-100 text-base mb-1">{biz.name}</h3>
+                      <p className="text-sky-300/60 text-sm line-clamp-2 mb-3">{biz.description}</p>
                       <div className="flex items-center gap-3 text-xs text-gray-400 flex-wrap">
-                        <span className="flex items-center gap-1 font-medium text-gray-600">
+                        <span className="flex items-center gap-1 font-medium text-sky-300">
                           <Clock size={11} />{biz.delivery_time || "20-35 min"}
                         </span>
-                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                        <span>Dërgesa <strong className="text-gray-700">{biz.delivery_fee?.toFixed(2) || "1.50"}€</strong></span>
-                        <span className="w-1 h-1 bg-gray-300 rounded-full" />
-                        <span>Min. <strong className="text-gray-700">{biz.min_order?.toFixed(0) || "3"}€</strong></span>
+                        <span className="w-1 h-1 bg-cyan-700 rounded-full" />
+                        <span className="text-sky-300/70">Dërgesa <strong className="text-cyan-300">{biz.delivery_fee?.toFixed(2) || "1.50"}€</strong></span>
+                        <span className="w-1 h-1 bg-cyan-700 rounded-full" />
+                        <span className="text-sky-300/70">Min. <strong className="text-cyan-300">{biz.min_order?.toFixed(0) || "3"}€</strong></span>
                       </div>
                     </div>
                   </div>
@@ -477,14 +484,16 @@ export default function Home() {
         <div className="mt-16 grid md:grid-cols-2 gap-5">
           <motion.div
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="hero-gradient rounded-3xl p-8 text-white relative overflow-hidden"
+            className="rounded-3xl p-8 text-white relative overflow-hidden"
+            style={{ background: 'linear-gradient(135deg, #020c1b 0%, #0a2a4a 50%, #0077b6 100%)', border: '1px solid rgba(0,229,255,0.25)', boxShadow: '0 0 40px rgba(0,180,216,0.2)' }}
           >
             <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2" />
             <div className="text-5xl mb-4">🏪</div>
             <h3 className="text-2xl font-black mb-2">Rrit Biznesin Tënd</h3>
             <p className="text-white/75 text-sm mb-5 leading-relaxed">Bashkohu me ekipin TiliGo dhe çdo ditë rriti shitjet tuaja. Mijëra klientë të rinj në majë të gishtave.</p>
             <Link to="/biznesi/register"
-              className="inline-flex items-center gap-2 bg-white text-blue-800 font-black px-6 py-3 rounded-xl hover:bg-amber-50 transition-colors text-sm shadow-lg">
+              className="inline-flex items-center gap-2 font-black px-6 py-3 rounded-xl transition-all text-sm shadow-lg text-[#020c1b] hover:scale-105"
+              style={{ background: 'linear-gradient(135deg,#00ff87,#00b4d8)', boxShadow: '0 0 20px rgba(0,255,135,0.4)' }}>
               Fillo Sot <ChevronRight size={16} />
             </Link>
           </motion.div>
@@ -497,7 +506,8 @@ export default function Home() {
             <h3 className="text-2xl font-black mb-2">Bëhu Dorëzues Elitar</h3>
             <p className="text-white/75 text-sm mb-5 leading-relaxed">Fiton para reale duke bërë diçka të thjeshtë. Oraret tuaja, rrugët tuaja — liri totale.</p>
             <Link to="/dorezuesi/register"
-              className="inline-flex items-center gap-2 bg-white text-green-800 font-black px-6 py-3 rounded-xl hover:bg-green-50 transition-colors text-sm shadow-lg">
+              className="inline-flex items-center gap-2 font-black px-6 py-3 rounded-xl transition-all text-sm shadow-lg text-[#020c1b] hover:scale-105"
+              style={{ background: 'linear-gradient(135deg,#39ff14,#00ff87)', boxShadow: '0 0 20px rgba(57,255,20,0.4)' }}>
               Apliko Tani <ChevronRight size={16} />
             </Link>
           </motion.div>

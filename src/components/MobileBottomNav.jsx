@@ -15,7 +15,8 @@ export default function MobileBottomNav() {
   const cartCount = (cart || []).reduce((s, i) => s + i.qty, 0);
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md dark:bg-gray-900/95 border-t border-orange-100 dark:border-gray-800"
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50"
+      style={{ background: 'rgba(4,12,28,0.97)', backdropFilter: 'blur(20px)', borderTop: '1px solid rgba(0,180,216,0.25)' }}
       style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
       <div className="flex">
         {TABS.map(({ path, label, icon: Icon }) => {
@@ -28,13 +29,13 @@ export default function MobileBottomNav() {
                   <motion.div
                     layoutId="nav-pill"
                     className="absolute inset-0 -m-2 rounded-xl"
-                    style={{ background: 'linear-gradient(135deg,rgba(249,115,22,0.15),rgba(251,191,36,0.15))' }}
+                    style={{ background: 'linear-gradient(135deg,rgba(0,255,135,0.15),rgba(0,180,216,0.15))', boxShadow: 'inset 0 0 12px rgba(0,229,255,0.1)' }}
                     transition={{ type: "spring", stiffness: 380, damping: 30 }}
                   />
                 )}
                 <Icon size={22}
                   className={`relative z-10 transition-all duration-300 ${isActive ? "scale-110" : "scale-100"}`}
-                  style={{ color: isActive ? '#f97316' : undefined }}
+                  style={{ color: isActive ? '#00ff87' : '#64b5c8', filter: isActive ? 'drop-shadow(0 0 6px #00ff87)' : 'none' }}
                 />
                 {path === "/porositjet-e-mia" && cartCount > 0 && (
                   <span className="absolute -top-1.5 -right-1.5 bg-amber-500 text-white text-[9px] font-black rounded-full w-4 h-4 flex items-center justify-center z-20">
@@ -42,7 +43,8 @@ export default function MobileBottomNav() {
                   </span>
                 )}
               </div>
-              <span className={`text-[10px] mt-1 font-bold transition-colors ${isActive ? "text-orange-500" : "text-gray-400 dark:text-gray-500"}`}>
+              <span className={`text-[10px] mt-1 font-bold transition-colors`}
+                style={{ color: isActive ? '#00ff87' : '#4a90a4' }}>
                 {label}
               </span>
             </Link>

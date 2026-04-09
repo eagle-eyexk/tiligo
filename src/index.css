@@ -15,32 +15,32 @@
 
 @layer base {
   :root {
-    --background: 254 252 248;       /* warm cream */
-    --foreground: 30 20 10;
-    --card: 255 255 255;
-    --card-foreground: 30 20 10;
-    --popover: 255 255 255;
-    --popover-foreground: 30 20 10;
-    --primary: 23 96 56;             /* rich summer teal-green */
-    --primary-foreground: 255 255 255;
-    --secondary: 255 245 230;
-    --secondary-foreground: 30 20 10;
-    --muted: 255 245 230;
-    --muted-foreground: 120 90 60;
-    --accent: 255 165 50;            /* warm golden amber */
-    --accent-foreground: 255 255 255;
+    --background: 4 12 28;           /* deep ocean night */
+    --foreground: 224 242 254;
+    --card: 8 22 48;
+    --card-foreground: 224 242 254;
+    --popover: 8 22 48;
+    --popover-foreground: 224 242 254;
+    --primary: 0 200 120;            /* neon green */
+    --primary-foreground: 4 12 28;
+    --secondary: 0 40 80;
+    --secondary-foreground: 224 242 254;
+    --muted: 0 30 60;
+    --muted-foreground: 100 180 220;
+    --accent: 0 229 255;             /* electric cyan */
+    --accent-foreground: 4 12 28;
     --destructive: 239 68 68;
     --destructive-foreground: 255 255 255;
-    --border: 240 220 195;
-    --input: 240 220 195;
-    --ring: 255 165 50;
+    --border: 0 60 120;
+    --input: 0 40 80;
+    --ring: 0 200 120;
     --radius: 1rem;
 
-    --tiligo-coral:   #ff6b6b;
-    --tiligo-peach:   #ffb347;
-    --tiligo-teal:    #06b6d4;
-    --tiligo-sky:     #38bdf8;
-    --tiligo-lime:    #a3e635;
+    --tiligo-neon:    #00ff87;
+    --tiligo-ocean:   #00b4d8;
+    --tiligo-deep:    #0a2a4a;
+    --tiligo-cyan:    #00e5ff;
+    --tiligo-lime:    #39ff14;
   }
 
   .dark {
@@ -71,7 +71,8 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-[#f0f4f8] text-foreground font-inter;
+    @apply text-foreground font-inter;
+    background: #020c1b;
     font-family: 'Inter', sans-serif;
     overscroll-behavior: none;
     -webkit-tap-highlight-color: transparent;
@@ -88,17 +89,17 @@
 }
 
 .tiligo-gradient {
-  background: linear-gradient(135deg, #f97316 0%, #fb923c 40%, #fbbf24 100%);
+  background: linear-gradient(135deg, #00b4d8 0%, #0077b6 40%, #00ff87 100%);
 }
 
 .hero-gradient {
   background: linear-gradient(
     150deg,
-    #0f4c3a 0%,
-    #1a6b4a 25%,
-    #ff8c42 60%,
-    #ffb347 80%,
-    #ffd700 100%
+    #020c1b 0%,
+    #0a2a4a 30%,
+    #0077b6 65%,
+    #00b4d8 85%,
+    #00ff87 100%
   );
 }
 
@@ -134,6 +135,11 @@
   100% { background-position: 200% center; }
 }
 
+@keyframes ocean-wave {
+  0%, 100% { transform: translateX(0) scaleY(1); }
+  50%       { transform: translateX(-20px) scaleY(1.1); }
+}
+
 @keyframes sunrise {
   0%   { opacity: 0; transform: translateY(40px) scale(0.94); }
   100% { opacity: 1; transform: translateY(0) scale(1); }
@@ -153,12 +159,12 @@
 .sunrise          { animation: sunrise 0.8s cubic-bezier(0.16,1,0.3,1) forwards; }
 
 .shimmer-text {
-  background: linear-gradient(90deg, #f97316, #fbbf24, #06b6d4, #f97316);
+  background: linear-gradient(90deg, #00ff87, #00e5ff, #00b4d8, #39ff14, #00ff87);
   background-size: 200% auto;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  animation: shimmer 3.5s linear infinite;
+  animation: shimmer 3s linear infinite;
 }
 
 .category-pill {
@@ -166,16 +172,31 @@
 }
 
 .category-pill.active {
-  background: linear-gradient(135deg, #f97316, #fbbf24);
-  @apply text-white shadow-lg scale-105;
+  background: linear-gradient(135deg, #00ff87, #00b4d8);
+  color: #020c1b;
+  box-shadow: 0 0 20px rgba(0,255,135,0.5), 0 0 40px rgba(0,180,216,0.3);
+  @apply scale-105;
 }
 
 .category-pill.inactive {
-  @apply bg-white/80 backdrop-blur text-gray-600 hover:text-orange-600 border border-orange-100 hover:border-orange-300 hover:shadow-md hover:scale-105;
+  @apply bg-white/5 backdrop-blur text-sky-200 hover:text-white border border-sky-800 hover:border-cyan-400 hover:shadow-md hover:scale-105;
 }
 
 .card-hover {
   @apply transition-all duration-300 hover:shadow-xl hover:-translate-y-1;
+}
+
+/* Neon glow utilities */
+.neon-green {
+  box-shadow: 0 0 15px rgba(0,255,135,0.6), 0 0 30px rgba(0,255,135,0.3), inset 0 0 15px rgba(0,255,135,0.05);
+}
+.neon-cyan {
+  box-shadow: 0 0 15px rgba(0,229,255,0.6), 0 0 30px rgba(0,229,255,0.3);
+}
+.ocean-card {
+  background: linear-gradient(135deg, rgba(8,22,48,0.95) 0%, rgba(0,40,80,0.9) 100%);
+  border: 1px solid rgba(0,180,216,0.25);
+  backdrop-filter: blur(20px);
 }
 
 /* Mobile-first scrollbar */
