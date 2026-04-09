@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import { Shield, LogOut, Check, X, Edit2, Trash2, ChevronDown, ChevronUp, Upload, TrendingUp, Users, Package, Store, Bike, RefreshCw } from "lucide-react";
+import { Shield, LogOut, Check, X, Edit2, Trash2, ChevronDown, ChevronUp, Upload, Package, RefreshCw, Link as LinkIcon, Facebook, Instagram, Twitter, Globe, Save } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import TiliGoLogo from "@/components/TiliGoLogo";
@@ -34,13 +33,48 @@ export default function AdminPanel() {
   const [expandedOrder, setExpandedOrder] = useState(null);
   const [orderSearch, setOrderSearch] = useState("");
   const [orderStatusFilter, setOrderStatusFilter] = useState("all");
+  const [appSettings, setAppSettings] = useState([]);
+  const [settingsForm, setSettingsForm] = useState({});
+  const [settingsSaving, setSettingsSaving] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   useEffect(() => {
     if (!authed) return;
     loadAll();
+    loadSettings();
     const unsub = base44.entities.Order.subscribe(() => loadAll());
     return unsub;
   }, [authed]);
+
+  const loadSettings = async () => {
+    const data = await base44.entities.AppSettings.list();
+    setAppSettings(data);
+    const form = {};
+    data.forEach(s => { form[s.key] = s.value; });
+    // defaults
+    if (!form.facebook) form.facebook = "https://facebook.com/tiligoo";
+    if (!form.instagram) form.instagram = "";
+    if (!form.tiktok) form.tiktok = "";
+    if (!form.website) form.website = "";
+    setSettingsForm(form);
+  };
+
+  const saveSettings = async () => {
+    setSettingsSaving(true);
+    const FIELDS = ["facebook", "instagram", "tiktok", "website"];
+    for (const key of FIELDS) {
+      const existing = appSettings.find(s => s.key === key);
+      if (existing) {
+        await base44.entities.AppSettings.update(existing.id, { value: settingsForm[key] || "" });
+      } else {
+        await base44.entities.AppSettings.create({ key, value: settingsForm[key] || "", label: key });
+      }
+    }
+    await loadSettings();
+    setSettingsSaving(false);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2500);
+  };
 
   const loadAll = async () => {
     setLoading(true);
@@ -201,6 +235,7 @@ export default function AdminPanel() {
             { key: "businesses", label: `🏪 Biznese`, badge: pendingBiz },
             { key: "deliveries", label: `🛵 Dorëzuesit`, badge: pendingDrivers },
             { key: "orders", label: `📦 Porositë`, badge: activeOrders },
+            { key: "settings", label: `⚙️ Cilësimet` },
           ].map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
               className={`relative px-5 py-3.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${tab === t.key ? "border-gray-900 text-gray-900" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
@@ -540,6 +575,45 @@ export default function AdminPanel() {
                     </AnimatePresence>
                   </motion.div>
                 ))}
+              </div>
+            )}
+
+            {/* SETTINGS */}
+            {tab === "settings" && (
+              <div className="space-y-5">
+                {/* Social Media */}
+                <div className="bg-white rounded-2xl p-6 shadow-sm">
+                  <h3 className="font-black text-gray-900 text-lg mb-1 flex items-center gap-2">
+                    <LinkIcon size={20} className="text-blue-600" /> Rrjetet Sociale
+                  </h3>
+                  <p className="text-gray-400 text-sm mb-5">Shto ose ndrysho linket e rrjeteve sociale të TiliGo.</p>
+                  <div className="space-y-4">
+                    {[
+                      { key: "facebook", label: "Facebook", icon: <Facebook size={18} className="text-blue-600" />, placeholder: "https://facebook.com/tiligoo" },
+                      { key: "instagram", label: "Instagram", icon: <Instagram size={18} className="text-pink-500" />, placeholder: "https://instagram.com/tiligo" },
+                      { key: "tiktok", label: "TikTok", icon: <span className="text-lg">🎵</span>, placeholder: "https://tiktok.com/@tiligo" },
+                      { key: "website", label: "Website", icon: <Globe size={18} className="text-gray-600" />, placeholder: "https://tiligo.app" },
+                    ].map(({ key, label, icon, placeholder }) => (
+                      <div key={key} className="flex items-center gap-3">
+                        <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">{icon}</div>
+                        <div className="flex-1">
+                          <label className="text-xs font-bold text-gray-500 block mb-1">{label}</label>
+                          <input
+                            value={settingsForm[key] || ""}
+                            onChange={e => setSettingsForm({...settingsForm, [key]: e.target.value})}
+                            placeholder={placeholder}
+                            className="w-full border-2 border-gray-100 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <button onClick={saveSettings}
+                    className="mt-5 flex items-center gap-2 font-black px-6 py-3 rounded-xl text-sm text-white transition-all shadow-md hover:scale-105"
+                    style={{ background: settingsSaved ? '#059669' : '#111827' }}>
+                    {settingsSaving ? "Duke ruajtur..." : settingsSaved ? "✓ U ruajt!" : <><Save size={15} /> Ruaj Cilësimet</>}
+                  </button>
+                </div>
               </div>
             )}
           </>

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Search, Star, Clock, ChevronRight, Shield, MapPin, Zap, TrendingUp, RefreshCw } from "lucide-react";
+import { Search, Star, Clock, ChevronRight, Shield, MapPin, Zap, TrendingUp, RefreshCw, Facebook, Instagram, Globe } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import Navbar from "@/components/Navbar";
@@ -434,9 +434,40 @@ export default function Home() {
         <div className="max-w-7xl mx-auto text-center">
           <img src="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png"
             alt="TiliGo" className="h-12 mx-auto mb-4 object-contain opacity-90" />
-          <p className="text-sm" style={{ color: 'rgba(255,255,255,0.4)' }}>© 2025 TiliGo · Prishtinë, Kosovë</p>
+          {/* Social links */}
+          <SocialLinks />
+          <p className="text-sm mt-4" style={{ color: 'rgba(255,255,255,0.4)' }}>© 2025 TiliGo · Prishtinë, Kosovë</p>
         </div>
       </footer>
+    </div>
+  );
+}
+
+function SocialLinks() {
+  const [links, setLinks] = useState({ facebook: "https://facebook.com/tiligoo", instagram: "", tiktok: "", website: "" });
+  useEffect(() => {
+    base44.entities.AppSettings.list().then(data => {
+      const map = {};
+      data.forEach(s => { map[s.key] = s.value; });
+      setLinks(prev => ({ ...prev, ...map }));
+    });
+  }, []);
+  const items = [
+    { key: "facebook", icon: <Facebook size={18} />, color: "#1877f2" },
+    { key: "instagram", icon: <Instagram size={18} />, color: "#e1306c" },
+    { key: "tiktok", icon: <span className="text-base leading-none">🎵</span>, color: "#ffffff" },
+    { key: "website", icon: <Globe size={18} />, color: "#00b4d8" },
+  ].filter(i => links[i.key]);
+  if (!items.length) return null;
+  return (
+    <div className="flex items-center justify-center gap-4 mt-2">
+      {items.map(({ key, icon, color }) => (
+        <a key={key} href={links[key]} target="_blank" rel="noopener noreferrer"
+          className="w-10 h-10 rounded-xl flex items-center justify-center transition-all hover:scale-110"
+          style={{ background: 'rgba(255,255,255,0.08)', color, border: '1px solid rgba(255,255,255,0.1)' }}>
+          {icon}
+        </a>
+      ))}
     </div>
   );
 }
