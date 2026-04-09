@@ -69,6 +69,7 @@ export default function Checkout() {
 
     await base44.entities.Order.create(order);
     clearCart();
+    localStorage.setItem("tiligo_active_order", code);
     setTimeout(() => generateOrderPDF(order), 800);
     setLoading(false);
     navigate(`/gjurmo/${code}`);

@@ -73,7 +73,9 @@ function MapUpdater({ center }) {
 }
 
 export default function TrackOrder() {
-  const { code } = useParams();
+  const { code: urlCode } = useParams();
+  const savedCode = localStorage.getItem("tiligo_active_order");
+  const code = urlCode || savedCode || "";
   const navigate = useNavigate();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -91,6 +93,8 @@ export default function TrackOrder() {
   useEffect(() => {
     if (code) loadOrder(code);
     else setLoading(false);
+    // Redirect to tracking URL if loaded from localStorage
+    if (!urlCode && savedCode) navigate(`/gjurmo/${savedCode}`, { replace: true });
 
     // Use order GPS coords if available, else get browser GPS
     if (navigator.geolocation) {
@@ -105,13 +109,21 @@ export default function TrackOrder() {
 
   useEffect(() => {
     if (!order) return;
+    // Clear active order from localStorage when done
+    if (order.status === "dorezuar" || order.status === "anuluar") {
+      localStorage.removeItem("tiligo_active_order");
+    }
     const unsub = base44.entities.Order.subscribe((event) => {
       if (event.data?.order_code === order.order_code) {
-        setOrder(event.data);
+        const updated = event.data;
+        setOrder(updated);
+        if (updated.status === "dorezuar" || updated.status === "anuluar") {
+          localStorage.removeItem("tiligo_active_order");
+        }
       }
     });
     return unsub;
-  }, [order?.order_code]);
+  }, [order?.order_code, order?.status]);
 
   // Use order GPS for customer coords if available
   const effectiveUserCoords = (order?.customer_lat && order?.customer_lng)
