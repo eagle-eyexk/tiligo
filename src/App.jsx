@@ -24,6 +24,8 @@ import AdminPanel from './pages/AdminPanel';
 import DownloadApp from './pages/DownloadApp';
 import DownloadProject from './pages/DownloadProject';
 import StaffHub from './pages/StaffHub';
+import UserLogin from './pages/UserLogin';
+import UserRegister from './pages/UserRegister';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -65,6 +67,8 @@ const AuthenticatedApp = () => {
         <Route path="/porositjet-e-mia" element={<MyOrders />} />
         <Route path="/shkarko-app" element={<DownloadApp />} />
         <Route path="/staff" element={<StaffHub />} />
+        <Route path="/user/login" element={<UserLogin />} />
+        <Route path="/user/register" element={<UserRegister />} />
       </Route>
       {/* Staff/business screens — no bottom nav */}
       <Route path="/biznesi/register" element={<BusinessRegister />} />

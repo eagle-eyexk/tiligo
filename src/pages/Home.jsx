@@ -12,6 +12,45 @@ const BLUE   = "#00BFFF";
 const GREEN  = "#39FF6B";
 const DARK_BLUE = "#0066FF";
 
+const PROMO_BANNERS = [
+  { emoji: "🎁", text: "Krijo llogarinë tënde dhe", highlight: "fiton 2€ falas!", sub: "Bonusi aplikohet automatikisht në porosinë e parë" },
+  { emoji: "🛵", text: "Dorëzimi i shpejtë brenda", highlight: "20-35 minutash!", sub: "Porosit tani dhe merr ushqimin tënd të nxehtë" },
+  { emoji: "💰", text: "Regjistrohu sot dhe", highlight: "kursej 2€ menjëherë!", sub: "Ofertë e kufizuar vetëm për klientët e rinj" },
+  { emoji: "🏆", text: "Over 1000+ klientë të kënaqur", highlight: "bashkohu edhe ti!", sub: "Kupon falas i mirëseardhjes të pret" },
+];
+
+function PromoBanner() {
+  const [idx, setIdx] = useState(0);
+  const [visible, setVisible] = useState(true);
+  const navigate = useNavigate();
+  useEffect(() => {
+    const t = setInterval(() => {
+      setVisible(false);
+      setTimeout(() => { setIdx(i => (i + 1) % PROMO_BANNERS.length); setVisible(true); }, 400);
+    }, 5000);
+    return () => clearInterval(t);
+  }, []);
+  const b = PROMO_BANNERS[idx];
+  return (
+    <motion.div
+      animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -6 }}
+      transition={{ duration: 0.35 }}
+      onClick={() => navigate("/user/register")}
+      className="cursor-pointer mx-4 mt-3 rounded-2xl px-4 py-3 flex items-center gap-3"
+      style={{ background: 'linear-gradient(135deg,rgba(57,255,107,0.12),rgba(0,191,255,0.1))', border: '1.5px solid rgba(57,255,107,0.4)', boxShadow: '0 0 20px rgba(57,255,107,0.15)' }}>
+      <span className="text-2xl flex-shrink-0">{b.emoji}</span>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold leading-tight" style={{ color: 'var(--text-primary)' }}>
+          {b.text} <span style={{ color: '#39FF6B' }}>{b.highlight}</span>
+        </p>
+        <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{b.sub}</p>
+      </div>
+      <span className="text-xs font-black px-3 py-1.5 rounded-xl flex-shrink-0"
+        style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b' }}>2€ →</span>
+    </motion.div>
+  );
+}
+
 /* ── Hero photos ──────────────────────────────────────── */
 const HERO_IMAGES = [
   "https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg",
@@ -98,6 +137,7 @@ export default function Home() {
       </AnimatePresence>
 
       <Navbar cart={cart} onCartClick={() => setCartOpen(true)} />
+      <PromoBanner />
       <CartDrawer open={cartOpen} onClose={() => setCartOpen(false)}
         cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClear={clearCart} />
 
