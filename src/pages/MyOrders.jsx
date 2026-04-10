@@ -68,6 +68,7 @@ export default function MyOrders() {
   const [loginForm, setLoginForm] = useState({ phone: "", password: "" });
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -81,6 +82,14 @@ export default function MyOrders() {
     localStorage.setItem("tiligo_user_profile", JSON.stringify(p));
     setProfile(p);
     setLoginLoading(false);
+  };
+
+  const handleDeleteAccount = async () => {
+    if (profile?.id) await base44.entities.Customer.delete(profile.id);
+    localStorage.removeItem("tiligo_user_profile");
+    setProfile(null);
+    setOrders([]);
+    setShowDeleteModal(false);
   };
 
   if (!profile) return (
@@ -365,7 +374,50 @@ export default function MyOrders() {
             );
           })}
         </div>
+
+        {/* ─── Delete Account ─── */}
+        <div className="rounded-2xl p-5 mt-2" style={{ background: 'rgba(239,68,68,0.07)', border: '1px solid rgba(239,68,68,0.25)' }}>
+          <p className="font-bold text-sm mb-1" style={{ color: '#F87171' }}>⚠️ Fshi Llogarinë</p>
+          <p className="text-xs mb-3" style={{ color: 'rgba(248,113,113,0.7)' }}>Ky veprim është i pakthyeshëm. Të gjitha të dhënat dhe historiku do të fshihen.</p>
+          <button onClick={() => setShowDeleteModal(true)}
+            className="w-full font-bold py-2.5 rounded-xl text-sm transition-all active:scale-95"
+            style={{ background: 'rgba(220,38,38,0.15)', color: '#F87171', border: '1px solid rgba(239,68,68,0.35)' }}>
+            🗑️ Fshi Llogarinë Permanentisht
+          </button>
+        </div>
       </div>
+
+      {/* ─── Delete Confirmation Modal ─── */}
+      <AnimatePresence>
+        {showDeleteModal && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+            className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-8"
+            style={{ background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(8px)' }}
+            onClick={() => setShowDeleteModal(false)}>
+            <motion.div initial={{ y: 60, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 60, opacity: 0 }}
+              transition={{ type: 'spring', damping: 28, stiffness: 300 }}
+              className="w-full max-w-sm rounded-3xl p-6"
+              style={{ background: 'var(--card-bg)', border: '1px solid rgba(239,68,68,0.4)' }}
+              onClick={e => e.stopPropagation()}>
+              <div className="text-4xl text-center mb-3">🗑️</div>
+              <h3 className="font-black text-lg text-center mb-2" style={{ color: 'var(--text-heading)' }}>Fshi Llogarinë?</h3>
+              <p className="text-sm text-center mb-6" style={{ color: 'var(--text-muted)' }}>Ky veprim është permanent dhe nuk mund të kthehet. Të gjitha porositë dhe të dhënat tuaja do të humbasin.</p>
+              <div className="flex gap-3">
+                <button onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 font-bold py-3 rounded-2xl text-sm"
+                  style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--text-primary)', border: '1px solid var(--nav-border)' }}>
+                  Anulo
+                </button>
+                <button onClick={handleDeleteAccount}
+                  className="flex-1 font-black py-3 rounded-2xl text-sm text-white transition-all active:scale-95"
+                  style={{ background: '#DC2626' }}>
+                  Po, Fshi!
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

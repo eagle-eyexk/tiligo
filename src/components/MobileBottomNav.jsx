@@ -1,4 +1,5 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { useRef, useEffect } from "react";
 import { Home, User } from "lucide-react";
 import { motion } from "framer-motion";
 import { useCart } from "@/lib/useCart";
@@ -10,8 +11,22 @@ const TABS = [
 
 export default function MobileBottomNav() {
   const location = useLocation();
+  const navigate = useNavigate();
   const { cart } = useCart();
   const cartCount = (cart || []).reduce((s, i) => s + i.qty, 0);
+
+  // Save scroll before leaving, restore on arrival
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`scroll_${location.pathname}`);
+    if (saved !== null) {
+      requestAnimationFrame(() => window.scrollTo(0, parseInt(saved)));
+    }
+  }, [location.pathname]);
+
+  const handleTabClick = (e, targetPath) => {
+    if (targetPath === location.pathname) return;
+    sessionStorage.setItem(`scroll_${location.pathname}`, String(window.scrollY));
+  };
 
   return (
     <nav className="md:hidden fixed bottom-0 left-0 right-0 z-50"
@@ -20,7 +35,7 @@ export default function MobileBottomNav() {
         {TABS.map(({ path, label, icon: Icon }) => {
           const isActive = location.pathname === path;
           return (
-            <Link key={path} to={path}
+            <Link key={path} to={path} onClick={(e) => handleTabClick(e, path)}
               className="flex-1 flex flex-col items-center justify-center py-3 relative select-none">
               <div className="relative">
                 {isActive && (

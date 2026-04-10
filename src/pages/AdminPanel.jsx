@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Shield, LogOut, Check, X, Edit2, Trash2, ChevronDown, ChevronUp, Upload, Package, RefreshCw, Link as LinkIcon, Facebook, Instagram, Twitter, Globe, Save, FileText } from "lucide-react";
 import StatementGenerator from "@/components/StatementGenerator";
+import SelectDrawer from "@/components/SelectDrawer";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
 import TiliGoLogo from "@/components/TiliGoLogo";
@@ -307,18 +308,22 @@ export default function AdminPanel() {
                         {editForm.image_url && <img src={editForm.image_url} className="mt-2 h-24 w-full object-cover rounded-xl" />}
                       </div>
                     ) : key === "status" ? (
-                      <select value={editForm[key]} onChange={e => setEditForm({...editForm, [key]: e.target.value})}
-                        className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500 transition-colors">
-                        {editItem._type === "business" || editItem._type === "delivery"
-                          ? ["pending","approved","rejected"].map(s => <option key={s}>{s}</option>)
-                          : Object.keys(STATUS_LABELS).map(s => <option key={s} value={s}>{STATUS_LABELS[s]}</option>)
+                      <SelectDrawer
+                        value={editForm[key]}
+                        onChange={v => setEditForm({...editForm, [key]: v})}
+                        label="Statusi"
+                        options={editItem._type === "business" || editItem._type === "delivery"
+                          ? [{value:"pending",label:"Pritje"},{value:"approved",label:"Aprovuar"},{value:"rejected",label:"Refuzuar"}]
+                          : Object.keys(STATUS_LABELS).map(s => ({ value: s, label: STATUS_LABELS[s] }))
                         }
-                      </select>
+                      />
                     ) : typeof editForm[key] === "boolean" ? (
-                      <select value={String(editForm[key])} onChange={e => setEditForm({...editForm, [key]: e.target.value === "true"})}
-                        className="w-full border-2 border-gray-100 rounded-xl px-3 py-2.5 text-sm outline-none focus:border-blue-500">
-                        <option value="true">Po</option><option value="false">Jo</option>
-                      </select>
+                      <SelectDrawer
+                        value={String(editForm[key])}
+                        onChange={v => setEditForm({...editForm, [key]: v === "true"})}
+                        label={key.replace(/_/g, " ")}
+                        options={[{value:"true",label:"Po"},{value:"false",label:"Jo"}]}
+                      />
                     ) : (
                       <input value={editForm[key] || ""} onChange={e => setEditForm({...editForm, [key]: e.target.value})}
                         className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors" />

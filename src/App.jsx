@@ -1,7 +1,8 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, useLocation } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -29,6 +30,7 @@ import UserRegister from './pages/UserRegister';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -56,7 +58,16 @@ const AuthenticatedApp = () => {
   return (
     <>
     <LocationPermissionPrompt />
-    <Routes>
+    <AnimatePresence mode="wait">
+      <motion.div
+        key={location.pathname}
+        initial={{ opacity: 0, x: 18 }}
+        animate={{ opacity: 1, x: 0 }}
+        exit={{ opacity: 0, x: -18 }}
+        transition={{ duration: 0.18, ease: "easeOut" }}
+        style={{ minHeight: '100vh' }}
+      >
+    <Routes location={location}>
       {/* Customer screens — persistent MobileBottomNav via CustomerLayout */}
       <Route element={<CustomerLayout />}>
         <Route path="/" element={<Home />} />
@@ -81,6 +92,8 @@ const AuthenticatedApp = () => {
       <Route path="/download.zip" element={<DownloadProject />} />
       <Route path="*" element={<PageNotFound />} />
     </Routes>
+      </motion.div>
+    </AnimatePresence>
     </>  
   );
 };
