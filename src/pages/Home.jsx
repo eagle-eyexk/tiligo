@@ -13,10 +13,16 @@ const GREEN  = "#39FF6B";
 const DARK_BLUE = "#0066FF";
 
 const PROMO_BANNERS = [
-  { emoji: "🎁", text: "Krijo llogarinë tënde dhe", highlight: "fiton 2€ falas!", sub: "Bonusi aplikohet automatikisht në porosinë e parë" },
-  { emoji: "🛵", text: "Dorëzimi i shpejtë brenda", highlight: "20-35 minutash!", sub: "Porosit tani dhe merr ushqimin tënd të nxehtë" },
-  { emoji: "💰", text: "Regjistrohu sot dhe", highlight: "kursej 2€ menjëherë!", sub: "Ofertë e kufizuar vetëm për klientët e rinj" },
-  { emoji: "🏆", text: "Over 1000+ klientë të kënaqur", highlight: "bashkohu edhe ti!", sub: "Kupon falas i mirëseardhjes të pret" },
+  { emoji: "🎁", text: "Krijo llogarinë & merr", highlight: "2€ falas menjëherë!", sub: "Bonusi aplikohet automatikisht — vetëm për klientët e rinj", to: "/user/register", cta: "2€ →" },
+  { emoji: "⚡", text: "Pse të presësh? Hyr tani dhe", highlight: "porosia vjen tek ti!", sub: "Login i shpejtë · 10 sekonda · porosi e gatshme", to: "/user/login", cta: "Hyr →" },
+  { emoji: "🛵", text: "Jemi rrugës — më shpejt", highlight: "se drita! ☄️", sub: "Dorëzimi ynë nuk njeh vonesa — ndjehu i dashur", to: "/user/register", cta: "Porosit →" },
+  { emoji: "💚", text: "Çdo porosi bëhet me", highlight: "dashuri për ty!", sub: "Kuzhinierët tanë punojnë me zemër — të ngrohët e garantuar", to: "/", cta: "Shiko →" },
+  { emoji: "🏆", text: "Mbi 1000+ klientë të lumtur —", highlight: "bashkohu sot!", sub: "Komunitetit tonë po rritet çdo ditë — bëhu pjesë", to: "/user/register", cta: "Bashkohu →" },
+  { emoji: "🌟", text: "Hyr & porosit — ne jemi", highlight: "gjithmonë këtu për ty!", sub: "24/7 · çdo ditë · çdo orë — TiliGo nuk fle kurrë", to: "/user/login", cta: "Hyr →" },
+  { emoji: "🔥", text: "Ushqimi yt i preferuar", highlight: "gati në 20 minuta!", sub: "Real-time tracking · ndiq dorëzuesin live", to: "/", cta: "Shiko →" },
+  { emoji: "🎉", text: "Surprizë! Regjistrohu dhe", highlight: "merr kuponin e mirëseardhjes!", sub: "Zbritje direkte — pa kushte — falas!", to: "/user/register", cta: "Merr →" },
+  { emoji: "💫", text: "Ti meriton të mirën — ne", highlight: "e sjellim deri te dera!", sub: "Çdo dërgim është me kujdes e me buzëqeshje 😊", to: "/user/login", cta: "Porosit →" },
+  { emoji: "🚀", text: "Pse të gatuash sot?", highlight: "Ne jemi vetëm 1 klik larg!", sub: "Hyr · zgjedh · porosit — dhe lëre pjesën tjetër tek ne", to: "/user/login", cta: "Hyr →" },
 ];
 
 function PromoBanner() {
@@ -35,7 +41,7 @@ function PromoBanner() {
     <motion.div
       animate={{ opacity: visible ? 1 : 0, y: visible ? 0 : -6 }}
       transition={{ duration: 0.35 }}
-      onClick={() => navigate("/user/register")}
+      onClick={() => navigate(b.to)}
       className="cursor-pointer mx-4 mt-3 rounded-2xl px-4 py-3 flex items-center gap-3"
       style={{ background: 'linear-gradient(135deg,rgba(57,255,107,0.12),rgba(0,191,255,0.1))', border: '1.5px solid rgba(57,255,107,0.4)', boxShadow: '0 0 20px rgba(57,255,107,0.15)' }}>
       <span className="text-2xl flex-shrink-0">{b.emoji}</span>
@@ -46,7 +52,7 @@ function PromoBanner() {
         <p className="text-xs mt-0.5" style={{ color: 'var(--text-muted)' }}>{b.sub}</p>
       </div>
       <span className="text-xs font-black px-3 py-1.5 rounded-xl flex-shrink-0"
-        style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b' }}>2€ →</span>
+        style={{ background: 'linear-gradient(135deg,#39FF6B,#00BFFF)', color: '#020c1b' }}>{b.cta}</span>
     </motion.div>
   );
 }
