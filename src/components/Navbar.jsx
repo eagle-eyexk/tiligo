@@ -91,6 +91,12 @@ export default function Navbar({ cart = [], onCartClick }) {
                   className="absolute right-0 mt-2 w-52 rounded-xl shadow-2xl overflow-hidden z-50"
                   style={{ background: 'var(--nav-bg)', border: '1px solid var(--nav-border)', backdropFilter: 'blur(20px)' }}
                 >
+                  <Link to="/porositjet-e-mia" onClick={() => setHyrjaOpen(false)}
+                    className="flex items-center gap-3 px-4 py-3 font-medium transition-colors hover:bg-white/10"
+                    style={{ color: 'var(--text-primary)' }}>
+                    👤 Llogaria Ime
+                  </Link>
+                  <div style={{ borderTop: '1px solid var(--nav-border)' }} />
                   <Link to="/biznesi/login" onClick={() => setHyrjaOpen(false)}
                     className="flex items-center gap-3 px-4 py-3 font-medium transition-colors hover:bg-white/10"
                     style={{ color: 'var(--text-primary)' }}>
@@ -148,10 +154,11 @@ export default function Navbar({ cart = [], onCartClick }) {
           >
             <div className="px-4 py-3 space-y-1">
               <Link to="/porositjet-e-mia" onClick={() => setMenuOpen(false)}
-                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-medium"
-                style={{ color: 'var(--text-primary)' }}>
-                <Package size={20} />Porositë e Mia
+                className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-bold"
+                style={{ color: '#39FF6B' }}>
+                👤 Llogaria Ime
               </Link>
+              <div className="my-1" style={{ borderTop: '1px solid var(--nav-border)' }} />
               <Link to="/biznesi/login" onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-medium"
                 style={{ color: 'var(--text-primary)' }}>
