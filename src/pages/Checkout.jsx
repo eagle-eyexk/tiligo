@@ -1,6 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { ArrowLeft, MapPin, Phone, User, Banknote, CheckCircle, Copy, Crosshair, Loader, Tag, X } from "lucide-react";
+import { ArrowLeft, MapPin, Phone, User, Banknote, CheckCircle, Copy, Crosshair, Loader, Tag, X, Zap, UserCheck, UserX } from "lucide-react";
 import { base44 } from "@/api/base44Client";
 import { motion } from "framer-motion";
 import { useCart } from "@/lib/useCart";
@@ -36,13 +36,27 @@ export default function Checkout() {
     }, () => setGpsLoading(false));
   };
   const [loading, setLoading] = useState(false);
+  const [priority, setPriority] = useState(false);
+  const [saveAccount, setSaveAccount] = useState(false);
   const [couponCode, setCouponCode] = useState("");
   const [appliedCoupon, setAppliedCoupon] = useState(null);
   const [couponError, setCouponError] = useState("");
   const [couponLoading, setCouponLoading] = useState(false);
 
+  // Pre-fill from saved profile
+  useEffect(() => {
+    try {
+      const profile = JSON.parse(localStorage.getItem("tiligo_user_profile") || "null");
+      if (profile) {
+        setForm(f => ({ ...f, name: profile.name || f.name, phone: profile.phone || f.phone }));
+        setSaveAccount(true);
+      }
+    } catch {}
+  }, []);
+
   const subtotal = cart.reduce((s, i) => s + i.price * i.qty, 0);
-  const deliveryFee = cart.length > 0 ? (cart[0]?.delivery_fee ?? 1.5) : 1.5;
+  const baseDeliveryFee = cart.length > 0 ? (cart[0]?.delivery_fee ?? 1.5) : 1.5;
+  const deliveryFee = baseDeliveryFee + (priority ? 1.5 : 0);
   const discount = appliedCoupon ? appliedCoupon.discount_amount : 0;
   const total = Math.max(0, subtotal + deliveryFee - discount);
 
@@ -89,6 +103,7 @@ export default function Checkout() {
       business_name: businessName,
       status: "e_re",
       payment_method: "cash",
+      priority: priority,
     };
 
     // Request notification permission
@@ -99,6 +114,20 @@ export default function Checkout() {
     // Decrement coupon uses
     if (appliedCoupon && appliedCoupon.uses_left > 0) {
       await base44.entities.Coupon.update(appliedCoupon.id, { uses_left: appliedCoupon.uses_left - 1 });
+    }
+    // Save account and check for welcome bonus
+    if (saveAccount) {
+      const profile = { name: form.name, phone: form.phone };
+      localStorage.setItem("tiligo_user_profile", JSON.stringify(profile));
+      // Check if first order → create welcome coupon
+      const existing = await base44.entities.Order.filter({ customer_phone: form.phone });
+      if (existing.length <= 1) {
+        const welcomeCode = "WELCOME-" + form.phone;
+        const already = await base44.entities.Coupon.filter({ code: welcomeCode });
+        if (already.length === 0) {
+          await base44.entities.Coupon.create({ code: welcomeCode, description: "Bonus Mirëseardhjes", discount_amount: 2, is_active: true, uses_left: 1 });
+        }
+      }
     }
     clearCart();
     localStorage.setItem("tiligo_active_order", code);
@@ -151,7 +180,7 @@ export default function Checkout() {
               <span>Nëntotali</span><span>{subtotal.toFixed(2)}€</span>
             </div>
             <div className="flex justify-between text-sm text-gray-500">
-              <span>Dërgesa</span><span>{deliveryFee.toFixed(2)}€</span>
+              <span>Dërgesa{priority ? ' (⚡ +1.50€)' : ''}</span><span>{deliveryFee.toFixed(2)}€</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-sm text-green-600 font-semibold">
@@ -245,6 +274,52 @@ export default function Checkout() {
               </div>
             )}
             {couponError && <p className="text-red-500 text-xs mt-1">{couponError}</p>}
+          </div>
+
+          {/* Priority Delivery */}
+          <div
+            onClick={() => setPriority(!priority)}
+            className="cursor-pointer rounded-xl p-4 flex items-center gap-3 select-none transition-all"
+            style={priority
+              ? { background: 'rgba(239,68,68,0.1)', border: '2px solid rgba(239,68,68,0.5)' }
+              : { background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(200,200,200,0.2)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: priority ? 'rgba(239,68,68,0.2)' : 'rgba(200,200,200,0.1)' }}>
+              <Zap size={18} style={{ color: priority ? '#EF4444' : '#9CA3AF' }} />
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm" style={{ color: priority ? '#EF4444' : 'var(--text-primary)' }}>⚡ Dorëzim me Prioritet</p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Porosia juaj trajtohet si urgjente +1.50€</p>
+            </div>
+            <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+              style={{ borderColor: priority ? '#EF4444' : '#9CA3AF', background: priority ? '#EF4444' : 'transparent' }}>
+              {priority && <span className="text-white text-xs font-black">✓</span>}
+            </div>
+          </div>
+
+          {/* Save account */}
+          <div
+            onClick={() => setSaveAccount(!saveAccount)}
+            className="cursor-pointer rounded-xl p-4 flex items-center gap-3 select-none transition-all"
+            style={saveAccount
+              ? { background: 'rgba(57,255,107,0.08)', border: '2px solid rgba(57,255,107,0.4)' }
+              : { background: 'rgba(255,255,255,0.05)', border: '2px solid rgba(200,200,200,0.2)' }}>
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ background: saveAccount ? 'rgba(57,255,107,0.15)' : 'rgba(200,200,200,0.1)' }}>
+              {saveAccount ? <UserCheck size={18} style={{ color: '#39FF6B' }} /> : <UserX size={18} style={{ color: '#9CA3AF' }} />}
+            </div>
+            <div className="flex-1">
+              <p className="font-bold text-sm" style={{ color: saveAccount ? '#39FF6B' : 'var(--text-primary)' }}>
+                {saveAccount ? "✅ Me Llogari" : "Porosit si Mysafir"}
+              </p>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                {saveAccount ? "Ruaj info & merr 2€ bonus për porosinë e parë 🎁" : "Pa llogari — nuk merr bonusin e mirëseardhjes"}
+              </p>
+            </div>
+            <div className="w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0"
+              style={{ borderColor: saveAccount ? '#39FF6B' : '#9CA3AF', background: saveAccount ? '#39FF6B' : 'transparent' }}>
+              {saveAccount && <span className="text-black text-xs font-black">✓</span>}
+            </div>
           </div>
 
           {/* Payment */}
