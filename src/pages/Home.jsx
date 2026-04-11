@@ -459,32 +459,6 @@ export default function Home() {
         </div>
       </main>
 
-      {/* ═══ SPONSORS ═══ */}
-      <div className="max-w-2xl mx-auto px-6 py-8">
-        <p className="text-center text-[10px] font-bold tracking-[0.25em] uppercase mb-4" style={{ color: 'var(--text-muted)' }}>Sponsorët Tanë</p>
-        <div className="flex items-center justify-center gap-6 flex-wrap">
-          {[
-            {
-              light: 'https://media.base44.com/images/public/69d519273be8cf966434f77a/e0dddd653_IMG_0144.jpeg',
-              dark:  'https://media.base44.com/images/public/69d519273be8cf966434f77a/781629bd0_IMG_0143.jpeg',
-              name:  'Tili Cleaning'
-            },
-            {
-              light: 'https://media.base44.com/images/public/69d519273be8cf966434f77a/8e198f96c_IMG_0146.jpg',
-              dark:  'https://media.base44.com/images/public/69d519273be8cf966434f77a/4a190bf33_IMG_0145.jpg',
-              name:  'Free Shop Tili'
-            },
-          ].map(s => (
-            <div key={s.name} className="rounded-xl overflow-hidden" style={{ height: 44, opacity: 0.85 }}>
-              <picture>
-                <source srcSet={s.dark} media="(prefers-color-scheme: dark)" />
-                <img src={s.light} alt={s.name} className="h-full w-auto object-contain" style={{ maxWidth: 140 }} />
-              </picture>
-            </div>
-          ))}
-        </div>
-      </div>
-
       {/* ═══ FOOTER ═══ */}
       <footer className="mt-12 pb-28 md:pb-0" style={{ background: 'var(--bg-body)', borderTop: '1px solid var(--divider)' }}>
         <div className="max-w-2xl mx-auto px-6 py-12 text-center">
@@ -495,28 +469,19 @@ export default function Home() {
           </picture>
           <SocialLinks />
           <div className="mt-8">
-            <p className="text-[10px] font-bold tracking-[0.25em] uppercase mb-4" style={{ color: 'var(--text-muted)' }}>
-              Instalo Aplikacionin
-            </p>
-            <div className="flex items-center justify-center gap-3 flex-wrap">
-              <Link to="/shkarko-app"
-                className="flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-105"
-                style={{ background: 'var(--stat-bg)', border: `1px solid ${BLUE}44`, color: 'var(--text-primary)' }}>
-                <span className="text-xl">🍎</span>
-                <div className="text-left">
-                  <p className="text-[10px] leading-none" style={{ color: 'var(--text-muted)' }}>Shkarko për</p>
-                  <p className="font-bold leading-tight">iPhone / iPad</p>
+            <p className="text-[10px] font-bold tracking-[0.25em] uppercase mb-4" style={{ color: 'var(--text-muted)' }}>Sponsorët Tanë</p>
+            <div className="flex items-center justify-center gap-5 flex-wrap">
+              {[
+                { light: 'https://media.base44.com/images/public/69d519273be8cf966434f77a/e0dddd653_IMG_0144.jpeg', dark: 'https://media.base44.com/images/public/69d519273be8cf966434f77a/781629bd0_IMG_0143.jpeg', name: 'Tili Cleaning' },
+                { light: 'https://media.base44.com/images/public/69d519273be8cf966434f77a/8e198f96c_IMG_0146.jpg', dark: 'https://media.base44.com/images/public/69d519273be8cf966434f77a/4a190bf33_IMG_0145.jpg', name: 'Free Shop Tili' },
+              ].map(s => (
+                <div key={s.name} className="overflow-hidden" style={{ borderRadius: 16, filter: 'blur(0.6px)', opacity: 0.82 }}>
+                  <picture>
+                    <source srcSet={s.dark} media="(prefers-color-scheme: dark)" />
+                    <img src={s.light} alt={s.name} style={{ height: 52, maxWidth: 150, objectFit: 'contain', display: 'block' }} />
+                  </picture>
                 </div>
-              </Link>
-              <Link to="/shkarko-app"
-                className="flex items-center gap-3 px-5 py-3 rounded-2xl text-sm font-semibold transition-all hover:scale-105"
-                style={{ background: 'var(--stat-bg)', border: `1px solid ${GREEN}44`, color: 'var(--text-primary)' }}>
-                <span className="text-xl">🤖</span>
-                <div className="text-left">
-                  <p className="text-[10px] leading-none" style={{ color: 'var(--text-muted)' }}>Shkarko për</p>
-                  <p className="font-bold leading-tight">Android</p>
-                </div>
-              </Link>
+              ))}
             </div>
           </div>
           <p className="text-xs mt-8" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>© 2025 TiliGo · Prishtinë, Kosovë</p>
