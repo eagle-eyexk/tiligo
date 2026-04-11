@@ -98,6 +98,7 @@ function usePullToRefresh(onRefresh) {
 export default function Home() {
   const [businesses,  setBusinesses ] = useState([]);
   const [search,      setSearch     ] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
   const [category,    setCategory   ] = useState("all");
   const [cartOpen,    setCartOpen   ] = useState(false);
   const [loading,     setLoading    ] = useState(true);
@@ -200,13 +201,15 @@ export default function Home() {
           </div>
 
           {/* Search bar */}
-          <div className="w-full max-w-lg">
+          <div className="w-full max-w-lg relative">
             <div className="relative flex items-center">
               <MapPin className="absolute left-4 z-10 flex-shrink-0" size={18} style={{ color: GREEN }} />
               <input
                 value={search}
-                onChange={e => setSearch(e.target.value)}
-                onKeyDown={e => e.key === "Enter" && navigate(`/?search=${search}`)}
+                onChange={e => { setSearch(e.target.value); setShowSuggestions(e.target.value.length > 0); }}
+                onFocus={() => search.length > 0 && setShowSuggestions(true)}
+                onBlur={() => setTimeout(() => setShowSuggestions(false), 150)}
+                onKeyDown={e => e.key === "Enter" && (navigate(`/?search=${search}`), setShowSuggestions(false))}
                 placeholder="Ku dërgojmë sot? 🛵"
                 className="w-full pl-11 pr-32 py-4 rounded-2xl text-sm font-medium outline-none"
                 style={{
@@ -218,12 +221,43 @@ export default function Home() {
                 }}
               />
               <button
-                onClick={() => navigate(`/?search=${search}`)}
+                onClick={() => (navigate(`/?search=${search}`), setShowSuggestions(false))}
                 className="absolute right-2 px-5 py-2.5 rounded-xl font-black text-sm transition-all hover:scale-105 active:scale-95"
                 style={{ background: `linear-gradient(135deg, ${GREEN}, ${BLUE})`, color: '#0a1a0a', boxShadow: `0 4px 16px ${GREEN}55` }}>
                 Kërko
               </button>
             </div>
+            {/* Suggestions dropdown */}
+            {showSuggestions && (() => {
+              const suggestions = businesses.filter(b =>
+                b.name?.toLowerCase().includes(search.toLowerCase()) ||
+                b.category?.toLowerCase().includes(search.toLowerCase()) ||
+                b.description?.toLowerCase().includes(search.toLowerCase())
+              ).slice(0, 6);
+              return suggestions.length > 0 ? (
+                <div className="absolute top-full left-0 right-0 mt-2 rounded-2xl overflow-hidden z-50 shadow-2xl"
+                  style={{ background: 'rgba(255,255,255,0.98)', border: `1.5px solid ${BLUE}44` }}>
+                  {suggestions.map(biz => (
+                    <button key={biz.id}
+                      onMouseDown={() => { setSearch(biz.name); setShowSuggestions(false); navigate(`/dyqani/${biz.id}`); }}
+                      className="w-full flex items-center gap-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+                      {biz.image_url
+                        ? <img src={biz.image_url} className="w-9 h-9 rounded-xl object-cover flex-shrink-0" />
+                        : <div className="w-9 h-9 rounded-xl flex-shrink-0 flex items-center justify-center text-lg" style={{ background: BLUE + '18' }}>🍽️</div>
+                      }
+                      <div className="flex-1 min-w-0">
+                        <p className="font-bold text-sm text-gray-900 truncate">{biz.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{biz.category} · {biz.delivery_time || '20-35 min'}</p>
+                      </div>
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded-full flex-shrink-0"
+                        style={{ background: biz.is_open ? GREEN + '20' : '#F3F4F6', color: biz.is_open ? '#16a34a' : '#9CA3AF' }}>
+                        {biz.is_open ? 'Open' : 'Closed'}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              ) : null;
+            })()}
           </div>
         </div>
       </section>
