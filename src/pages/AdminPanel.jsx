@@ -1,5 +1,10 @@
 import { useState, useEffect } from "react";
-import { Shield, LogOut, Check, X, Edit2, Trash2, ChevronDown, ChevronUp, Upload, Package, RefreshCw, Link as LinkIcon, Facebook, Instagram, Twitter, Globe, Save, FileText } from "lucide-react";
+import {
+  Shield, LogOut, Check, X, Edit2, Trash2, ChevronDown, ChevronUp,
+  Upload, Package, RefreshCw, Link as LinkIcon, Facebook, Instagram,
+  Globe, Save, FileText, Store, Users, Bike, DollarSign, TrendingUp,
+  Bell, Search, SlidersHorizontal, CircleDot
+} from "lucide-react";
 import StatementGenerator from "@/components/StatementGenerator";
 import SelectDrawer from "@/components/SelectDrawer";
 import { base44 } from "@/api/base44Client";
@@ -8,17 +13,20 @@ import TiliGoLogo from "@/components/TiliGoLogo";
 
 const ADMIN_USER = "root";
 const ADMIN_PASS = "Jari!!2018";
+const W = "#009DE0";
+const G = "#30C48D";
 
-const STATUS_COLORS = {
-  e_re: "bg-blue-100 text-blue-700", pranuar: "bg-indigo-100 text-indigo-700",
-  ne_pergatitje: "bg-amber-100 text-amber-700", gati_per_dorezim: "bg-orange-100 text-orange-700",
-  ne_rruge: "bg-purple-100 text-purple-700", dorezuar: "bg-green-100 text-green-700",
-  anuluar: "bg-red-100 text-red-700",
+const STATUS_STYLE = {
+  e_re:             { bg: "#EBF5FF", color: "#0066CC", dot: "#3B82F6", label: "New" },
+  pranuar:          { bg: "#EDE9FE", color: "#5B21B6", dot: "#8B5CF6", label: "Accepted" },
+  ne_pergatitje:    { bg: "#FEF3C7", color: "#92400E", dot: "#F59E0B", label: "Preparing" },
+  gati_per_dorezim: { bg: "#FFF7ED", color: "#9A3412", dot: "#F97316", label: "Ready" },
+  ne_rruge:         { bg: "#F3E8FF", color: "#6B21A8", dot: "#A855F7", label: "On the way" },
+  dorezuar:         { bg: "#DCFCE7", color: "#14532D", dot: "#22C55E", label: "Delivered" },
+  anuluar:          { bg: "#FEE2E2", color: "#7F1D1D", dot: "#EF4444", label: "Cancelled" },
 };
-const STATUS_LABELS = {
-  e_re: "E Re", pranuar: "Pranuar", ne_pergatitje: "Në Përgatitje",
-  gati_per_dorezim: "Gati", ne_rruge: "Në Rrugë", dorezuar: "Dorëzuar", anuluar: "Anuluar"
-};
+
+const STATUS_LABELS = Object.fromEntries(Object.entries(STATUS_STYLE).map(([k, v]) => [k, v.label]));
 
 export default function AdminPanel() {
   const [authed, setAuthed] = useState(() => localStorage.getItem("tiligo_admin") === "1");
@@ -45,154 +53,95 @@ export default function AdminPanel() {
 
   useEffect(() => {
     if (!authed) return;
-    loadAll();
-    loadSettings();
-    loadCoupons();
+    loadAll(); loadSettings(); loadCoupons();
     const unsub = base44.entities.Order.subscribe(() => loadAll());
     return unsub;
   }, [authed]);
 
-  const loadCoupons = async () => {
-    const data = await base44.entities.Coupon.list();
-    setCoupons(data);
-  };
-
+  const loadCoupons = async () => { const d = await base44.entities.Coupon.list(); setCoupons(d); };
   const saveCoupon = async (e) => {
     e.preventDefault();
-    await base44.entities.Coupon.create({
-      ...couponForm,
-      code: couponForm.code.toUpperCase(),
-      discount_amount: parseFloat(couponForm.discount_amount),
-      uses_left: parseInt(couponForm.uses_left),
-      is_active: true,
-    });
+    await base44.entities.Coupon.create({ ...couponForm, code: couponForm.code.toUpperCase(), discount_amount: parseFloat(couponForm.discount_amount), uses_left: parseInt(couponForm.uses_left), is_active: true });
     setCouponForm({ code: "", description: "", discount_amount: "", uses_left: -1 });
-    setShowCouponForm(false);
-    loadCoupons();
+    setShowCouponForm(false); loadCoupons();
   };
-
-  const toggleCoupon = async (c) => {
-    await base44.entities.Coupon.update(c.id, { is_active: !c.is_active });
-    loadCoupons();
-  };
-
-  const deleteCoupon = async (id) => {
-    if (!confirm("Jeni i sigurt?")) return;
-    await base44.entities.Coupon.delete(id);
-    loadCoupons();
-  };
+  const toggleCoupon = async (c) => { await base44.entities.Coupon.update(c.id, { is_active: !c.is_active }); loadCoupons(); };
+  const deleteCoupon = async (id) => { if (!confirm("Delete coupon?")) return; await base44.entities.Coupon.delete(id); loadCoupons(); };
 
   const loadSettings = async () => {
     const data = await base44.entities.AppSettings.list();
     setAppSettings(data);
-    const form = {};
+    const form = { facebook: "https://facebook.com/tiligoo", instagram: "", tiktok: "", website: "" };
     data.forEach(s => { form[s.key] = s.value; });
-    // defaults
-    if (!form.facebook) form.facebook = "https://facebook.com/tiligoo";
-    if (!form.instagram) form.instagram = "";
-    if (!form.tiktok) form.tiktok = "";
-    if (!form.website) form.website = "";
     setSettingsForm(form);
   };
 
   const saveSettings = async () => {
     setSettingsSaving(true);
-    const FIELDS = ["facebook", "instagram", "tiktok", "website"];
-    for (const key of FIELDS) {
+    for (const key of ["facebook","instagram","tiktok","website"]) {
       const existing = appSettings.find(s => s.key === key);
-      if (existing) {
-        await base44.entities.AppSettings.update(existing.id, { value: settingsForm[key] || "" });
-      } else {
-        await base44.entities.AppSettings.create({ key, value: settingsForm[key] || "", label: key });
-      }
+      if (existing) await base44.entities.AppSettings.update(existing.id, { value: settingsForm[key] || "" });
+      else await base44.entities.AppSettings.create({ key, value: settingsForm[key] || "", label: key });
     }
-    await loadSettings();
-    setSettingsSaving(false);
-    setSettingsSaved(true);
+    await loadSettings(); setSettingsSaving(false); setSettingsSaved(true);
     setTimeout(() => setSettingsSaved(false), 2500);
   };
 
   const loadAll = async () => {
     setLoading(true);
-    const [b, d, o] = await Promise.all([
-      base44.entities.Business.list(),
-      base44.entities.Delivery.list(),
-      base44.entities.Order.list("-created_date", 200),
-    ]);
-    setBusinesses(b);
-    setDeliveries(d);
-    setOrders(o);
-    setLoading(false);
+    const [b, d, o] = await Promise.all([base44.entities.Business.list(), base44.entities.Delivery.list(), base44.entities.Order.list("-created_date", 200)]);
+    setBusinesses(b); setDeliveries(d); setOrders(o); setLoading(false);
   };
 
   const handleLogin = (e) => {
     e.preventDefault();
-    if (loginForm.user === ADMIN_USER && loginForm.pass === ADMIN_PASS) {
-      localStorage.setItem("tiligo_admin", "1");
-      setAuthed(true);
-    } else {
-      setLoginError("Kredencialet janë të gabuara!");
-    }
+    if (loginForm.user === ADMIN_USER && loginForm.pass === ADMIN_PASS) { localStorage.setItem("tiligo_admin", "1"); setAuthed(true); }
+    else setLoginError("Invalid credentials");
   };
 
-  const logout = () => {
-    localStorage.removeItem("tiligo_admin");
-    setAuthed(false);
-  };
-
+  const logout = () => { localStorage.removeItem("tiligo_admin"); setAuthed(false); };
   const approveBiz = async (id) => { await base44.entities.Business.update(id, { status: "approved" }); loadAll(); };
   const rejectBiz = async (id) => { await base44.entities.Business.update(id, { status: "rejected" }); loadAll(); };
-  const deleteBiz = async (id) => { if (!confirm("Jeni i sigurt?")) return; await base44.entities.Business.delete(id); loadAll(); };
+  const deleteBiz = async (id) => { if (!confirm("Delete?")) return; await base44.entities.Business.delete(id); loadAll(); };
   const approveDriver = async (id) => { await base44.entities.Delivery.update(id, { status: "approved" }); loadAll(); };
   const rejectDriver = async (id) => { await base44.entities.Delivery.update(id, { status: "rejected" }); loadAll(); };
-  const deleteDriver = async (id) => { if (!confirm("Jeni i sigurt?")) return; await base44.entities.Delivery.delete(id); loadAll(); };
+  const deleteDriver = async (id) => { if (!confirm("Delete?")) return; await base44.entities.Delivery.delete(id); loadAll(); };
   const updateOrderStatus = async (id, status) => { await base44.entities.Order.update(id, { status }); loadAll(); };
-  const deleteOrder = async (id) => { if (!confirm("Jeni i sigurt?")) return; await base44.entities.Order.delete(id); loadAll(); };
-
+  const deleteOrder = async (id) => { if (!confirm("Delete?")) return; await base44.entities.Order.delete(id); loadAll(); };
   const startEdit = (item, type) => { setEditItem({ ...item, _type: type }); setEditForm({ ...item }); };
-
   const saveEdit = async () => {
     const { _type, id } = editItem;
     if (_type === "business") await base44.entities.Business.update(id, editForm);
     else if (_type === "delivery") await base44.entities.Delivery.update(id, editForm);
-    setEditItem(null);
-    loadAll();
+    setEditItem(null); loadAll();
   };
-
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const file = e.target.files[0]; if (!file) return;
     setUploading(true);
     const { file_url } = await base44.integrations.Core.UploadFile({ file });
-    setEditForm(f => ({ ...f, image_url: file_url }));
-    setUploading(false);
+    setEditForm(f => ({ ...f, image_url: file_url })); setUploading(false);
   };
 
   if (!authed) return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center px-4">
-      <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }}
-        className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-2xl">
-        <div className="text-center mb-6">
-          <TiliGoLogo size="md" className="justify-center mb-4" />
-          <div className="w-16 h-16 bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-xl">
-            <Shield size={28} className="text-amber-400" />
-          </div>
-          <h1 className="text-2xl font-black text-gray-900">Paneli Admin</h1>
-          <p className="text-gray-400 text-sm mt-1">Hyrja e sigurt e administratorit</p>
+    <div className="min-h-screen flex items-center justify-center px-4" style={{ background: "#F5F7FA" }}>
+      <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
+        className="bg-white rounded-3xl p-8 w-full max-w-sm shadow-xl">
+        <TiliGoLogo size="md" className="justify-center mb-6" />
+        <div className="w-14 h-14 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ background: W + "15" }}>
+          <Shield size={26} style={{ color: W }} />
         </div>
-        {loginError && (
-          <div className="bg-red-50 border-l-4 border-red-500 text-red-700 text-sm px-4 py-3 rounded-xl mb-4">{loginError}</div>
-        )}
+        <h1 className="text-2xl font-black text-gray-900 text-center">Admin Panel</h1>
+        <p className="text-gray-400 text-sm text-center mt-1 mb-6">Secure administrator access</p>
+        {loginError && <div className="bg-red-50 text-red-700 text-sm px-4 py-3 rounded-xl mb-4 border border-red-100">{loginError}</div>}
         <form onSubmit={handleLogin} className="space-y-3">
           <input value={loginForm.user} onChange={e => setLoginForm({...loginForm, user: e.target.value})}
-            placeholder="Përdoruesi" required
-            className="w-full border-2 border-gray-100 focus:border-gray-900 rounded-xl px-4 py-3.5 text-sm outline-none transition-colors" />
+            placeholder="Username" required
+            className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-4 py-3.5 text-sm outline-none transition-colors" />
           <input type="password" value={loginForm.pass} onChange={e => setLoginForm({...loginForm, pass: e.target.value})}
-            placeholder="Fjalëkalimi" required
-            className="w-full border-2 border-gray-100 focus:border-gray-900 rounded-xl px-4 py-3.5 text-sm outline-none transition-colors" />
-          <button type="submit"
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white font-black py-4 rounded-xl transition-colors shadow-lg mt-2">
-            🔐 Hyr si Admin
+            placeholder="Password" required
+            className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-4 py-3.5 text-sm outline-none transition-colors" />
+          <button type="submit" className="w-full font-black py-4 rounded-xl text-white mt-2 transition-all" style={{ background: W }}>
+            Sign In
           </button>
         </form>
       </motion.div>
@@ -201,63 +150,66 @@ export default function AdminPanel() {
 
   const pendingBiz = businesses.filter(b => b.status === "pending").length;
   const pendingDrivers = deliveries.filter(d => d.status === "pending").length;
-  const activeOrders = orders.filter(o => !["dorezuar", "anuluar"].includes(o.status)).length;
-  const totalRevenue = orders.filter(o => o.status === "dorezuar").reduce((s, o) => s + (o.total || 0), 0);
+  const activeOrders = orders.filter(o => !["dorezuar","anuluar"].includes(o.status)).length;
   const todayRevenue = orders.filter(o => o.status === "dorezuar" && new Date(o.created_date).toDateString() === new Date().toDateString()).reduce((s, o) => s + (o.total || 0), 0);
   const filteredOrders = orders.filter(o => {
-    const matchSearch = !orderSearch || o.order_code?.toLowerCase().includes(orderSearch.toLowerCase()) || o.customer_name?.toLowerCase().includes(orderSearch.toLowerCase()) || o.business_name?.toLowerCase().includes(orderSearch.toLowerCase());
-    const matchStatus = orderStatusFilter === "all" || o.status === orderStatusFilter;
-    return matchSearch && matchStatus;
+    const ms = !orderSearch || o.order_code?.toLowerCase().includes(orderSearch.toLowerCase()) || o.customer_name?.toLowerCase().includes(orderSearch.toLowerCase()) || o.business_name?.toLowerCase().includes(orderSearch.toLowerCase());
+    return ms && (orderStatusFilter === "all" || o.status === orderStatusFilter);
   });
 
+  const TABS = [
+    { key: "dashboard", label: "Dashboard" },
+    { key: "businesses", label: "Businesses", badge: pendingBiz },
+    { key: "deliveries", label: "Couriers", badge: pendingDrivers },
+    { key: "orders", label: "Orders", badge: activeOrders },
+    { key: "coupons", label: "Coupons" },
+    { key: "statement", label: "Statement" },
+    { key: "settings", label: "Settings" },
+  ];
+
   return (
-    <div className="min-h-screen bg-[#f0f4f8]">
+    <div className="min-h-screen" style={{ background: "#F5F7FA" }}>
       {/* Header */}
-      <div className="bg-gradient-to-r from-gray-900 to-gray-800 text-white sticky top-0 z-50 shadow-xl">
+      <div className="bg-white border-b border-gray-100 sticky top-0 z-50 shadow-sm">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-amber-500 rounded-xl flex items-center justify-center shadow-md">
-              <Shield size={20} className="text-white" />
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: W + "15" }}>
+              <Shield size={20} style={{ color: W }} />
             </div>
             <div>
-              <span className="font-black text-white text-lg">Admin Panel</span>
-              <p className="text-gray-400 text-xs">TiliGo Control Center</p>
+              <span className="font-black text-gray-900">Admin Panel</span>
+              <p className="text-xs text-gray-400">TiliGo Control Center</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={loadAll} className="w-9 h-9 bg-white/10 hover:bg-white/20 rounded-xl flex items-center justify-center transition-colors" title="Rifresko">
-              <RefreshCw size={15} className="text-white" />
+            <button onClick={loadAll} className="w-9 h-9 bg-gray-100 hover:bg-gray-200 rounded-xl flex items-center justify-center transition-colors" title="Refresh">
+              <RefreshCw size={15} className="text-gray-600" />
             </button>
-            <button onClick={logout} className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white text-sm font-bold px-3 py-2 rounded-xl transition-colors">
-              <LogOut size={15} /> Dil
+            <button onClick={logout} className="flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-sm font-bold px-3 py-2 rounded-xl transition-colors">
+              <LogOut size={15}/> Sign Out
             </button>
           </div>
         </div>
       </div>
 
-      {/* KPI Stats */}
+      {/* KPIs */}
       <div className="max-w-6xl mx-auto px-4 pt-6 pb-2">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5">
           {[
-            { label: "Biznese", value: businesses.length, sub: `${businesses.filter(b => b.status === "approved").length} aktive`, emoji: "🏪", gradient: "from-blue-500 to-blue-700" },
-            { label: "Dorëzues", value: deliveries.length, sub: `${deliveries.filter(d => d.status === "approved").length} aprovuar`, emoji: "🛵", gradient: "from-green-500 to-green-700" },
-            { label: "Porosi Aktive", value: activeOrders, sub: `${orders.length} totale`, emoji: "📦", gradient: "from-amber-500 to-orange-600" },
-            { label: "Të ardhura Sot", value: `${todayRevenue.toFixed(0)}€`, sub: `${orders.filter(o => o.status === "dorezuar" && new Date(o.created_date).toDateString() === new Date().toDateString()).length} sot`, emoji: "💰", gradient: "from-purple-500 to-purple-700" },
+            { icon: <Store size={20}/>, label: "Businesses", value: businesses.length, sub: `${businesses.filter(b=>b.status==="approved").length} active`, color: W, bg: W+"15", badge: pendingBiz },
+            { icon: <Bike size={20}/>, label: "Couriers", value: deliveries.length, sub: `${deliveries.filter(d=>d.status==="approved").length} approved`, color: G, bg: G+"18", badge: pendingDrivers },
+            { icon: <Package size={20}/>, label: "Active Orders", value: activeOrders, sub: `${orders.length} total`, color: "#F59E0B", bg: "#FEF3C7" },
+            { icon: <DollarSign size={20}/>, label: "Today's Revenue", value: `${todayRevenue.toFixed(0)}€`, sub: `${orders.filter(o=>o.status==="dorezuar"&&new Date(o.created_date).toDateString()===new Date().toDateString()).length} orders`, color: "#8B5CF6", bg: "#F3E8FF" },
           ].map((s, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
-              className={`bg-gradient-to-br ${s.gradient} text-white rounded-2xl p-5 shadow-md`}>
-              <div className="flex items-center justify-between mb-2">
-                <span className="text-2xl">{s.emoji}</span>
-                {(s.label === "Biznese" && pendingBiz > 0) && (
-                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-black">{pendingBiz} pritje</span>
-                )}
-                {(s.label === "Dorëzues" && pendingDrivers > 0) && (
-                  <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full font-black">{pendingDrivers} pritje</span>
-                )}
+            <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+              className="bg-white rounded-2xl p-5 shadow-sm relative overflow-hidden">
+              <div className="w-11 h-11 rounded-xl flex items-center justify-center mb-3" style={{ background: s.bg }}>
+                <span style={{ color: s.color }}>{s.icon}</span>
               </div>
-              <p className="font-black text-2xl">{s.value}</p>
-              <p className="text-white/60 text-xs">{s.label}</p>
-              <p className="text-white/50 text-xs mt-0.5">{s.sub}</p>
+              <p className="font-black text-2xl text-gray-900">{s.value}</p>
+              <p className="text-xs text-gray-500">{s.label}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{s.sub}</p>
+              {s.badge > 0 && <span className="absolute top-3 right-3 bg-red-500 text-white text-[10px] font-black px-1.5 py-0.5 rounded-full">{s.badge} pending</span>}
             </motion.div>
           ))}
         </div>
@@ -265,22 +217,13 @@ export default function AdminPanel() {
 
       {/* Tabs */}
       <div className="bg-white border-b border-gray-100 sticky top-16 z-40">
-        <div className="max-w-6xl mx-auto px-4 flex overflow-x-auto">
-          {[
-            { key: "dashboard", label: "📊 Dashboard" },
-            { key: "businesses", label: `🏪 Biznese`, badge: pendingBiz },
-            { key: "deliveries", label: `🛵 Dorëzuesit`, badge: pendingDrivers },
-            { key: "orders", label: `📦 Porositë`, badge: activeOrders },
-            { key: "coupons", label: `🎫 Kupona` },
-            { key: "statement", label: `📊 Pasqyra` },
-            { key: "settings", label: `⚙️ Cilësimet` },
-          ].map(t => (
+        <div className="max-w-6xl mx-auto px-4 flex overflow-x-auto no-scrollbar">
+          {TABS.map(t => (
             <button key={t.key} onClick={() => setTab(t.key)}
-              className={`relative px-5 py-3.5 text-sm font-bold border-b-2 transition-colors whitespace-nowrap flex-shrink-0 ${tab === t.key ? "border-gray-900 text-gray-900" : "border-transparent text-gray-500 hover:text-gray-700"}`}>
+              className="relative px-5 py-3.5 text-sm font-semibold border-b-2 transition-all whitespace-nowrap"
+              style={tab === t.key ? { borderColor: W, color: W } : { borderColor: "transparent", color: "#6B7280" }}>
               {t.label}
-              {t.badge > 0 && (
-                <span className="ml-1.5 bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 font-black">{t.badge}</span>
-              )}
+              {t.badge > 0 && <span className="ml-1.5 bg-red-500 text-white text-[10px] rounded-full px-1.5 py-0.5 font-black">{t.badge}</span>}
             </button>
           ))}
         </div>
@@ -290,178 +233,149 @@ export default function AdminPanel() {
       <AnimatePresence>
         {editItem && (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4 backdrop-blur-sm">
-            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.9, opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-end md:items-center justify-center px-4 pb-4 md:pb-0 backdrop-blur-sm">
+            <motion.div initial={{ y: 40, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 40, opacity: 0 }}
+              transition={{ type: "spring", damping: 28, stiffness: 300 }}
               className="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto">
-              <h3 className="font-black text-xl mb-5">✏️ Ndrysho të dhënat</h3>
+              <h3 className="font-bold text-xl text-gray-900 mb-5">Edit Record</h3>
               <div className="space-y-3">
-                {Object.keys(editForm).filter(k => !["id","created_date","updated_date","created_by"].includes(k)).map(key => (
+                {Object.keys(editForm).filter(k => !["id","created_date","updated_date","created_by","_type"].includes(k)).map(key => (
                   <div key={key}>
-                    <label className="text-xs font-bold text-gray-500 mb-1.5 block uppercase tracking-wide">{key.replace(/_/g, " ")}</label>
+                    <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1.5">{key.replace(/_/g," ")}</label>
                     {key === "image_url" ? (
                       <div>
                         <label className="flex items-center gap-2 border-2 border-dashed border-gray-200 hover:border-blue-400 rounded-xl p-3 cursor-pointer text-sm text-gray-500 transition-colors">
-                          <Upload size={16} className="text-blue-500" />
-                          {uploading ? "Duke ngarkuar..." : editForm.image_url ? "Ndrysho foton" : "Ngarko foto"}
+                          <Upload size={16} style={{ color: W }} />
+                          {uploading ? "Uploading..." : editForm.image_url ? "Change photo" : "Upload photo"}
                           <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                         </label>
                         {editForm.image_url && <img src={editForm.image_url} className="mt-2 h-24 w-full object-cover rounded-xl" />}
                       </div>
                     ) : key === "status" ? (
-                      <SelectDrawer
-                        value={editForm[key]}
-                        onChange={v => setEditForm({...editForm, [key]: v})}
-                        label="Statusi"
+                      <SelectDrawer value={editForm[key]} onChange={v => setEditForm({...editForm, [key]: v})} label="Status"
                         options={editItem._type === "business" || editItem._type === "delivery"
-                          ? [{value:"pending",label:"Pritje"},{value:"approved",label:"Aprovuar"},{value:"rejected",label:"Refuzuar"}]
-                          : Object.keys(STATUS_LABELS).map(s => ({ value: s, label: STATUS_LABELS[s] }))
-                        }
-                      />
+                          ? [{value:"pending",label:"Pending"},{value:"approved",label:"Approved"},{value:"rejected",label:"Rejected"}]
+                          : Object.entries(STATUS_LABELS).map(([v,l]) => ({ value: v, label: l }))} />
                     ) : typeof editForm[key] === "boolean" ? (
-                      <SelectDrawer
-                        value={String(editForm[key])}
-                        onChange={v => setEditForm({...editForm, [key]: v === "true"})}
-                        label={key.replace(/_/g, " ")}
-                        options={[{value:"true",label:"Po"},{value:"false",label:"Jo"}]}
-                      />
+                      <SelectDrawer value={String(editForm[key])} onChange={v => setEditForm({...editForm, [key]: v === "true"})}
+                        label={key.replace(/_/g," ")} options={[{value:"true",label:"Yes"},{value:"false",label:"No"}]} />
                     ) : (
                       <input value={editForm[key] || ""} onChange={e => setEditForm({...editForm, [key]: e.target.value})}
-                        className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors" />
+                        className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors" />
                     )}
                   </div>
                 ))}
               </div>
               <div className="flex gap-3 mt-5">
-                <button onClick={() => setEditItem(null)}
-                  className="flex-1 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl hover:bg-gray-200 text-sm">Anulo</button>
-                <button onClick={saveEdit}
-                  className="flex-1 bg-gray-900 text-white font-bold py-3.5 rounded-xl hover:bg-gray-800 text-sm shadow-md">Ruaj</button>
+                <button onClick={() => setEditItem(null)} className="flex-1 bg-gray-100 text-gray-700 font-bold py-3.5 rounded-xl text-sm hover:bg-gray-200">Cancel</button>
+                <button onClick={saveEdit} className="flex-1 font-bold py-3.5 rounded-xl text-sm text-white shadow-sm" style={{ background: W }}>Save Changes</button>
               </div>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
 
-      <div className="max-w-6xl mx-auto px-4 py-5 space-y-4">
+      <div className="max-w-6xl mx-auto px-4 py-5 space-y-3">
         {loading ? (
-          <div className="space-y-3">{[1,2,3,4].map(i => <div key={i} className="bg-white rounded-2xl h-20 animate-pulse" />)}</div>
+          [1,2,3,4].map(i => <div key={i} className="bg-white rounded-2xl h-20 animate-pulse shadow-sm" />)
         ) : (
           <>
             {/* DASHBOARD */}
             {tab === "dashboard" && (
-              <div className="space-y-4">
-                <div className="grid md:grid-cols-2 gap-4">
-                  {/* Recent Orders */}
-                  <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <Package size={18} className="text-blue-600" /> Porositë e Fundit
-                    </h3>
-                    <div className="space-y-2">
-                      {orders.slice(0, 5).map(o => (
-                        <div key={o.id} className="flex items-center justify-between py-1.5 border-b border-gray-50 last:border-0">
+              <div className="grid md:grid-cols-2 gap-4">
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Package size={18} style={{ color: W }}/> Recent Orders</h3>
+                  <div className="space-y-2">
+                    {orders.slice(0, 6).map(o => {
+                      const st = STATUS_STYLE[o.status];
+                      return (
+                        <div key={o.id} className="flex items-center justify-between py-2 border-b border-gray-50 last:border-0">
                           <div>
                             <p className="font-bold text-amber-600 text-sm">#{o.order_code}</p>
                             <p className="text-gray-500 text-xs">{o.customer_name} · {o.business_name}</p>
                           </div>
                           <div className="text-right">
-                            <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${STATUS_COLORS[o.status]}`}>{STATUS_LABELS[o.status]}</span>
-                            <p className="text-gray-900 font-black text-sm mt-0.5">{o.total?.toFixed(2)}€</p>
+                            <span className="text-xs font-semibold px-2 py-0.5 rounded-full" style={{ background: st?.bg, color: st?.color }}>{st?.label}</span>
+                            <p className="font-black text-sm text-gray-900 mt-0.5">{o.total?.toFixed(2)}€</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                <div className="bg-white rounded-2xl p-5 shadow-sm">
+                  <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2"><Bell size={18} style={{ color: "#F59E0B" }}/> Pending Approvals</h3>
+                  {pendingBiz === 0 && pendingDrivers === 0 ? (
+                    <div className="text-center py-8">
+                      <div className="w-12 h-12 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: "#DCFCE7" }}>
+                        <Check size={22} style={{ color: G }} />
+                      </div>
+                      <p className="text-sm text-gray-500">All caught up!</p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {businesses.filter(b => b.status === "pending").map(biz => (
+                        <div key={biz.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm flex items-center gap-1.5"><Store size={14} style={{ color: W }}/> {biz.name}</p>
+                            <p className="text-gray-500 text-xs">{biz.phone}</p>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => approveBiz(biz.id)} className="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-xl flex items-center justify-center transition-colors"><Check size={14} style={{ color: G }}/></button>
+                            <button onClick={() => rejectBiz(biz.id)} className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors"><X size={14} className="text-red-500"/></button>
+                          </div>
+                        </div>
+                      ))}
+                      {deliveries.filter(d => d.status === "pending").map(del => (
+                        <div key={del.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                          <div>
+                            <p className="font-semibold text-gray-900 text-sm flex items-center gap-1.5"><Bike size={14} style={{ color: G }}/> {del.name}</p>
+                            <p className="text-gray-500 text-xs">{del.phone}</p>
+                          </div>
+                          <div className="flex gap-1.5">
+                            <button onClick={() => approveDriver(del.id)} className="w-8 h-8 bg-green-100 hover:bg-green-200 rounded-xl flex items-center justify-center transition-colors"><Check size={14} style={{ color: G }}/></button>
+                            <button onClick={() => rejectDriver(del.id)} className="w-8 h-8 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors"><X size={14} className="text-red-500"/></button>
                           </div>
                         </div>
                       ))}
                     </div>
-                  </div>
-                  {/* Pending Approvals */}
-                  <div className="bg-white rounded-2xl p-5 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-3 flex items-center gap-2">
-                      <RefreshCw size={18} className="text-amber-500" /> Aprovime Pritëse
-                    </h3>
-                    {pendingBiz === 0 && pendingDrivers === 0 ? (
-                      <div className="text-center py-8 text-gray-400">
-                        <div className="text-4xl mb-2">✅</div>
-                        <p className="text-sm">Të gjitha janë aprovuar</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-2">
-                        {businesses.filter(b => b.status === "pending").map(biz => (
-                          <div key={biz.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
-                            <div>
-                              <p className="font-bold text-gray-900 text-sm">🏪 {biz.name}</p>
-                              <p className="text-gray-500 text-xs">{biz.phone}</p>
-                            </div>
-                            <div className="flex gap-1.5">
-                              <button onClick={() => approveBiz(biz.id)} className="w-8 h-8 bg-green-100 hover:bg-green-200 text-green-700 rounded-full flex items-center justify-center"><Check size={14} /></button>
-                              <button onClick={() => rejectBiz(biz.id)} className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-full flex items-center justify-center"><X size={14} /></button>
-                            </div>
-                          </div>
-                        ))}
-                        {deliveries.filter(d => d.status === "pending").map(del => (
-                          <div key={del.id} className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
-                            <div>
-                              <p className="font-bold text-gray-900 text-sm">🛵 {del.name}</p>
-                              <p className="text-gray-500 text-xs">{del.phone}</p>
-                            </div>
-                            <div className="flex gap-1.5">
-                              <button onClick={() => approveDriver(del.id)} className="w-8 h-8 bg-green-100 hover:bg-green-200 text-green-700 rounded-full flex items-center justify-center"><Check size={14} /></button>
-                              <button onClick={() => rejectDriver(del.id)} className="w-8 h-8 bg-red-100 hover:bg-red-200 text-red-600 rounded-full flex items-center justify-center"><X size={14} /></button>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  )}
                 </div>
               </div>
             )}
 
             {/* BUSINESSES */}
             {tab === "businesses" && (
-              <div className="space-y-3">
-                {businesses.length === 0 ? (
-                  <div className="text-center py-16 text-gray-400">Nuk ka biznese</div>
-                ) : businesses.map((biz, i) => (
-                  <motion.div key={biz.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              <div className="space-y-2">
+                {businesses.length === 0 ? <div className="text-center py-16 text-gray-400 bg-white rounded-2xl shadow-sm">No businesses yet</div>
+                : businesses.map((biz, i) => (
+                  <motion.div key={biz.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                     className="bg-white rounded-2xl shadow-sm overflow-hidden">
                     <div className="flex items-center gap-4 p-4">
-                      {biz.image_url ? (
-                        <img src={biz.image_url} className="w-16 h-16 rounded-2xl object-cover flex-shrink-0" />
-                      ) : (
-                        <div className="w-16 h-16 rounded-2xl bg-blue-100 flex items-center justify-center flex-shrink-0 text-2xl">🏪</div>
-                      )}
+                      {biz.image_url
+                        ? <img src={biz.image_url} className="w-14 h-14 rounded-2xl object-cover flex-shrink-0 border border-gray-100" />
+                        : <div className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: W + "15" }}><Store size={22} style={{ color: W }}/></div>
+                      }
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <p className="font-bold text-gray-900">{biz.name}</p>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${biz.status === "approved" ? "bg-green-100 text-green-700" : biz.status === "rejected" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>
-                            {biz.status === "approved" ? "✓ Aprovuar" : biz.status === "rejected" ? "✗ Refuzuar" : "⏳ Pritje"}
+                          <p className="font-semibold text-gray-900">{biz.name}</p>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${biz.status === "approved" ? "bg-green-100 text-green-700" : biz.status === "rejected" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>
+                            {biz.status === "approved" ? "Approved" : biz.status === "rejected" ? "Rejected" : "Pending"}
                           </span>
                           <span className={`text-xs px-2 py-0.5 rounded-full ${biz.is_open ? "bg-green-50 text-green-600" : "bg-gray-100 text-gray-400"}`}>
-                            {biz.is_open ? "🟢 Hapur" : "🔴 Mbyllur"}
+                            {biz.is_open ? "Open" : "Closed"}
                           </span>
                         </div>
                         <p className="text-gray-500 text-sm">{biz.phone}</p>
                         <p className="text-gray-400 text-xs">{biz.address} · {biz.category}</p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {biz.status === "pending" && (
-                          <>
-                            <button onClick={() => approveBiz(biz.id)}
-                              className="w-9 h-9 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl flex items-center justify-center transition-colors" title="Aprovo">
-                              <Check size={16} />
-                            </button>
-                            <button onClick={() => rejectBiz(biz.id)}
-                              className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl flex items-center justify-center transition-colors" title="Refuzo">
-                              <X size={16} />
-                            </button>
-                          </>
-                        )}
-                        <button onClick={() => startEdit(biz, "business")}
-                          className="w-9 h-9 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center transition-colors">
-                          <Edit2 size={15} />
-                        </button>
-                        <button onClick={() => deleteBiz(biz.id)}
-                          className="w-9 h-9 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl flex items-center justify-center transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                        {biz.status === "pending" && <>
+                          <button onClick={() => approveBiz(biz.id)} className="w-9 h-9 bg-green-100 hover:bg-green-200 rounded-xl flex items-center justify-center transition-colors"><Check size={16} style={{ color: G }}/></button>
+                          <button onClick={() => rejectBiz(biz.id)} className="w-9 h-9 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors"><X size={16} className="text-red-500"/></button>
+                        </>}
+                        <button onClick={() => startEdit(biz, "business")} className="w-9 h-9 bg-blue-50 hover:bg-blue-100 rounded-xl flex items-center justify-center transition-colors"><Edit2 size={15} style={{ color: W }}/></button>
+                        <button onClick={() => deleteBiz(biz.id)} className="w-9 h-9 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center transition-colors"><Trash2 size={15} className="text-red-500"/></button>
                       </div>
                     </div>
                   </motion.div>
@@ -471,49 +385,33 @@ export default function AdminPanel() {
 
             {/* DELIVERIES */}
             {tab === "deliveries" && (
-              <div className="space-y-3">
-                {deliveries.length === 0 ? (
-                  <div className="text-center py-16 text-gray-400">Nuk ka dorëzues</div>
-                ) : deliveries.map((del, i) => (
-                  <motion.div key={del.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+              <div className="space-y-2">
+                {deliveries.length === 0 ? <div className="text-center py-16 text-gray-400 bg-white rounded-2xl shadow-sm">No couriers yet</div>
+                : deliveries.map((del, i) => (
+                  <motion.div key={del.id} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.03 }}
                     className="bg-white rounded-2xl shadow-sm p-4">
                     <div className="flex items-center gap-4">
-                      {del.image_url ? (
-                        <img src={del.image_url} className="w-14 h-14 rounded-full object-cover flex-shrink-0 border-2 border-gray-100" />
-                      ) : (
-                        <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center flex-shrink-0 text-2xl">🛵</div>
-                      )}
+                      {del.image_url
+                        ? <img src={del.image_url} className="w-12 h-12 rounded-full object-cover flex-shrink-0 border-2 border-gray-100" />
+                        : <div className="w-12 h-12 rounded-full flex items-center justify-center flex-shrink-0" style={{ background: G + "18" }}><Bike size={20} style={{ color: G }}/></div>
+                      }
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap mb-0.5">
-                          <p className="font-bold text-gray-900">{del.name}</p>
-                          <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${del.status === "approved" ? "bg-green-100 text-green-700" : del.status === "rejected" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>
-                            {del.status === "approved" ? "✓ Aprovuar" : del.status === "rejected" ? "✗ Refuzuar" : "⏳ Pritje"}
+                          <p className="font-semibold text-gray-900">{del.name}</p>
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${del.status === "approved" ? "bg-green-100 text-green-700" : del.status === "rejected" ? "bg-red-100 text-red-600" : "bg-amber-100 text-amber-700"}`}>
+                            {del.status === "approved" ? "Approved" : del.status === "rejected" ? "Rejected" : "Pending"}
                           </span>
                         </div>
                         <p className="text-gray-500 text-sm">{del.phone}</p>
-                        <p className="text-gray-400 text-xs">{del.vehicle === "motor" ? "🛵 Motor" : del.vehicle === "biciklete" ? "🚲 Biçikletë" : "🚗 Makinë"} · {del.is_available ? "🟢 Aktiv" : "⚫ Jo aktiv"}</p>
+                        <p className="text-gray-400 text-xs">{del.vehicle} · {del.is_available ? <span className="text-green-600">Active</span> : "Inactive"}</p>
                       </div>
                       <div className="flex items-center gap-1.5 flex-shrink-0">
-                        {del.status === "pending" && (
-                          <>
-                            <button onClick={() => approveDriver(del.id)}
-                              className="w-9 h-9 bg-green-100 hover:bg-green-200 text-green-700 rounded-xl flex items-center justify-center transition-colors">
-                              <Check size={16} />
-                            </button>
-                            <button onClick={() => rejectDriver(del.id)}
-                              className="w-9 h-9 bg-red-100 hover:bg-red-200 text-red-600 rounded-xl flex items-center justify-center transition-colors">
-                              <X size={16} />
-                            </button>
-                          </>
-                        )}
-                        <button onClick={() => startEdit(del, "delivery")}
-                          className="w-9 h-9 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-xl flex items-center justify-center transition-colors">
-                          <Edit2 size={15} />
-                        </button>
-                        <button onClick={() => deleteDriver(del.id)}
-                          className="w-9 h-9 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl flex items-center justify-center transition-colors">
-                          <Trash2 size={15} />
-                        </button>
+                        {del.status === "pending" && <>
+                          <button onClick={() => approveDriver(del.id)} className="w-9 h-9 bg-green-100 hover:bg-green-200 rounded-xl flex items-center justify-center transition-colors"><Check size={16} style={{ color: G }}/></button>
+                          <button onClick={() => rejectDriver(del.id)} className="w-9 h-9 bg-red-100 hover:bg-red-200 rounded-xl flex items-center justify-center transition-colors"><X size={16} className="text-red-500"/></button>
+                        </>}
+                        <button onClick={() => startEdit(del, "delivery")} className="w-9 h-9 bg-blue-50 hover:bg-blue-100 rounded-xl flex items-center justify-center transition-colors"><Edit2 size={15} style={{ color: W }}/></button>
+                        <button onClick={() => deleteDriver(del.id)} className="w-9 h-9 bg-red-50 hover:bg-red-100 rounded-xl flex items-center justify-center transition-colors"><Trash2 size={15} className="text-red-500"/></button>
                       </div>
                     </div>
                   </motion.div>
@@ -524,99 +422,81 @@ export default function AdminPanel() {
             {/* ORDERS */}
             {tab === "orders" && (
               <div className="space-y-3">
-                {/* Search + Filter */}
                 <div className="bg-white rounded-2xl p-4 shadow-sm flex flex-col md:flex-row gap-3">
-                  <input
-                    value={orderSearch}
-                    onChange={e => setOrderSearch(e.target.value)}
-                    placeholder="Kërko porosi, klient, biznes..."
-                    className="flex-1 border-2 border-gray-100 focus:border-gray-400 rounded-xl px-4 py-2.5 text-sm outline-none transition-colors"
-                  />
+                  <div className="relative flex-1">
+                    <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input value={orderSearch} onChange={e => setOrderSearch(e.target.value)}
+                      placeholder="Search orders, customers, businesses..."
+                      className="w-full border border-gray-200 focus:border-blue-400 rounded-xl pl-9 pr-4 py-2.5 text-sm outline-none transition-colors" />
+                  </div>
                   <div className="flex gap-1.5 flex-wrap">
-                    {["all", "e_re", "ne_pergatitje", "gati_per_dorezim", "ne_rruge", "dorezuar", "anuluar"].map(s => (
+                    {["all", ...Object.keys(STATUS_LABELS)].map(s => (
                       <button key={s} onClick={() => setOrderStatusFilter(s)}
-                        className={`text-xs px-3 py-1.5 rounded-full font-bold transition-colors whitespace-nowrap ${
-                          orderStatusFilter === s ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                        }`}>
-                        {s === "all" ? `Të gjitha (${orders.length})` : STATUS_LABELS[s]}
+                        className={`text-xs px-3 py-1.5 rounded-full font-semibold transition-all whitespace-nowrap ${orderStatusFilter === s ? "text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}
+                        style={orderStatusFilter === s ? { background: W } : {}}>
+                        {s === "all" ? `All (${orders.length})` : STATUS_LABELS[s]}
                       </button>
                     ))}
                   </div>
                 </div>
-                {filteredOrders.length === 0 ? (
-                  <div className="text-center py-16 text-gray-400">Nuk ka porosi</div>
-                ) : filteredOrders.map((order, i) => (
-                  <motion.div key={order.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
-                    className="bg-white rounded-2xl shadow-sm overflow-hidden">
-                    <div className="p-4 flex items-center justify-between cursor-pointer"
-                      onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center">
-                          <Package size={18} className="text-amber-600" />
-                        </div>
-                        <div>
-                          <p className="font-black text-amber-600">#{order.order_code}</p>
-                          <p className="text-gray-700 text-sm font-medium">{order.customer_name} · <span className="text-gray-500">{order.business_name}</span></p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${STATUS_COLORS[order.status]}`}>
-                          {STATUS_LABELS[order.status]}
-                        </span>
-                        <span className="font-black text-gray-900 text-sm">{order.total?.toFixed(2)}€</span>
-                        {expandedOrder === order.id ? <ChevronUp size={16} className="text-gray-400" /> : <ChevronDown size={16} className="text-gray-400" />}
-                      </div>
-                    </div>
-                    <AnimatePresence>
-                      {expandedOrder === order.id && (
-                        <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
-                          className="border-t border-gray-100 px-4 pb-4">
-                          <div className="pt-3 space-y-3">
-                            <div className="grid grid-cols-2 gap-2 text-sm">
-                              <div className="bg-gray-50 rounded-xl p-3">
-                                <p className="text-gray-400 text-xs mb-0.5">Telefoni</p>
-                                <a href={`tel:${order.customer_phone}`} className="font-bold text-blue-700">{order.customer_phone}</a>
-                              </div>
-                              <div className="bg-gray-50 rounded-xl p-3">
-                                <p className="text-gray-400 text-xs mb-0.5">Adresa</p>
-                                <p className="font-bold text-gray-900 text-xs">{order.customer_address}</p>
-                              </div>
-                            </div>
-                            {order.delivery_name && (
-                              <p className="text-sm text-gray-600 bg-purple-50 px-3 py-2 rounded-xl">🛵 <strong>Dorëzuesi:</strong> {order.delivery_name}</p>
-                            )}
-                            {order.notes && (
-                              <p className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-xl">📝 {order.notes}</p>
-                            )}
-                            <div className="bg-gray-50 rounded-xl p-3">
-                              {order.items?.map((item, i) => (
-                                <div key={i} className="flex justify-between text-sm py-0.5">
-                                  <span className="text-gray-600">{item.qty}× {item.name}</span>
-                                  <span className="font-semibold text-gray-900">{(item.price * item.qty).toFixed(2)}€</span>
-                                </div>
-                              ))}
-                              <div className="border-t border-gray-200 mt-1 pt-1 flex justify-between font-black text-sm">
-                                <span>Total</span><span>{order.total?.toFixed(2)}€</span>
-                              </div>
-                            </div>
-                            <div className="flex flex-wrap gap-1.5">
-                              {Object.keys(STATUS_LABELS).map(s => (
-                                <button key={s} onClick={() => updateOrderStatus(order.id, s)}
-                                  className={`text-xs px-3 py-1.5 rounded-full font-medium transition-colors ${order.status === s ? STATUS_COLORS[s] + " ring-2 ring-offset-1" : "bg-gray-100 text-gray-600 hover:bg-gray-200"}`}>
-                                  {STATUS_LABELS[s]}
-                                </button>
-                              ))}
-                              <button onClick={() => deleteOrder(order.id)}
-                                className="text-xs px-3 py-1.5 rounded-full font-medium bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1">
-                                <Trash2 size={11} /> Fshi
-                              </button>
-                            </div>
+                {filteredOrders.length === 0 ? <div className="text-center py-16 text-gray-400 bg-white rounded-2xl shadow-sm">No orders found</div>
+                : filteredOrders.map((order, i) => {
+                  const st = STATUS_STYLE[order.status];
+                  return (
+                    <motion.div key={order.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                      className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                      <div className="p-4 flex items-center justify-between cursor-pointer" onClick={() => setExpandedOrder(expandedOrder === order.id ? null : order.id)}>
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: st?.bg }}>
+                            <Package size={18} style={{ color: st?.dot }} />
                           </div>
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </motion.div>
-                ))}
+                          <div>
+                            <p className="font-bold text-amber-600">#{order.order_code}</p>
+                            <p className="text-gray-700 text-sm">{order.customer_name} · <span className="text-gray-400">{order.business_name}</span></p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-semibold px-2.5 py-1 rounded-full" style={{ background: st?.bg, color: st?.color }}>
+                            <span className="inline-block w-1.5 h-1.5 rounded-full mr-1.5" style={{ background: st?.dot }} />{st?.label}
+                          </span>
+                          <span className="font-black text-gray-900 text-sm">{order.total?.toFixed(2)}€</span>
+                          {expandedOrder === order.id ? <ChevronUp size={16} className="text-gray-400"/> : <ChevronDown size={16} className="text-gray-400"/>}
+                        </div>
+                      </div>
+                      <AnimatePresence>
+                        {expandedOrder === order.id && (
+                          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: "auto", opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+                            className="border-t border-gray-100 px-4 pb-4">
+                            <div className="pt-3 space-y-3">
+                              <div className="grid grid-cols-2 gap-2 text-sm">
+                                <div className="bg-gray-50 rounded-xl p-3"><p className="text-gray-400 text-xs mb-0.5">Phone</p><a href={`tel:${order.customer_phone}`} className="font-bold" style={{ color: W }}>{order.customer_phone}</a></div>
+                                <div className="bg-gray-50 rounded-xl p-3"><p className="text-gray-400 text-xs mb-0.5">Address</p><p className="font-semibold text-gray-900 text-xs">{order.customer_address}</p></div>
+                              </div>
+                              {order.delivery_name && <p className="text-sm text-gray-600 bg-purple-50 px-3 py-2 rounded-xl flex items-center gap-2"><Bike size={13} className="text-purple-500"/> <strong>Courier:</strong> {order.delivery_name}</p>}
+                              {order.notes && <p className="text-sm text-amber-700 bg-amber-50 px-3 py-2 rounded-xl">Note: {order.notes}</p>}
+                              <div className="bg-gray-50 rounded-xl p-3">
+                                {order.items?.map((item, i) => <div key={i} className="flex justify-between text-sm py-0.5"><span className="text-gray-600">{item.qty}× {item.name}</span><span className="font-semibold text-gray-900">{(item.price*item.qty).toFixed(2)}€</span></div>)}
+                                <div className="border-t border-gray-200 mt-1 pt-1 flex justify-between font-black text-sm"><span>Total</span><span>{order.total?.toFixed(2)}€</span></div>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5">
+                                {Object.entries(STATUS_LABELS).map(([s, l]) => (
+                                  <button key={s} onClick={() => updateOrderStatus(order.id, s)}
+                                    className="text-xs px-3 py-1.5 rounded-full font-medium transition-all"
+                                    style={order.status === s ? { background: STATUS_STYLE[s].bg, color: STATUS_STYLE[s].color, outline: `2px solid ${STATUS_STYLE[s].dot}`, outlineOffset: "2px" } : { background: "#F3F4F6", color: "#6B7280" }}>
+                                    {l}
+                                  </button>
+                                ))}
+                                <button onClick={() => deleteOrder(order.id)} className="text-xs px-3 py-1.5 rounded-full font-medium bg-red-100 text-red-600 hover:bg-red-200 flex items-center gap-1">
+                                  <Trash2 size={11}/> Delete
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
 
@@ -625,88 +505,72 @@ export default function AdminPanel() {
               <div className="space-y-4">
                 <div className="flex justify-between items-center">
                   <div>
-                    <h2 className="font-black text-gray-900">Kupona</h2>
-                    <p className="text-gray-500 text-sm">{coupons.length} kupona total</p>
+                    <h2 className="font-bold text-gray-900">Coupons</h2>
+                    <p className="text-gray-500 text-sm">{coupons.length} coupons total</p>
                   </div>
                   <button onClick={() => setShowCouponForm(!showCouponForm)}
-                    className="flex items-center gap-2 bg-gray-900 text-white text-sm font-bold px-4 py-2.5 rounded-xl hover:bg-gray-800 transition-colors shadow-md">
-                    <span className="text-base">+</span> Kupon i Ri
+                    className="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-xl text-white transition-all" style={{ background: W }}>
+                    + New Coupon
                   </button>
                 </div>
-
                 {showCouponForm && (
-                  <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-                    className="bg-white rounded-2xl p-5 shadow-sm">
-                    <h3 className="font-bold text-gray-900 mb-4">🎫 Krijo Kupon të Ri</h3>
+                  <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="bg-white rounded-2xl p-5 shadow-sm">
+                    <h3 className="font-bold text-gray-900 mb-4">Create Coupon</h3>
                     <form onSubmit={saveCoupon} className="space-y-3">
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Kodi *</label>
-                          <input value={couponForm.code} onChange={e => setCouponForm({...couponForm, code: e.target.value.toUpperCase()})}
-                            placeholder="p.sh. SAVE10" required
-                            className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-3 py-2.5 text-sm outline-none font-mono tracking-widest" />
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Code *</label>
+                          <input value={couponForm.code} onChange={e => setCouponForm({...couponForm, code: e.target.value.toUpperCase()})} placeholder="e.g. SAVE10" required className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none font-mono tracking-widest" />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Zbritja (€) *</label>
-                          <input type="number" step="0.01" min="0" value={couponForm.discount_amount}
-                            onChange={e => setCouponForm({...couponForm, discount_amount: e.target.value})}
-                            placeholder="p.sh. 2.50" required
-                            className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-3 py-2.5 text-sm outline-none" />
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Discount (€) *</label>
+                          <input type="number" step="0.01" min="0" value={couponForm.discount_amount} onChange={e => setCouponForm({...couponForm, discount_amount: e.target.value})} placeholder="2.50" required className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none" />
                         </div>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Përshkrimi</label>
-                          <input value={couponForm.description} onChange={e => setCouponForm({...couponForm, description: e.target.value})}
-                            placeholder="p.sh. Zbritje 2.50€"
-                            className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-3 py-2.5 text-sm outline-none" />
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Description</label>
+                          <input value={couponForm.description} onChange={e => setCouponForm({...couponForm, description: e.target.value})} placeholder="e.g. Welcome discount" className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none" />
                         </div>
                         <div>
-                          <label className="text-xs font-bold text-gray-500 uppercase tracking-wide block mb-1">Përdorime (-1 = pafund)</label>
-                          <input type="number" value={couponForm.uses_left} onChange={e => setCouponForm({...couponForm, uses_left: e.target.value})}
-                            placeholder="-1"
-                            className="w-full border-2 border-gray-100 focus:border-blue-500 rounded-xl px-3 py-2.5 text-sm outline-none" />
+                          <label className="text-xs font-semibold text-gray-500 uppercase tracking-wide block mb-1">Uses (-1 = unlimited)</label>
+                          <input type="number" value={couponForm.uses_left} onChange={e => setCouponForm({...couponForm, uses_left: e.target.value})} placeholder="-1" className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none" />
                         </div>
                       </div>
                       <div className="flex gap-3 pt-1">
-                        <button type="button" onClick={() => setShowCouponForm(false)}
-                          className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-sm">Anulo</button>
-                        <button type="submit"
-                          className="flex-1 bg-gray-900 text-white font-bold py-3 rounded-xl text-sm shadow-md">🎫 Krijo Kuponin</button>
+                        <button type="button" onClick={() => setShowCouponForm(false)} className="flex-1 bg-gray-100 text-gray-700 font-bold py-3 rounded-xl text-sm">Cancel</button>
+                        <button type="submit" className="flex-1 font-bold py-3 rounded-xl text-sm text-white" style={{ background: W }}>Create Coupon</button>
                       </div>
                     </form>
                   </motion.div>
                 )}
-
                 {coupons.length === 0 ? (
-                  <div className="text-center py-16 text-gray-400">
-                    <div className="text-5xl mb-3">🎫</div>
-                    <p>Nuk ka kupona akoma</p>
+                  <div className="text-center py-16 bg-white rounded-2xl shadow-sm">
+                    <div className="w-14 h-14 rounded-full mx-auto mb-3 flex items-center justify-center" style={{ background: W + "15" }}>
+                      <FileText size={24} style={{ color: W }} />
+                    </div>
+                    <p className="text-gray-500">No coupons yet</p>
                   </div>
                 ) : (
                   <div className="space-y-2">
                     {coupons.map((c, i) => (
-                      <motion.div key={c.id} initial={{ opacity: 0, y: 5 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                      <motion.div key={c.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                         className="bg-white rounded-2xl p-4 shadow-sm flex items-center justify-between">
                         <div className="flex items-center gap-3">
-                          <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-xl ${c.is_active ? 'bg-green-50' : 'bg-gray-100'}`}>
-                            🎫
+                          <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ background: c.is_active ? "#DCFCE7" : "#F3F4F6" }}>
+                            <FileText size={16} style={{ color: c.is_active ? G : "#9CA3AF" }} />
                           </div>
                           <div>
                             <p className="font-black text-gray-900 font-mono tracking-wide">{c.code}</p>
-                            <p className="text-sm text-gray-500">{c.description || ""} · <span className="text-green-600 font-bold">-{c.discount_amount?.toFixed(2)}€</span></p>
-                            <p className="text-xs text-gray-400">{c.uses_left === -1 ? "Përdorime: Pafund" : `Përdorime të mbetura: ${c.uses_left}`}</p>
+                            <p className="text-sm text-gray-500">{c.description || ""} · <span className="font-bold" style={{ color: G }}>-{c.discount_amount?.toFixed(2)}€</span></p>
+                            <p className="text-xs text-gray-400">{c.uses_left === -1 ? "Unlimited uses" : `${c.uses_left} uses left`}</p>
                           </div>
                         </div>
                         <div className="flex items-center gap-2">
-                          <button onClick={() => toggleCoupon(c)}
-                            className={`text-xs font-bold px-3 py-1.5 rounded-full transition-colors ${c.is_active ? 'bg-green-100 text-green-700 hover:bg-green-200' : 'bg-gray-100 text-gray-500 hover:bg-gray-200'}`}>
-                            {c.is_active ? "✓ Aktiv" : "Jo aktiv"}
+                          <button onClick={() => toggleCoupon(c)} className={`text-xs font-semibold px-3 py-1.5 rounded-full transition-colors ${c.is_active ? "bg-green-100 text-green-700 hover:bg-green-200" : "bg-gray-100 text-gray-500 hover:bg-gray-200"}`}>
+                            {c.is_active ? "Active" : "Inactive"}
                           </button>
-                          <button onClick={() => deleteCoupon(c.id)}
-                            className="w-8 h-8 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl flex items-center justify-center transition-colors">
-                            <Trash2 size={14} />
-                          </button>
+                          <button onClick={() => deleteCoupon(c.id)} className="w-8 h-8 bg-red-50 hover:bg-red-100 text-red-500 rounded-xl flex items-center justify-center transition-colors"><Trash2 size={14}/></button>
                         </div>
                       </motion.div>
                     ))}
@@ -715,45 +579,35 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {/* STATEMENT */}
-            {tab === "statement" && (
-              <StatementGenerator orders={orders} mode="admin" entityName="TiliGo Admin" isAdmin={true} />
-            )}
+            {tab === "statement" && <StatementGenerator orders={orders} mode="admin" entityName="TiliGo Admin" isAdmin={true} />}
 
             {/* SETTINGS */}
             {tab === "settings" && (
-              <div className="space-y-5">
-                {/* Social Media */}
+              <div className="max-w-xl space-y-5">
                 <div className="bg-white rounded-2xl p-6 shadow-sm">
-                  <h3 className="font-black text-gray-900 text-lg mb-1 flex items-center gap-2">
-                    <LinkIcon size={20} className="text-blue-600" /> Rrjetet Sociale
-                  </h3>
-                  <p className="text-gray-400 text-sm mb-5">Shto ose ndrysho linket e rrjeteve sociale të TiliGo.</p>
+                  <h3 className="font-bold text-gray-900 text-lg mb-1 flex items-center gap-2"><LinkIcon size={18} style={{ color: W }}/> Social Media</h3>
+                  <p className="text-gray-400 text-sm mb-5">Manage TiliGo social media links.</p>
                   <div className="space-y-4">
                     {[
-                      { key: "facebook", label: "Facebook", icon: <Facebook size={18} className="text-blue-600" />, placeholder: "https://facebook.com/tiligoo" },
-                      { key: "instagram", label: "Instagram", icon: <Instagram size={18} className="text-pink-500" />, placeholder: "https://instagram.com/tiligo" },
-                      { key: "tiktok", label: "TikTok", icon: <span className="text-lg">🎵</span>, placeholder: "https://tiktok.com/@tiligo" },
-                      { key: "website", label: "Website", icon: <Globe size={18} className="text-gray-600" />, placeholder: "https://tiligo.app" },
+                      { key: "facebook", label: "Facebook", icon: <Facebook size={18} className="text-blue-600"/>, placeholder: "https://facebook.com/tiligoo" },
+                      { key: "instagram", label: "Instagram", icon: <Instagram size={18} className="text-pink-500"/>, placeholder: "https://instagram.com/tiligo" },
+                      { key: "tiktok", label: "TikTok", icon: <span className="text-base">🎵</span>, placeholder: "https://tiktok.com/@tiligo" },
+                      { key: "website", label: "Website", icon: <Globe size={18} className="text-gray-600"/>, placeholder: "https://tiligo.app" },
                     ].map(({ key, label, icon, placeholder }) => (
                       <div key={key} className="flex items-center gap-3">
                         <div className="w-10 h-10 bg-gray-50 rounded-xl flex items-center justify-center flex-shrink-0">{icon}</div>
                         <div className="flex-1">
-                          <label className="text-xs font-bold text-gray-500 block mb-1">{label}</label>
-                          <input
-                            value={settingsForm[key] || ""}
-                            onChange={e => setSettingsForm({...settingsForm, [key]: e.target.value})}
-                            placeholder={placeholder}
-                            className="w-full border-2 border-gray-100 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors"
-                          />
+                          <label className="text-xs font-semibold text-gray-500 block mb-1">{label}</label>
+                          <input value={settingsForm[key] || ""} onChange={e => setSettingsForm({...settingsForm, [key]: e.target.value})} placeholder={placeholder}
+                            className="w-full border border-gray-200 focus:border-blue-400 rounded-xl px-3 py-2.5 text-sm outline-none transition-colors" />
                         </div>
                       </div>
                     ))}
                   </div>
                   <button onClick={saveSettings}
-                    className="mt-5 flex items-center gap-2 font-black px-6 py-3 rounded-xl text-sm text-white transition-all shadow-md hover:scale-105"
-                    style={{ background: settingsSaved ? '#059669' : '#111827' }}>
-                    {settingsSaving ? "Duke ruajtur..." : settingsSaved ? "✓ U ruajt!" : <><Save size={15} /> Ruaj Cilësimet</>}
+                    className="mt-5 flex items-center gap-2 font-bold px-6 py-3 rounded-xl text-sm text-white transition-all"
+                    style={{ background: settingsSaved ? G : W }}>
+                    {settingsSaving ? "Saving..." : settingsSaved ? <><Check size={15}/> Saved!</> : <><Save size={15}/> Save Settings</>}
                   </button>
                 </div>
               </div>
