@@ -59,11 +59,14 @@ function PromoBanner() {
 
 /* ── Hero photos ──────────────────────────────────────── */
 const HERO_IMAGES = [
-  "https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg",
-  "https://media.base44.com/images/public/69d519273be8cf966434f77a/267962dbe_IMG_0103.jpg",
-  "https://media.base44.com/images/public/69d519273be8cf966434f77a/b84f16779_IMG_0101.jpg",
-  "https://media.base44.com/images/public/69d519273be8cf966434f77a/f0eaae1bd_IMG_0102.jpg",
-  "https://media.base44.com/images/public/69d519273be8cf966434f77a/037c93d34_IMG_0099.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/529b3e7b0_IMG_0101.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/dfd6fccac_IMG_0099.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/69cd0276c_IMG_0098.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/932b72c40_IMG_0100.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/429928441_IMG_0103.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/544d787d9_IMG_0102.jpg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/30aad122e_IMG_0114.jpeg",
+  "https://media.base44.com/images/public/69d519273be8cf966434f77a/7be6d048a_IMG_0111.jpeg",
 ];
 
 const CATEGORIES = [
