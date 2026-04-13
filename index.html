@@ -3,15 +3,63 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/png" href="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png" />
+    <link rel="shortcut icon" type="image/png" href="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
     <link rel="manifest" href="/manifest.json" />
     <meta name="theme-color" content="#020c1b" media="(prefers-color-scheme: dark)" />
     <meta name="theme-color" content="#00b4d8" media="(prefers-color-scheme: light)" />
-    <meta name="description" content="TiliGo — Platforma #1 e dorëzimit të ushqimit në Kosovë. Porosit nga restorantet dhe dyqanet e tua të preferuara." />
-    <meta name="keywords" content="TiliGo, ushqim, dërgim, Kosovë, Prishtinë, pica, burger, dorëzim" />
-    <meta property="og:title" content="TiliGo — Porosit Ushqim Online" />
-    <meta property="og:description" content="Dorëzimi më i shpejtë në Kosovë. Porosit tani!" />
-    <meta property="og:image" content="https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png" />
+
+    <!-- Primary SEO -->
+    <title>TiliGo — Dorëzim Ushqimi #1 në Kosovë</title>
+    <meta name="description" content="TiliGo është platforma #1 e dorëzimit të ushqimit në Kosovë. Porosit nga restorantet dhe dyqanet e tua të preferuara në Prishtinë dhe rreth e rrotull. Dorëzim i shpejtë, real-time tracking." />
+    <meta name="keywords" content="TiliGo, ushqim, dërgim, Kosovë, Prishtinë, pica, burger, sushi, dorëzim, food delivery, tiligo" />
+    <meta name="author" content="TiliGo" />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href="https://tiligo.app/" />
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://tiligo.app/" />
+    <meta property="og:title" content="TiliGo — Dorëzim Ushqimi #1 në Kosovë" />
+    <meta property="og:description" content="Porosit ushqimin tënd të preferuar online. Dorëzim i shpejtë në Prishtinë dhe qytetet e tjera të Kosovës. Real-time tracking." />
+    <meta property="og:image" content="https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:site_name" content="TiliGo" />
+    <meta property="og:locale" content="sq_AL" />
+
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="TiliGo — Dorëzim Ushqimi #1 në Kosovë" />
+    <meta name="twitter:description" content="Porosit ushqimin tënd të preferuar online. Dorëzim i shpejtë në Kosovë." />
+    <meta name="twitter:image" content="https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg" />
+
+    <!-- Google Structured Data (JSON-LD) -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "FoodEstablishment",
+      "name": "TiliGo",
+      "description": "Platforma #1 e dorëzimit të ushqimit në Kosovë. Porosit nga restorantet dhe dyqanet e tua të preferuara.",
+      "url": "https://tiligo.app",
+      "logo": "https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png",
+      "image": "https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg",
+      "telephone": "+383000000000",
+      "address": {
+        "@type": "PostalAddress",
+        "streetAddress": "Prishtinë",
+        "addressLocality": "Prishtinë",
+        "addressCountry": "XK"
+      },
+      "areaServed": "Kosovë",
+      "servesCuisine": ["Ushqim", "Pica", "Burger", "Sushi", "Kafe"],
+      "priceRange": "€",
+      "sameAs": [
+        "https://facebook.com/tiligoo"
+      ]
+    }
+    </script>
+
     <!-- iOS PWA -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -22,7 +70,6 @@
     <link rel="apple-touch-startup-image" href="https://media.base44.com/images/public/69d519273be8cf966434f77a/dd754594c_IMG_0100.jpg" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="format-detection" content="telephone=no" />
-    <title>TiliGo — Porosit Ushqim Online</title>
   </head>
   <body>
     <div id="root"></div>
