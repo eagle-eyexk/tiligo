@@ -152,8 +152,8 @@ export default function Home() {
       cart={cart} onAdd={addToCart} onRemove={removeFromCart} onClear={clearCart} />
 
       {/* ═══════════════════════════════════════════
-           HERO
-        ═══════════════════════════════════════════ */}
+             HERO
+          ═══════════════════════════════════════════ */}
       <section className="relative overflow-hidden" style={{ minHeight: 520 }}>
         {/* Crossfade photos */}
         <div className="absolute inset-0">
@@ -266,8 +266,8 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════
-           CATEGORIES
-        ═══════════════════════════════════════════ */}
+             CATEGORIES
+          ═══════════════════════════════════════════ */}
       <section className="max-w-5xl mx-auto px-4 py-8">
         <h2 className="text-xl font-black mb-5 flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
           <span style={{ color: BLUE }}>Popular</span>&nbsp;Categories
@@ -302,8 +302,8 @@ export default function Home() {
       </section>
 
       {/* ═══════════════════════════════════════════
-           FEATURED STORES
-        ═══════════════════════════════════════════ */}
+             FEATURED STORES
+          ═══════════════════════════════════════════ */}
       <main className="max-w-7xl mx-auto px-4 pb-8">
         <div className="mb-5 flex items-center justify-between">
           <h2 className="text-xl font-black flex items-center gap-2" style={{ color: 'var(--text-heading)' }}>
@@ -416,49 +416,49 @@ export default function Home() {
 
         {/* ═══ CTA Buttons ═══ */}
         <div className="mt-16 grid md:grid-cols-2 gap-5">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="rounded-3xl p-8 text-white relative overflow-hidden cursor-pointer group hidden"
-            style={{
-              background: `linear-gradient(135deg, ${GREEN}22 0%, ${GREEN}44 100%)`,
-              border: `2px solid ${GREEN}`,
-              boxShadow: `0 8px 32px ${GREEN}33`
-            }}>
-            <div className="absolute -top-8 -right-8 text-8xl opacity-20 group-hover:scale-110 transition-transform duration-500">🛵</div>
-            <div className="text-4xl mb-3">❤️</div>
-            <h3 className="text-2xl font-black mb-2" style={{ color: 'var(--text-heading)' }}>Bëhu Dorëzues</h3>
-            <p className="text-sm mb-5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-              Fiton para reale duke bërë diçka të thjeshtë. Oraret tuaja, rrugët tuaja.
-            </p>
-            <Link to="/dorezuesi/register"
-            className="inline-flex items-center gap-2 font-black px-6 py-3 rounded-2xl text-sm transition-all hover:scale-105 active:scale-95"
-            style={{ background: `linear-gradient(135deg, ${GREEN}, #22c55e)`, color: '#0a1a0a', boxShadow: `0 4px 20px ${GREEN}55` }}>
-              Apliko Tani <ChevronRight size={16} />
-            </Link>
-          </motion.div>
+          
 
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
-            whileHover={{ y: -4, scale: 1.02 }}
-            className="rounded-3xl p-8 relative overflow-hidden cursor-pointer group hidden"
-            style={{
-              background: `linear-gradient(135deg, ${BLUE}18 0%, ${BLUE}33 100%)`,
-              border: `2px solid ${BLUE}`,
-              boxShadow: `0 8px 32px ${BLUE}33`
-            }}>
-            <div className="absolute -top-8 -right-8 text-8xl opacity-20 group-hover:scale-110 transition-transform duration-500">🏪</div>
-            <div className="text-4xl mb-3">🚀</div>
-            <h3 className="text-2xl font-black mb-2" style={{ color: 'var(--text-heading)' }}>Rrit Biznesin Tënd</h3>
-            <p className="text-sm mb-5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-              Mijëra klientë të rinj në majë të gishtave. Bashkohu me TiliGo sot.
-            </p>
-            <Link to="/biznesi/register"
-            className="inline-flex items-center gap-2 font-black px-6 py-3 rounded-2xl text-sm transition-all hover:scale-105 active:scale-95"
-            style={{ background: `linear-gradient(135deg, ${BLUE}, ${DARK_BLUE})`, color: '#ffffff', boxShadow: `0 4px 20px ${BLUE}55` }}>
-              Fillo Sot <ChevronRight size={16} />
-            </Link>
-          </motion.div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
+
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+          
         </div>
       </main>
 

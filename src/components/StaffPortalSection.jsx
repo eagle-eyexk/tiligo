@@ -18,12 +18,12 @@ export default function StaffPortalSection() {
       <div className="max-w-5xl mx-auto relative z-10">
         {/* Section Header */}
         <div className="text-center mb-14">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-4 text-xs font-bold uppercase tracking-widest hidden"
-            style={{ background: "rgba(0,191,255,0.08)", border: "1px solid rgba(0,191,255,0.25)", color: "#00BFFF" }}>
-            🚀 Bashkohu me TiliGo
-          </motion.div>
+          
+
+
+
+
+          
           <motion.h2
             initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: 0.1 }}
             className="font-black text-4xl md:text-5xl mb-3" style={{ color: "var(--text-heading)", letterSpacing: "-0.02em" }}>
