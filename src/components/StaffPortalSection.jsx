@@ -48,7 +48,7 @@ export default function StaffPortalSection() {
             {/* Animated top bar */}
             <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0066FF, #00BFFF)" }} />
 
-            <div className="p-8">
+            <div className="p-8 opacity-95">
               {/* Icon */}
               <motion.div
                 whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
@@ -57,7 +57,7 @@ export default function StaffPortalSection() {
                 <Store size={28} style={{ color: "#00BFFF" }} />
               </motion.div>
 
-              <span className="font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 inline-block text-base opacity-90"
+              <span className="font-bold uppercase tracking-widest px-3 py-1 rounded-full mb-3 inline-block text-base opacity-100"
               style={{ background: "rgba(0,191,255,0.1)", color: "#00BFFF", border: "1px solid rgba(0,191,255,0.25)" }}>
                 Biznes Partner
               </span>
