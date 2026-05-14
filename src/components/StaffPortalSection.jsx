@@ -48,7 +48,7 @@ export default function StaffPortalSection() {
             {/* Animated top bar */}
             <div className="h-1 w-full" style={{ background: "linear-gradient(90deg, #0066FF, #00BFFF)" }} />
 
-            <div className="p-8 opacity-95">
+            <div className="p-8 opacity-100">
               {/* Icon */}
               <motion.div
                 whileHover={{ rotate: [0, -5, 5, 0], scale: 1.05 }}
