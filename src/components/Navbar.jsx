@@ -159,21 +159,21 @@ export default function Navbar({ cart = [], onCartClick }) {
                 👤 Llogaria Ime
               </Link>
               <div className="my-1" style={{ borderTop: '1px solid var(--nav-border)' }} />
-              <Link to="/biznesi/login" onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-medium hidden"
-            style={{ color: 'var(--text-primary)' }}>
-                🏪 Hyrja Biznesit
-              </Link>
-              <Link to="/dorezuesi/login" onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-medium hidden"
-            style={{ color: 'var(--text-primary)' }}>
-                🛵 Hyrja Dorëzuesit
-              </Link>
-              <Link to="/admin" onClick={() => setMenuOpen(false)}
-            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-medium border-t hidden"
-            style={{ color: 'var(--text-primary)', borderColor: 'var(--nav-border)' }}>
-                🔐 Paneli Admin
-              </Link>
+              
+
+
+
+            
+              
+
+
+
+            
+              
+
+
+
+            
             </div>
           </motion.div>
         }
