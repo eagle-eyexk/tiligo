@@ -12,7 +12,7 @@ export default function TiliGoLogo({ size = "md", className = "" }) {
       transition={{ type: "spring", stiffness: 300, damping: 22 }}>
       
       {/* Light mode logo */}
-      <img src="https://media.base44.com/images/public/69d519273be8cf966434f77a/5ef16eb14_logo.png"
+      <img src="https://media.base44.com/images/public/69d519273be8cf966434f77a/fc7a6591f_EDF46C35-0107-4BA7-B178-8EC88E5B95DE.png"
 
       alt="TiliGo"
       className={`${h} w-auto object-contain block dark:hidden`}
