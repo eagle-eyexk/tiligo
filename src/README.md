@@ -77,8 +77,8 @@ Vizito `/download.zip` në aplikacion për të shkarkuar kodin burimor të plot�
 
 ## 📞 Kontakti
 
-- 📧 info@tiligo.app
-- 📍 Prishtinë, Kosovë
+- 📧 support@tili-go.com
+- 📍 Vushtrri, Kosovë
 - ☎️ +383 44 000 000
 
 ---
