@@ -96,21 +96,16 @@ export default function Navbar({ cart = [], onCartClick }) {
                 style={{ color: 'var(--text-primary)' }}>
                     👤 Llogaria Ime
                   </Link>
+                  <Link to="/user/register" onClick={() => setHyrjaOpen(false)}
+                className="flex items-center gap-3 px-4 py-3 font-medium transition-colors hover:bg-white/10"
+                style={{ color: '#39FF6B' }}>
+                    🎁 Regjistrohu & merr 2€
+                  </Link>
                   <div style={{ borderTop: '1px solid var(--nav-border)' }} />
-                  <Link to="/biznesi/login" onClick={() => setHyrjaOpen(false)}
+                  <Link to="/user/login" onClick={() => setHyrjaOpen(false)}
                 className="flex items-center gap-3 px-4 py-3 font-medium transition-colors hover:bg-white/10"
                 style={{ color: 'var(--text-primary)' }}>
-                    🏪 Hyrja Biznesit
-                  </Link>
-                  <Link to="/dorezuesi/login" onClick={() => setHyrjaOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 font-medium transition-colors hover:bg-white/10"
-                style={{ color: 'var(--text-primary)' }}>
-                    🛵 Hyrja Dorëzuesit
-                  </Link>
-                  <Link to="/admin" onClick={() => setHyrjaOpen(false)}
-                className="flex items-center gap-3 px-4 py-3 font-medium transition-colors hover:bg-white/10 border-t"
-                style={{ color: 'var(--text-primary)', borderColor: 'var(--nav-border)' }}>
-                    🔐 Paneli Admin
+                    🔑 Hyrja e Klientit
                   </Link>
                 </motion.div>
               }
@@ -157,6 +152,16 @@ export default function Navbar({ cart = [], onCartClick }) {
             className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-bold"
             style={{ color: '#39FF6B' }}>
                 👤 Llogaria Ime
+              </Link>
+              <Link to="/user/login" onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-bold"
+            style={{ color: 'var(--text-primary)' }}>
+                🔑 Hyrja e Klientit
+              </Link>
+              <Link to="/user/register" onClick={() => setMenuOpen(false)}
+            className="flex items-center gap-3 px-3 py-3 rounded-xl hover:bg-white/10 font-bold"
+            style={{ color: '#39FF6B' }}>
+                🎁 Regjistrohu & merr 2€
               </Link>
               <div className="my-1" style={{ borderTop: '1px solid var(--nav-border)' }} />
               

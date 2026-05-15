@@ -499,7 +499,12 @@ export default function Home() {
 
             </div>
           </div>
-          <p className="text-xs mt-8" style={{ color: 'var(--text-muted)', opacity: 0.5 }}>© 2025 TiliGo · Prishtinë, Kosovë</p>
+          <div className="mt-8 space-y-1 text-xs" style={{ color: 'var(--text-muted)', opacity: 0.6 }}>
+            <p className="font-black text-sm" style={{ opacity: 0.8, color: 'var(--text-secondary)' }}>TiliGo — Platforma #1 e Dorëzimit në Kosovë</p>
+            <p>Themeluar në Vushtrri · Shërbim 24/7 në të gjithë Kosovën</p>
+            <p>📍 Vushtrri, Kosovë &nbsp;·&nbsp; 📧 support@tili-go.com &nbsp;·&nbsp; ☎️ +383 44 000 000</p>
+            <p className="mt-2 opacity-50">© 2026 TiliGo · Të gjitha të drejtat e rezervuara · tili-go.com</p>
+          </div>
         </div>
       </footer>
     </div>);

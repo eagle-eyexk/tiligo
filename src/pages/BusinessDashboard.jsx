@@ -135,13 +135,17 @@ export default function BusinessDashboard() {
   const [tab, setTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [products, setProducts] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [showProductForm, setShowProductForm] = useState(false);
+  const [showOfferForm, setShowOfferForm] = useState(false);
   const [editProduct, setEditProduct] = useState(null);
+  const [editOffer, setEditOffer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [newOrderBanner, setNewOrderBanner] = useState(false);
   const [newOrderData, setNewOrderData] = useState(null);
   const [productForm, setProductForm] = useState({ name: "", description: "", price: "", category: "", image_url: "" });
+  const [offerForm, setOfferForm] = useState({ title: "", description: "", original_price: "", offer_price: "", image_url: "", items_included: "", badge: "🔥 Hot Deal", valid_until: "" });
 
   useEffect(() => {
     if (!biz) { navigate("/biznesi/login"); return; }
@@ -156,6 +160,7 @@ export default function BusinessDashboard() {
           setNewOrderData(event.data);
           setNewOrderBanner(true);
           setTimeout(() => setNewOrderBanner(false), 7000);
+          sendPushNotification("Porosi e Re! 🎉", `#${event.data?.order_code} · ${event.data?.total?.toFixed(2)}€ · ${event.data?.customer_name}`, "🛒");
         }
         loadOrders();
       }
@@ -163,9 +168,24 @@ export default function BusinessDashboard() {
     return unsub;
   }, [biz]);
 
-  const loadData = async () => { setLoading(true); await Promise.all([loadOrders(), loadProducts()]); setLoading(false); };
+  // Request push notification permission for businesses
+  useEffect(() => {
+    if (!biz) return;
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  }, [biz]);
+
+  const sendPushNotification = (title, body, icon = "🔔") => {
+    if ('Notification' in window && Notification.permission === 'granted') {
+      new Notification(`${icon} ${title}`, { body, icon: "https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png", badge: "https://media.base44.com/images/public/69d519273be8cf966434f77a/9ac65c451_IMG_0066.png" });
+    }
+  };
+
+  const loadData = async () => { setLoading(true); await Promise.all([loadOrders(), loadProducts(), loadOffers()]); setLoading(false); };
   const loadOrders = async () => { const d = await base44.entities.Order.filter({ business_id: biz.id }, "-created_date"); setOrders(d); };
   const loadProducts = async () => { const d = await base44.entities.Product.filter({ business_id: biz.id }); setProducts(d); };
+  const loadOffers = async () => { const d = await base44.entities.Offer.filter({ business_id: biz.id }); setOffers(d); };
 
   const toggleOpen = async () => {
     await base44.entities.Business.update(biz.id, { is_open: !biz.is_open });
@@ -205,6 +225,29 @@ export default function BusinessDashboard() {
     setShowProductForm(true);
   };
 
+  const saveOffer = async (e) => {
+    e.preventDefault();
+    const data = {
+      ...offerForm,
+      original_price: parseFloat(offerForm.original_price) || 0,
+      offer_price: parseFloat(offerForm.offer_price),
+      items_included: offerForm.items_included.split(",").map(s => s.trim()).filter(Boolean),
+      business_id: biz.id, business_name: biz.name, is_active: true
+    };
+    if (editOffer) await base44.entities.Offer.update(editOffer.id, data);
+    else await base44.entities.Offer.create(data);
+    setShowOfferForm(false); setEditOffer(null);
+    setOfferForm({ title: "", description: "", original_price: "", offer_price: "", image_url: "", items_included: "", badge: "🔥 Hot Deal", valid_until: "" });
+    loadOffers();
+  };
+  const deleteOffer = async (id) => { if (!confirm("Delete this offer?")) return; await base44.entities.Offer.delete(id); loadOffers(); };
+  const openEditOffer = (offer) => {
+    setEditOffer(offer);
+    setOfferForm({ title: offer.title, description: offer.description || "", original_price: String(offer.original_price || ""), offer_price: String(offer.offer_price), image_url: offer.image_url || "", items_included: (offer.items_included || []).join(", "), badge: offer.badge || "🔥 Hot Deal", valid_until: offer.valid_until || "" });
+    setShowOfferForm(true);
+  };
+  const toggleOffer = async (offer) => { await base44.entities.Offer.update(offer.id, { is_active: !offer.is_active }); loadOffers(); };
+
   const logout = () => { localStorage.removeItem("tiligo_business"); navigate("/"); };
   if (!biz) return null;
 
@@ -218,6 +261,7 @@ export default function BusinessDashboard() {
   const TABS = [
     { key: "orders", icon: "🛒", label: "Orders", badge: pendingOrders.length },
     { key: "products", icon: "🍽️", label: "Menu" },
+    { key: "offers", icon: "🎯", label: "Offers", badge: offers.filter(o => o.is_active).length || undefined },
     { key: "analytics", icon: "📊", label: "Analytics" },
     { key: "history", icon: "📋", label: "History" },
     { key: "statement", icon: "📄", label: "Statement" },
@@ -467,6 +511,144 @@ export default function BusinessDashboard() {
                     </div>
                   </motion.div>
                 ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ── OFFERS / COMBOS ── */}
+        {tab === "offers" && (
+          <div>
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <h2 className="font-black text-gray-900 text-lg">Ofertat & Combo 🎯</h2>
+                <p className="text-sm text-gray-400">{offers.filter(o=>o.is_active).length} aktive · {offers.length} gjithsej</p>
+              </div>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
+                onClick={() => { setEditOffer(null); setOfferForm({ title: "", description: "", original_price: "", offer_price: "", image_url: "", items_included: "", badge: "🔥 Hot Deal", valid_until: "" }); setShowOfferForm(true); }}
+                className="flex items-center gap-2 text-sm font-black px-5 py-3 rounded-2xl text-white shadow-lg"
+                style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)", boxShadow: "0 4px 20px rgba(245,158,11,0.4)" }}>
+                <Plus size={16} /> New Offer
+              </motion.button>
+            </div>
+
+            <AnimatePresence>
+              {showOfferForm && (
+                <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                  className="fixed inset-0 bg-black/60 z-50 flex items-end md:items-center justify-center px-4 pb-4 md:pb-0 backdrop-blur-md">
+                  <motion.div initial={{ y: 80, opacity: 0 }} animate={{ y: 0, opacity: 1 }} exit={{ y: 80, opacity: 0 }}
+                    transition={{ type: "spring", damping: 28, stiffness: 300 }}
+                    className="rounded-3xl p-6 w-full max-w-md shadow-2xl max-h-[90vh] overflow-y-auto bg-white">
+                    <div className="flex items-center gap-3 mb-6">
+                      <div className="w-12 h-12 rounded-2xl flex items-center justify-center text-2xl" style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}>🎯</div>
+                      <div>
+                        <h3 className="font-black text-xl text-gray-900">{editOffer ? "Edit Offer" : "Create Offer / Combo"}</h3>
+                        <p className="text-xs text-gray-400">Attract customers with amazing deals</p>
+                      </div>
+                    </div>
+                    <form onSubmit={saveOffer} className="space-y-4">
+                      <div>
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Offer Title *</label>
+                        <input value={offerForm.title} onChange={e => setOfferForm({...offerForm, title: e.target.value})} placeholder="e.g. Family Feast Combo 🍕🍔" required className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Description</label>
+                        <input value={offerForm.description} onChange={e => setOfferForm({...offerForm, description: e.target.value})} placeholder="What's included, why it's special..." className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50" />
+                      </div>
+                      <div>
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Items Included (comma separated)</label>
+                        <input value={offerForm.items_included} onChange={e => setOfferForm({...offerForm, items_included: e.target.value})} placeholder="Pizza, Burger, Cola, Fries" className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50" />
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Original Price (€)</label>
+                          <input type="number" step="0.01" min="0" value={offerForm.original_price} onChange={e => setOfferForm({...offerForm, original_price: e.target.value})} placeholder="15.00" className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50" />
+                        </div>
+                        <div>
+                          <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Offer Price (€) *</label>
+                          <input type="number" step="0.01" min="0" value={offerForm.offer_price} onChange={e => setOfferForm({...offerForm, offer_price: e.target.value})} placeholder="9.99" required className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Badge</label>
+                          <select value={offerForm.badge} onChange={e => setOfferForm({...offerForm, badge: e.target.value})} className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50">
+                            {["🔥 Hot Deal","⚡ Flash Sale","💎 Premium","🎉 Special","🆕 New"].map(b => <option key={b} value={b}>{b}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label className="text-xs font-black text-gray-500 uppercase tracking-wider block mb-1.5">Valid Until</label>
+                          <input type="date" value={offerForm.valid_until} onChange={e => setOfferForm({...offerForm, valid_until: e.target.value})} className="w-full border-2 border-gray-100 focus:border-orange-400 rounded-2xl px-4 py-3 text-sm outline-none bg-gray-50" />
+                        </div>
+                      </div>
+                      <div className="flex gap-3 pt-2">
+                        <button type="button" onClick={() => setShowOfferForm(false)} className="flex-1 bg-gray-100 text-gray-700 font-black py-3.5 rounded-2xl text-sm">Cancel</button>
+                        <motion.button whileHover={{ scale: 1.02 }} type="submit"
+                          className="flex-1 font-black py-3.5 rounded-2xl text-sm text-white shadow-lg"
+                          style={{ background: "linear-gradient(135deg,#f59e0b,#ef4444)" }}>
+                          {editOffer ? "Save Changes ✓" : "Launch Offer 🚀"}
+                        </motion.button>
+                      </div>
+                    </form>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {offers.length === 0 ? (
+              <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-20 rounded-3xl" style={{ background: "linear-gradient(135deg,rgba(245,158,11,0.06),rgba(239,68,68,0.06))", border: "2px dashed rgba(245,158,11,0.3)" }}>
+                <motion.div animate={{ rotate: [0,-5,5,0], scale: [1,1.1,1] }} transition={{ repeat: Infinity, duration: 3 }} className="text-6xl mb-3">🎯</motion.div>
+                <p className="font-black text-gray-700 text-lg">No Offers Yet</p>
+                <p className="text-sm text-gray-400 mt-1">Create combo deals to boost sales!</p>
+              </motion.div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {offers.map((offer, i) => {
+                  const discount = offer.original_price ? Math.round((1 - offer.offer_price / offer.original_price) * 100) : null;
+                  return (
+                    <motion.div key={offer.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
+                      whileHover={{ y: -4, boxShadow: "0 20px 50px rgba(245,158,11,0.2)" }}
+                      className="rounded-3xl overflow-hidden shadow-lg bg-white border border-orange-100">
+                      <div className="p-5 relative" style={{ background: offer.is_active ? "linear-gradient(135deg,#92400e,#f59e0b)" : "linear-gradient(135deg,#374151,#6b7280)" }}>
+                        <div className="absolute top-0 right-0 w-24 h-24 rounded-full opacity-20" style={{ background: "rgba(255,255,255,0.4)", transform: "translate(30%,-30%)" }} />
+                        <div className="flex items-start justify-between">
+                          <div>
+                            <span className="text-xs bg-white/20 text-white font-black px-2 py-0.5 rounded-full mb-2 inline-block">{offer.badge}</span>
+                            <p className="font-black text-white text-lg leading-tight">{offer.title}</p>
+                            {offer.description && <p className="text-white/75 text-xs mt-1">{offer.description}</p>}
+                          </div>
+                          <div className="text-right flex-shrink-0 ml-3">
+                            {offer.original_price > 0 && <p className="text-white/50 text-xs line-through">{offer.original_price?.toFixed(2)}€</p>}
+                            <p className="font-black text-2xl text-white">{offer.offer_price?.toFixed(2)}€</p>
+                            {discount && <span className="text-xs bg-red-500 text-white font-black px-2 py-0.5 rounded-full">-{discount}%</span>}
+                          </div>
+                        </div>
+                        {offer.items_included?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-3">
+                            {offer.items_included.map((item, j) => (
+                              <span key={j} className="text-[10px] bg-white/20 text-white px-2 py-0.5 rounded-full font-bold">{item}</span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="px-4 py-3 flex items-center justify-between bg-white">
+                        <div className="flex items-center gap-2">
+                          {offer.valid_until && <span className="text-xs text-gray-400">📅 Until {offer.valid_until}</span>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <motion.button whileHover={{ scale: 1.05 }} onClick={() => toggleOffer(offer)}
+                            className="text-xs font-black px-3 py-1.5 rounded-full transition-all"
+                            style={offer.is_active ? { background: "#dcfce7", color: "#16a34a" } : { background: "#f3f4f6", color: "#6b7280" }}>
+                            {offer.is_active ? "● Active" : "○ Inactive"}
+                          </motion.button>
+                          <motion.button whileHover={{ scale: 1.1 }} onClick={() => openEditOffer(offer)} className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "#dbeafe" }}><Edit2 size={13} className="text-blue-600"/></motion.button>
+                          <motion.button whileHover={{ scale: 1.1 }} onClick={() => deleteOffer(offer.id)} className="w-8 h-8 rounded-xl flex items-center justify-center shadow-sm" style={{ background: "#fee2e2" }}><Trash2 size={13} className="text-red-500"/></motion.button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>

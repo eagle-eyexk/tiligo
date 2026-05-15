@@ -128,14 +128,28 @@ export default function LiveRouteMap({ driverCoords, customerCoords, customerNam
               </span>
             )}
           </div>
-          <button
-            onClick={() => setFollowDriver(f => !f)}
-            className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
-            style={followDriver
-              ? { background: "#009DE0", color: "#fff" }
-              : { background: "#F3F4F6", color: "#6B7280" }}>
-            {followDriver ? "📡 Following" : "Follow"}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setFollowDriver(f => !f)}
+              className="text-xs font-semibold px-3 py-1 rounded-full transition-all"
+              style={followDriver
+                ? { background: "#009DE0", color: "#fff" }
+                : { background: "#F3F4F6", color: "#6B7280" }}>
+              {followDriver ? "📡 Following" : "Follow"}
+            </button>
+            {customerCoords && (
+              <a
+                href={/iPad|iPhone|iPod/.test(navigator.userAgent)
+                  ? `maps://maps.apple.com/?daddr=${customerCoords[0]},${customerCoords[1]}`
+                  : `https://www.google.com/maps/dir/?api=1&destination=${customerCoords[0]},${customerCoords[1]}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1"
+                style={{ background: "linear-gradient(135deg,#3b82f6,#8b5cf6)", color: "#fff" }}>
+                🗺️ Navigate
+              </a>
+            )}
+          </div>
         </div>
       )}
 

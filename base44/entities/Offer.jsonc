@@ -1,0 +1,59 @@
+{
+  "name": "Offer",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Offer title e.g. 'Family Combo Deal'"
+    },
+    "description": {
+      "type": "string"
+    },
+    "original_price": {
+      "type": "number"
+    },
+    "offer_price": {
+      "type": "number"
+    },
+    "business_id": {
+      "type": "string"
+    },
+    "business_name": {
+      "type": "string"
+    },
+    "image_url": {
+      "type": "string"
+    },
+    "items_included": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "List of product names included in the combo"
+    },
+    "is_active": {
+      "type": "boolean",
+      "default": true
+    },
+    "valid_until": {
+      "type": "string",
+      "format": "date"
+    },
+    "badge": {
+      "type": "string",
+      "enum": [
+        "\ud83d\udd25 Hot Deal",
+        "\u26a1 Flash Sale",
+        "\ud83d\udc8e Premium",
+        "\ud83c\udf89 Special",
+        "\ud83c\udd95 New"
+      ],
+      "default": "\ud83d\udd25 Hot Deal"
+    }
+  },
+  "required": [
+    "title",
+    "offer_price",
+    "business_id"
+  ]
+}

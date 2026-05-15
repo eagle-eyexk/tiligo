@@ -7,11 +7,13 @@ import Navbar from "@/components/Navbar";
 import CartDrawer from "@/components/CartDrawer";
 import { useCart } from "@/lib/useCart";
 
-const MOCK_OFFERS = [
-  { id: 1, label: "🎉 20% zbritje për porosinë e parë", color: "from-violet-500 to-indigo-600" },
-  { id: 2, label: "🛵 Dërgesa falas mbi 10€", color: "from-emerald-500 to-teal-600" },
-  { id: 3, label: "🔥 Combo i ditës: 2+1 falas", color: "from-orange-500 to-red-500" },
-];
+const BADGE_GRAD = {
+  "🔥 Hot Deal": "from-orange-500 to-red-500",
+  "⚡ Flash Sale": "from-yellow-500 to-orange-500",
+  "💎 Premium": "from-violet-500 to-indigo-600",
+  "🎉 Special": "from-pink-500 to-rose-500",
+  "🆕 New": "from-emerald-500 to-teal-600",
+};
 
 // Each product card gets a staggered, scroll-triggered fade-up
 function ProductCard({ prod, qty, onAdd, onRemove, index }) {
@@ -83,6 +85,7 @@ export default function BusinessPage() {
   const [cartOpen, setCartOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeOffer, setActiveOffer] = useState(0);
+  const [realOffers, setRealOffers] = useState([]);
   const { cart, addToCart, removeFromCart, clearCart } = useCart();
 
   const { scrollY } = useScroll();
@@ -91,18 +94,21 @@ export default function BusinessPage() {
 
   useEffect(() => { loadData(); }, [id]);
   useEffect(() => {
-    const t = setInterval(() => setActiveOffer(p => (p + 1) % MOCK_OFFERS.length), 3500);
+    if (realOffers.length === 0) return;
+    const t = setInterval(() => setActiveOffer(p => (p + 1) % realOffers.length), 3500);
     return () => clearInterval(t);
-  }, []);
+  }, [realOffers.length]);
 
   const loadData = async () => {
     setLoading(true);
-    const [bizList, prods] = await Promise.all([
+    const [bizList, prods, offs] = await Promise.all([
       base44.entities.Business.filter({ id }),
       base44.entities.Product.filter({ business_id: id, is_available: true }),
+      base44.entities.Offer.filter({ business_id: id, is_active: true }),
     ]);
     if (bizList.length > 0) setBusiness(bizList[0]);
     setProducts(prods);
+    setRealOffers(offs);
     setLoading(false);
   };
 
@@ -205,28 +211,52 @@ export default function BusinessPage() {
           </div>
         </motion.div>
 
-        {/* ── OFFERS BANNER ── */}
-        <div className="mb-5 rounded-2xl overflow-hidden shadow-md">
-          <AnimatePresence mode="wait">
-            <motion.div key={activeOffer}
-              initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
-              transition={{ duration: 0.4 }}
-              className={`bg-gradient-to-r ${MOCK_OFFERS[activeOffer].color} text-white px-5 py-4 flex items-center justify-between`}>
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-white/20 rounded-full flex items-center justify-center">
-                  <Zap size={16} className="text-white" />
+        {/* ── OFFERS BANNER (real offers from business) ── */}
+        {realOffers.length > 0 && (
+          <div className="mb-5 space-y-2">
+            <div className="flex items-center gap-2 mb-2">
+              <Flame size={16} className="text-orange-500" />
+              <h2 className="font-black text-base" style={{ color: 'var(--text-heading)' }}>Ofertat e Momentit 🎯</h2>
+            </div>
+            <AnimatePresence mode="wait">
+              <motion.div key={activeOffer}
+                initial={{ opacity: 0, x: 40 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -40 }}
+                transition={{ duration: 0.4 }}
+                className={`bg-gradient-to-r ${BADGE_GRAD[realOffers[activeOffer % realOffers.length]?.badge] || "from-orange-500 to-red-500"} text-white rounded-2xl p-5 shadow-lg`}>
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex-1">
+                    <span className="text-xs bg-white/20 font-black px-2 py-0.5 rounded-full mb-1 inline-block">{realOffers[activeOffer % realOffers.length]?.badge}</span>
+                    <p className="font-black text-lg leading-tight">{realOffers[activeOffer % realOffers.length]?.title}</p>
+                    {realOffers[activeOffer % realOffers.length]?.description && (
+                      <p className="text-white/80 text-xs mt-1">{realOffers[activeOffer % realOffers.length]?.description}</p>
+                    )}
+                    {realOffers[activeOffer % realOffers.length]?.items_included?.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {realOffers[activeOffer % realOffers.length].items_included.map((item, j) => (
+                          <span key={j} className="text-[10px] bg-white/20 px-2 py-0.5 rounded-full font-bold">{item}</span>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <div className="text-right ml-4 flex-shrink-0">
+                    {realOffers[activeOffer % realOffers.length]?.original_price > 0 && (
+                      <p className="text-white/60 text-sm line-through">{realOffers[activeOffer % realOffers.length]?.original_price?.toFixed(2)}€</p>
+                    )}
+                    <p className="font-black text-3xl">{realOffers[activeOffer % realOffers.length]?.offer_price?.toFixed(2)}€</p>
+                  </div>
                 </div>
-                <span className="font-bold text-sm">{MOCK_OFFERS[activeOffer].label}</span>
-              </div>
-              <div className="flex gap-1.5">
-                {MOCK_OFFERS.map((_, i) => (
-                  <button key={i} onClick={() => setActiveOffer(i)}
-                    className={`rounded-full transition-all ${i === activeOffer ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/40"}`} />
-                ))}
-              </div>
-            </motion.div>
-          </AnimatePresence>
-        </div>
+                {realOffers.length > 1 && (
+                  <div className="flex gap-1.5 mt-2">
+                    {realOffers.map((_, i) => (
+                      <button key={i} onClick={() => setActiveOffer(i)}
+                        className={`rounded-full transition-all ${i === activeOffer % realOffers.length ? "w-5 h-2 bg-white" : "w-2 h-2 bg-white/40"}`} />
+                    ))}
+                  </div>
+                )}
+              </motion.div>
+            </AnimatePresence>
+          </div>
+        )}
 
         {/* ── FEATURED STRIP (horizontal scroll) ── */}
         {featured.length > 0 && (
