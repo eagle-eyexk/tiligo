@@ -61,10 +61,7 @@
     "read": {
       "$or": [
         {
-          "data.email": "{{user.email}}"
-        },
-        {
-          "data.phone": "{{user.data.phone}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
@@ -76,10 +73,7 @@
     "update": {
       "$or": [
         {
-          "data.email": "{{user.email}}"
-        },
-        {
-          "data.phone": "{{user.data.phone}}"
+          "created_by": "{{user.email}}"
         },
         {
           "user_condition": {
