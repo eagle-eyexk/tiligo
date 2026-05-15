@@ -78,5 +78,32 @@
     "items",
     "total",
     "business_id"
-  ]
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "data.customer_phone": "{{user.data.phone}}"
+        },
+        {
+          "data.business_id": "{{user.data.business_id}}"
+        },
+        {
+          "data.delivery_id": "{{user.data.delivery_id}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
 }
