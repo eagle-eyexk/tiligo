@@ -47,6 +47,9 @@
     "read": {
       "$or": [
         {
+          "data.status": "approved"
+        },
+        {
           "created_by": "{{user.email}}"
         },
         {
@@ -69,9 +72,16 @@
       ]
     },
     "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
+      "$or": [
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        }
+      ]
     }
   }
 }
