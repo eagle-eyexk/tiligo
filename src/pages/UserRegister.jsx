@@ -85,7 +85,7 @@ export default function UserRegister() {
                   <input type={type} value={form[key]} onChange={e => setForm({ ...form, [key]: e.target.value })}
                     placeholder={placeholder} required
                     className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
-                    style={{ background: 'var(--input-bg)', border: '1.5px solid var(--card-border)', color: 'var(--text-primary)' }} />
+                    style={{ background: '#fff', border: '1.5px solid #bfdbfe', color: '#1e3a5f' }} />
                 </div>
               ))}
 

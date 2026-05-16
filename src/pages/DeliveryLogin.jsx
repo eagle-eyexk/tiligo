@@ -59,7 +59,7 @@ export default function DeliveryLogin() {
               </label>
               <input value={form.phone} onChange={e => setForm({...form, phone: e.target.value})}
                 placeholder="+383 44 000 000" required
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50" />
+                className="w-full border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#1e3a5f]" />
             </div>
             <div>
               <label className="text-sm font-semibold text-gray-700 flex items-center gap-1.5 mb-1.5">
@@ -67,7 +67,7 @@ export default function DeliveryLogin() {
               </label>
               <input type="password" value={form.password} onChange={e => setForm({...form, password: e.target.value})}
                 placeholder="••••••••" required
-                className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-500 bg-gray-50" />
+                className="w-full border border-blue-200 rounded-xl px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white text-[#1e3a5f]" />
             </div>
             {/* Remember me */}
             <label className="flex items-center gap-2.5 cursor-pointer select-none">

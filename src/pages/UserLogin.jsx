@@ -64,7 +64,7 @@ export default function UserLogin() {
               <input type="tel" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })}
                 placeholder="+383 44 000 000" required
                 className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
-                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--card-border)', color: 'var(--text-primary)' }} />
+                style={{ background: '#fff', border: '1.5px solid #bfdbfe', color: '#1e3a5f' }} />
             </div>
             <div>
               <label className="text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 mb-1.5" style={{ color: 'var(--text-muted)' }}>
@@ -73,7 +73,7 @@ export default function UserLogin() {
               <input type="password" value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
                 placeholder="••••••••" required
                 className="w-full rounded-2xl px-4 py-3 text-sm outline-none"
-                style={{ background: 'var(--input-bg)', border: '1.5px solid var(--card-border)', color: 'var(--text-primary)' }} />
+                style={{ background: '#fff', border: '1.5px solid #bfdbfe', color: '#1e3a5f' }} />
             </div>
 
             {/* Remember me */}

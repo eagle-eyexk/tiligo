@@ -38,9 +38,11 @@ const STATUS_LABELS = {
   gati_per_dorezim: "Gati për Dorëzim", ne_rruge: "Në Rrugë", dorezuar: "Dorëzuar", anuluar: "Anuluar"
 };
 
-// Kosovo bounding box
+// Kosovo bounding box — map locked inside Kosovo
 const KOSOVO_CENTER = [42.6629, 21.1655];
 const KOSOVO_BOUNDS = [[41.85, 20.01], [43.27, 21.79]];
+const MIN_ZOOM = 10;
+const MAX_ZOOM = 18;
 
 // Haversine distance in km
 function haversineKm(lat1, lng1, lat2, lng2) {
@@ -473,7 +475,9 @@ export default function TrackOrder() {
                     zoomControl={true}
                     scrollWheelZoom={true}
                     maxBounds={KOSOVO_BOUNDS}
-                    maxBoundsViscosity={0.85}
+                    maxBoundsViscosity={1.0}
+                    minZoom={MIN_ZOOM}
+                    maxZoom={MAX_ZOOM}
                   >
                     <TileLayer
                       url="https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png"
