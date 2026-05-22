@@ -1,0 +1,82 @@
+name: iOS App Store Build
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  build_and_upload:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '20'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Add Capacitor iOS platform
+        run: |
+          if [ ! -d ios ]; then
+            npx cap add ios
+          fi
+
+      - name: Sync Capacitor assets
+        run: npm run capacitor:sync
+
+      - name: Install CocoaPods
+        run: |
+          cd ios/App
+          pod install --repo-update
+
+      - name: Create Xcode export options
+        run: |
+          mkdir -p ios/App
+          cat > ios/App/ExportOptions.plist <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>app-store</string>
+  <key>uploadSymbols</key>
+  <true/>
+</dict>
+</plist>
+EOF
+
+      - name: Archive iOS app
+        run: |
+          mkdir -p build
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath $PWD/build/TiliGo.xcarchive archive
+          xcodebuild -exportArchive -archivePath $PWD/build/TiliGo.xcarchive -exportOptionsPlist ios/App/ExportOptions.plist -exportPath $PWD/build/ipa
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: TiliGo-ipa
+          path: build/ipa
+
+      - name: Write App Store Connect API key
+        if: secrets.APP_STORE_CONNECT_API_KEY_JSON != ''
+        run: |
+          mkdir -p fastlane
+          cat > fastlane/AppStoreConnectAPI.json <<'EOF'
+${{ secrets.APP_STORE_CONNECT_API_KEY_JSON }}
+EOF
+
+      - name: Install Fastlane
+        if: secrets.APP_STORE_CONNECT_API_KEY_JSON != ''
+        run: gem install fastlane -NV
+
+      - name: Upload to App Store
+        if: secrets.APP_STORE_CONNECT_API_KEY_JSON != ''
+        run: fastlane pilot upload --api_key_path fastlane/AppStoreConnectAPI.json --ipa build/ipa/TiliGo.ipa --skip_submission true

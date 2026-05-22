@@ -9,7 +9,14 @@
     "lint": "eslint . --quiet",
     "lint:fix": "eslint . --fix",
     "typecheck": "tsc -p ./jsconfig.json",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "capacitor:init": "npx cap init tiligo com.tiligo.app --web-dir=dist --npm-client=npm",
+    "capacitor:add:ios": "npx cap add ios",
+    "capacitor:sync": "npx cap sync ios",
+    "capacitor:copy": "npx cap copy",
+    "capacitor:open": "npx cap open ios",
+    "ios:prepare": "npm run build && npm run capacitor:sync",
+    "ios:open": "npm run ios:prepare && npm run capacitor:open"
   },
   "dependencies": {
     "@base44/sdk": "^0.8.30",
@@ -45,6 +52,7 @@
     "@radix-ui/react-tooltip": "^1.1.8",
     "@stripe/react-stripe-js": "^3.0.0",
     "@stripe/stripe-js": "^5.2.0",
+    "@capacitor/core": "^6.0.0",
     "@tanstack/react-query": "^5.84.1",
     "canvas-confetti": "^1.9.4",
     "class-variance-authority": "^0.7.1",
@@ -83,6 +91,8 @@
     "@types/node": "^22.13.5",
     "@types/react": "^18.2.66",
     "@types/react-dom": "^18.2.22",
+    "@capacitor/cli": "^6.0.0",
+    "@capacitor/ios": "^6.0.0",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "baseline-browser-mapping": "^2.8.32",

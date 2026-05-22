@@ -32,6 +32,18 @@ Run the app: `npm run dev`
 
 Open [Base44.com](http://Base44.com) and click on Publish.
 
+**iOS App Store support**
+
+This project now includes Capacitor iOS wrapper support and a GitHub Actions workflow for building an App Store IPA automatically.
+
+- Run `npm install`
+- Run `npm run capacitor:add:ios` on a Mac to generate the native iOS wrapper
+- Run `npm run ios:prepare` to build and sync the web app into iOS
+- Run `npm run capacitor:open` to open the project in Xcode
+- Push to `main` to trigger `.github/workflows/ios-app-store.yml`
+
+To upload automatically, add the secret `APP_STORE_CONNECT_API_KEY_JSON` with your App Store Connect API key JSON.
+
 **Docs & Support**
 
 Documentation: [https://docs.base44.com/Integrations/Using-GitHub](https://docs.base44.com/Integrations/Using-GitHub)
