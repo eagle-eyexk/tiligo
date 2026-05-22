@@ -27,9 +27,9 @@ workflows:
       - name: Create App Store Connect API key file
         script: |
           mkdir -p ios/App/fastlane
-          cat > ios/App/fastlane/AppStoreConnectAPI.json <<'EOF'
-${APP_STORE_CONNECT_API_KEY_JSON}
-EOF
+          cat > ios/App/fastlane/AppStoreConnectAPI.json <<"EOF"
+          $APP_STORE_CONNECT_API_KEY_JSON
+          EOF
       - name: Create export options
         script: |
           cat > ios/App/ExportOptions.plist <<'EOF'
