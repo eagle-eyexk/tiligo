@@ -1,0 +1,64 @@
+workflows:
+  ios-app-store:
+    name: iOS App Store Build
+    max_build_duration: 120
+    environment:
+      node: 20.0.0
+      cocoapods: default
+      vars:
+        APP_STORE_CONNECT_API_KEY_JSON:
+          encrypted: true
+        FASTLANE_APPLE_APPLICATION_SPECIFIC_PASSWORD:
+          encrypted: true
+    scripts:
+      - name: Install dependencies
+        script: |
+          npm ci
+      - name: Build web app
+        script: |
+          npm run build
+      - name: Sync Capacitor iOS
+        script: |
+          npx cap sync ios
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install --repo-update
+      - name: Create App Store Connect API key file
+        script: |
+          mkdir -p ios/App/fastlane
+          cat > ios/App/fastlane/AppStoreConnectAPI.json <<'EOF'
+${APP_STORE_CONNECT_API_KEY_JSON}
+EOF
+      - name: Create export options
+        script: |
+          cat > ios/App/ExportOptions.plist <<'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>app-store</string>
+  <key>uploadSymbols</key>
+  <true/>
+</dict>
+</plist>
+EOF
+      - name: Archive iOS app
+        script: |
+          cd ios/App
+          mkdir -p $CM_BUILD_DIR/build
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath $CM_BUILD_DIR/build/TiliGo.xcarchive archive
+      - name: Export IPA
+        script: |
+          cd ios/App
+          xcodebuild -exportArchive -archivePath $CM_BUILD_DIR/build/TiliGo.xcarchive -exportOptionsPlist ExportOptions.plist -exportPath $CM_BUILD_DIR/build/ipa
+      - name: Install Fastlane
+        script: |
+          gem install fastlane -NV
+      - name: Upload to App Store
+        script: |
+          cd ios/App
+          fastlane pilot upload --api_key_path fastlane/AppStoreConnectAPI.json --ipa $CM_BUILD_DIR/build/ipa/TiliGo.ipa --skip_submission true
+    artifacts:
+      - $CM_BUILD_DIR/build/ipa/*.ipa
