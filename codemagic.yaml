@@ -1,7 +1,7 @@
 workflows:
 
-  tiligo_self_healing_pipeline:
-    name: Tiligo Self-Healing CI/CD Engine
+  tiligo_production_pipeline:
+    name: Tiligo Production CI/CD
 
     integrations:
       app_store_connect: tiligo_asc
@@ -21,41 +21,31 @@ workflows:
     scripts:
 
       # =========================================================
-      # 1. SELF-HEALING PROJECT RECOVERY ENGINE
+      # 1. VALIDATE PROJECT STRUCTURE (FAIL FAST)
       # =========================================================
-      - name: Self-Healing Recovery
+      - name: Validate Flutter Project
         script: |
           set -e
 
-          echo "🧠 Starting self-healing system..."
+          echo "🔍 Checking Flutter project structure..."
 
-          # CASE 1: No Flutter project at all
           if [ ! -f pubspec.yaml ]; then
-            echo "❌ pubspec.yaml missing → initializing Flutter project..."
-
-            flutter create . --platforms=ios,android
+            echo "❌ ERROR: pubspec.yaml not found"
+            echo "👉 This repo is NOT a valid Flutter project root"
+            exit 1
           fi
 
-          # CASE 2: Broken iOS structure
-          if [ ! -d ios ] || [ ! -f ios/Podfile ]; then
-            echo "⚠️ iOS project broken → regenerating ios..."
-
-            rm -rf ios
-            flutter create . --platforms=ios
+          if [ ! -d lib ]; then
+            echo "❌ ERROR: lib/ folder missing"
+            exit 1
           fi
 
-          # CASE 3: Broken Android structure
-          if [ ! -d android ]; then
-            echo "⚠️ Android missing → regenerating android..."
-            flutter create . --platforms=android
-          fi
-
-          echo "✅ Self-healing complete"
+          echo "✅ Flutter project detected"
 
       # =========================================================
-      # 2. CLEAN BUILD STATE
+      # 2. INSTALL DEPENDENCIES
       # =========================================================
-      - name: Clean Project
+      - name: Install Dependencies
         script: |
           set -e
 
@@ -63,18 +53,28 @@ workflows:
           flutter pub get
 
       # =========================================================
-      # 3. iOS DEPENDENCIES FIX
+      # 3. iOS DEPENDENCIES (SAFE MODE)
       # =========================================================
-      - name: Fix CocoaPods
+      - name: Install CocoaPods
         script: |
           set -e
+
+          if [ ! -d ios ]; then
+            echo "❌ ERROR: ios/ folder missing (run flutter create locally)"
+            exit 1
+          fi
+
+          if [ ! -f ios/Podfile ]; then
+            echo "❌ ERROR: Podfile missing (ios project not generated correctly)"
+            exit 1
+          fi
 
           cd ios
           pod install
           cd ..
 
       # =========================================================
-      # 4. QUALITY CHECKS (NON-BLOCKING)
+      # 4. CODE QUALITY
       # =========================================================
       - name: Analyze Code
         script: |
@@ -87,22 +87,20 @@ workflows:
           flutter test
 
       # =========================================================
-      # 5. BUILD ENGINE
+      # 5. BUILD
       # =========================================================
       - name: Build iOS App
         script: |
           set -e
 
           if [ "$CM_BRANCH" = "main" ]; then
-            echo "🚀 Production build"
             flutter build ipa --release
           else
-            echo "🧪 Development build"
             flutter build ios --debug --no-codesign
           fi
 
       # =========================================================
-      # 6. AUTO VERSIONING
+      # 6. VERSIONING
       # =========================================================
       - name: Versioning
         script: |
