@@ -1,7 +1,7 @@
 workflows:
 
-  tiligo_zero_touch_ios:
-    name: Tiligo Zero-Touch iOS Pipeline
+  tiligo_ios:
+    name: Tiligo iOS Stable Pipeline
 
     integrations:
       app_store_connect: tiligo_asc
@@ -12,11 +12,6 @@ workflows:
       flutter: stable
       xcode: latest
 
-      # 🚀 THIS ENABLES FULL AUTOMATIC SIGNING
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.tiligo.app
-
     cache:
       cache_paths:
         - ~/.pub-cache
@@ -25,40 +20,63 @@ workflows:
     scripts:
 
       # =====================================================
-      # 1. PROJECT VALIDATION (NO AUTO MAGIC)
+      # VALIDATE PROJECT
       # =====================================================
       - name: Validate Project
         script: |
           set -e
-
           if [ ! -f pubspec.yaml ]; then
             echo "❌ Missing Flutter project root"
             exit 1
           fi
 
       # =====================================================
-      # 2. DEPENDENCIES
+      # INSTALL DEPENDENCIES
       # =====================================================
-      - name: Install Dependencies
+      - name: Flutter Dependencies
         script: |
           set -e
           flutter clean
           flutter pub get
 
       # =====================================================
-      # 3. iOS BUILD PREP
+      # iOS PODS
       # =====================================================
-      - name: iOS Setup
+      - name: Install CocoaPods
         script: |
           set -e
 
           if [ ! -d ios ]; then
-            echo "❌ ios folder missing. Commit flutter create output first."
+            echo "❌ ios folder missing - commit flutter create output"
             exit 1
           fi
 
           cd ios
           pod install
+          cd ..
+
+      # =====================================================
+      # BUILD
+      # =====================================================
+      - name: Build IPA
+        script: |
+          set -e
+          flutter build ipa --release
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+
+      app_store_connect:
+        auth: integration
+
+        submit_to_testflight: true
+
+        beta_groups:
+          - Internal Testers
+
+        submit_to_app_store: falsepod install
           cd ..
 
       # =====================================================
