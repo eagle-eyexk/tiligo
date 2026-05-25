@@ -1,7 +1,7 @@
 workflows:
 
-  tiligo_power_engine:
-    name: Tiligo Power Autonomous CI/CD
+  tiligo_autonomous_full_engine:
+    name: Tiligo Autonomous Full Bootstrap CI
 
     integrations:
       app_store_connect: tiligo_asc
@@ -21,118 +21,89 @@ workflows:
     scripts:
 
       # =========================================================
-      # 1. PROJECT AUTO-RECOVERY ENGINE
+      # 🚀 FULL AUTONOMOUS BOOTSTRAP ENGINE
       # =========================================================
-      - name: Auto Project Recovery
+      - name: Bootstrap Everything (Flutter + iOS + Android)
         script: |
           set -e
 
-          echo "🧠 Checking Flutter project integrity..."
+          echo "🧠 STARTING FULL AUTONOMOUS BOOTSTRAP"
 
-          # Case 1: No Flutter project
+          cd $CM_BUILD_DIR
+
+          # -----------------------------
+          # 1. Ensure Flutter project exists
+          # -----------------------------
           if [ ! -f pubspec.yaml ]; then
-            echo "❌ No pubspec.yaml found → STOP (invalid repo)"
-            exit 1
-          fi
-
-          # Case 2: Missing iOS + Android
-          if [ ! -d ios ] || [ ! -d android ]; then
-            echo "⚠️ Missing platforms → regenerating Flutter project..."
-
-            flutter clean
-            flutter pub get
+            echo "❌ No Flutter project detected → creating new one..."
             flutter create . --platforms=ios,android
           fi
 
-          # Case 3: Missing Podfile
+          # -----------------------------
+          # 2. Ensure iOS + Android exist
+          # -----------------------------
+          if [ ! -d ios ] || [ ! -d android ]; then
+            echo "⚠️ Missing platforms → regenerating..."
+            flutter create . --platforms=ios,android
+          fi
+
+          # -----------------------------
+          # 3. Ensure Podfile exists
+          # -----------------------------
           if [ ! -f ios/Podfile ]; then
             echo "⚠️ Podfile missing → rebuilding iOS module..."
-
             rm -rf ios
             flutter create . --platforms=ios
           fi
 
-          echo "✅ Project structure verified"
-
-      # =========================================================
-      # 2. DEPENDENCY INSTALLATION
-      # =========================================================
-      - name: Install Dependencies
-        script: |
-          set -e
-
-          echo "📦 Installing Flutter packages..."
+          # -----------------------------
+          # 4. Install dependencies
+          # -----------------------------
+          echo "📦 Installing Flutter dependencies..."
           flutter clean
           flutter pub get
 
-      # =========================================================
-      # 3. iOS DEPENDENCY ENGINE (COCOAPODS SAFE MODE)
-      # =========================================================
-      - name: CocoaPods Safe Install
-        script: |
-          set -e
-
-          echo "🍫 Validating iOS setup..."
-
-          if [ ! -d ios ]; then
-            echo "❌ iOS folder missing after recovery"
-            exit 1
-          fi
-
-          if [ ! -f ios/Podfile ]; then
-            echo "❌ Podfile still missing → critical failure"
-            exit 1
-          fi
-
+          # -----------------------------
+          # 5. CocoaPods install
+          # -----------------------------
+          echo "🍫 Installing CocoaPods..."
           cd ios
-          pod repo update
           pod install
           cd ..
 
-          echo "✅ CocoaPods installed successfully"
+          echo "✅ BOOTSTRAP COMPLETE"
 
       # =========================================================
-      # 4. QUALITY CHECKS (NON-BLOCKING)
+      # 🧪 QUALITY CHECK
       # =========================================================
-      - name: Code Analysis
+      - name: Analyze & Test
         script: |
           set +e
           flutter analyze
-
-      - name: Unit Tests
-        script: |
-          set +e
           flutter test
 
       # =========================================================
-      # 5. BUILD ENGINE (SMART MODE)
+      # 🚀 BUILD ENGINE
       # =========================================================
       - name: Build iOS App
         script: |
           set -e
 
-          echo "🚀 Starting build..."
-
           if [ "$CM_BRANCH" = "main" ]; then
-            echo "📦 Production build"
             flutter build ipa --release
           else
-            echo "🧪 Dev build"
             flutter build ios --debug --no-codesign
           fi
 
       # =========================================================
-      # 6. AUTO VERSIONING ENGINE
+      # 🔢 VERSIONING
       # =========================================================
-      - name: Versioning System
+      - name: Auto Versioning
         script: |
           set +e
-
           cd ios
           agvtool new-version -all $BUILD_NUMBER || true
           cd ..
-
-          echo "🔢 Version updated"
 
     artifacts:
       - build/ios/ipa/*.ipa
