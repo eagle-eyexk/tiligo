@@ -4,7 +4,7 @@ workflows:
     name: Tiligo Smart CI/CD (Dev + Staging + Production)
 
     integrations:
-      app_store_connect: Codemagic ASC   # ⚠️ must match Codemagic UI integration name
+      app_store_connect: tiligo_asc
 
     max_build_duration: 120
 
