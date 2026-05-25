@@ -1,7 +1,7 @@
 workflows:
 
-  tiligo_ios_production:
-    name: Tiligo iOS Production Pipeline
+  tiligo_zero_touch_ios:
+    name: Tiligo Zero-Touch iOS Pipeline
 
     integrations:
       app_store_connect: tiligo_asc
@@ -12,6 +12,7 @@ workflows:
       flutter: stable
       xcode: latest
 
+      # 🚀 THIS ENABLES FULL AUTOMATIC SIGNING
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.tiligo.app
@@ -24,38 +25,35 @@ workflows:
     scripts:
 
       # =====================================================
-      # 1. VERIFY PROJECT (FAIL FAST)
+      # 1. PROJECT VALIDATION (NO AUTO MAGIC)
       # =====================================================
-      - name: Validate Flutter Project
+      - name: Validate Project
         script: |
           set -e
 
           if [ ! -f pubspec.yaml ]; then
-            echo "❌ ERROR: pubspec.yaml not found in repo root"
+            echo "❌ Missing Flutter project root"
             exit 1
           fi
 
-          echo "✅ Flutter project detected"
-
       # =====================================================
-      # 2. INSTALL DEPENDENCIES
+      # 2. DEPENDENCIES
       # =====================================================
-      - name: Install Flutter Dependencies
+      - name: Install Dependencies
         script: |
           set -e
-
           flutter clean
           flutter pub get
 
       # =====================================================
-      # 3. iOS SETUP (CLEAN & SAFE)
+      # 3. iOS BUILD PREP
       # =====================================================
-      - name: Install iOS Pods
+      - name: iOS Setup
         script: |
           set -e
 
           if [ ! -d ios ]; then
-            echo "❌ ERROR: ios folder missing. Run 'flutter create .' locally and commit ios folder."
+            echo "❌ ios folder missing. Commit flutter create output first."
             exit 1
           fi
 
@@ -64,17 +62,9 @@ workflows:
           cd ..
 
       # =====================================================
-      # 4. CODE QUALITY (NON-BLOCKING)
+      # 4. BUILD
       # =====================================================
-      - name: Analyze Code
-        script: |
-          set +e
-          flutter analyze
-
-      # =====================================================
-      # 5. BUILD IOS APP
-      # =====================================================
-      - name: Build iOS App
+      - name: Build IPA
         script: |
           set -e
           flutter build ipa --release
@@ -84,6 +74,7 @@ workflows:
 
     publishing:
 
+      # 🚀 ZERO PROVISIONING = CODEMAGIC HANDLES EVERYTHING
       app_store_connect:
         auth: integration
 
