@@ -1,101 +1,106 @@
 workflows:
 
-  ios_production:
+  # =========================
+  # 🧪 DEV BUILD
+  # =========================
+  dev:
+    name: Tiligo Dev Build
 
-    name: Tiligo iOS Production
+    environment:
+      flutter: stable
+      xcode: latest
+
+    triggering:
+      branch_patterns:
+        - pattern: develop
+          include: true
+
+    scripts:
+      - flutter pub get
+      - flutter build ios --debug --no-codesign
+
+    artifacts:
+      - build/ios/iphoneos/Runner.app
+
+
+  # =========================
+  # 🧪 STAGING (TESTFLIGHT)
+  # =========================
+  staging:
+    name: Tiligo Staging (TestFlight)
 
     max_build_duration: 90
 
     environment:
-
       flutter: stable
-
       xcode: latest
 
-      vars:
-
-        BUNDLE_ID: "com.base69d519273be8cf966434f77a.app"
-
-        APP_NAME: "TiliGo"
-
-    cache:
-
-      cache_paths:
-
-        - ~/.pub-cache
-
-        - ios/Pods
-
-        - ~/.gradle
+    triggering:
+      branch_patterns:
+        - pattern: develop
+          include: true
 
     scripts:
+      - flutter clean
+      - flutter pub get
 
-      - name: 🔧 Clean environment
+      - cd ios && pod install && cd ..
 
-        script: |
+      - flutter test || true
 
-          flutter clean
+      - flutter build ipa --release
 
-          flutter pub get
-
-      - name: 📦 Install iOS dependencies
-
-        script: |
-
-          cd ios
-
-          pod install
-
-          cd ..
-
-      - name: 🧪 Run tests (non-blocking)
-
-        script: |
-
-          flutter test || true
-
-      - name: 🏗 Build iOS (auto signing handled by Codemagic)
-
-        script: |
-
-          flutter build ipa --release
-
-      - name: 🏷 Auto versioning
-
-        script: |
-
-          echo "Build number: $BUILD_NUMBER"
-
-          cd ios
-
-          agvtool new-version -all $BUILD_NUMBER || true
-
-          cd ..
+      - chmod +x scripts/versioning.sh
+      - ./scripts/versioning.sh
 
     artifacts:
-
       - build/ios/ipa/*.ipa
 
     publishing:
-
       app_store_connect:
-
         auth: integration
-
         submit_to_testflight: true
-
         beta_groups:
-
           - Internal Testers
 
-        release_notes: |
 
-          Automated Tiligo build via Codemagic CI/CD
+  # =========================
+  # 🚀 PRODUCTION (APP STORE)
+  # =========================
+  production:
+    name: Tiligo Production Release
+
+    max_build_duration: 120
+
+    environment:
+      flutter: stable
+      xcode: latest
 
     triggering:
-
       branch_patterns:
-
         - pattern: main
-
           include: true
+
+        - pattern: "v*"
+          include: true
+
+    scripts:
+      - flutter clean
+      - flutter pub get
+
+      - cd ios && pod install && cd ..
+
+      - flutter test || true
+
+      - flutter build ipa --release
+
+      - chmod +x scripts/versioning.sh
+      - ./scripts/versioning.sh
+
+    artifacts:
+      - build/ios/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
