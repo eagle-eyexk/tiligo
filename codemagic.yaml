@@ -1,10 +1,7 @@
 workflows:
 
-  tiligo_smart_pipeline:
-    name: Tiligo Smart CI/CD (Auto Detect + Production Ready)
-
-    integrations:
-      app_store_connect: tiligo_asc
+  tiligo_autonomous_engine:
+    name: Tiligo Autonomous CI/CD Engine
 
     max_build_duration: 120
 
@@ -21,33 +18,52 @@ workflows:
     scripts:
 
       # =========================================================
-      # LOCATE FLUTTER PROJECT ROOT (FIXES pubspec.yaml ERROR)
+      # 1. REPOSITORY INTELLIGENCE SCAN
       # =========================================================
-      - name: Locate Flutter Project
+      - name: Repository Intelligence Scan
         script: |
           set -e
 
-          echo "Searching for Flutter project root..."
+          echo "🧠 Scanning repository..."
 
-          FLUTTER_DIR=$(dirname $(find . -name pubspec.yaml | head -n 1))
+          echo ""
+          echo "Full structure:"
+          ls -R .
 
-          if [ -z "$FLUTTER_DIR" ]; then
-            echo "ERROR: pubspec.yaml not found anywhere in repo"
+          echo ""
+          echo "Searching for Flutter project..."
+          FLUTTER_PATH=$(find . -name pubspec.yaml | head -n 1)
+
+          if [ -z "$FLUTTER_PATH" ]; then
+            echo ""
+            echo "⚠️ No Flutter project detected"
+
+            echo ""
+            echo "Checking if Flutter can be initialized..."
+
+            if [ -f "README.md" ]; then
+              echo "Repo exists but no Flutter app found."
+              echo "Stopping safely."
+            fi
+
+            echo ""
+            echo "❌ EXIT: This repository is not a Flutter application"
             exit 1
           fi
 
-          echo "Flutter project found at: $FLUTTER_DIR"
+          FLUTTER_DIR=$(dirname "$FLUTTER_PATH")
+          echo "FLUTTER_DIR=$FLUTTER_DIR" >> $CM_ENV
 
-          echo "FLUTTER_PROJECT_DIR=$FLUTTER_DIR" >> $CM_ENV
+          echo "✅ Flutter project found at: $FLUTTER_DIR"
 
       # =========================================================
-      # CLEAN + INSTALL
+      # 2. CLEAN + DEPENDENCIES
       # =========================================================
-      - name: Clean & Install Dependencies
+      - name: Setup Flutter Project
         script: |
           set -e
 
-          cd $FLUTTER_PROJECT_DIR
+          cd $FLUTTER_DIR
 
           flutter clean
           flutter pub get
@@ -57,78 +73,70 @@ workflows:
           cd ..
 
       # =========================================================
-      # TESTS (NON-BLOCKING)
+      # 3. TESTING LAYER
       # =========================================================
       - name: Run Tests
         script: |
           set +e
-
-          cd $FLUTTER_PROJECT_DIR
+          cd $FLUTTER_DIR
           flutter test
 
       # =========================================================
-      # ANALYSIS (NON-BLOCKING)
+      # 4. STATIC ANALYSIS
       # =========================================================
-      - name: Static Analysis
+      - name: Code Analysis
         script: |
           set +e
-
-          cd $FLUTTER_PROJECT_DIR
+          cd $FLUTTER_DIR
           flutter analyze
 
       # =========================================================
-      # BUILD MODE DETECTION
+      # 5. BUILD MODE ENGINE
       # =========================================================
-      - name: Detect Build Mode
+      - name: Determine Build Mode
         script: |
           set -e
 
-          echo "Branch: $CM_BRANCH"
-
-          if [ "$CM_BRANCH" = "develop" ]; then
-            echo "BUILD_MODE=dev" >> $CM_ENV
-
-          elif [ "$CM_BRANCH" = "main" ]; then
-            echo "BUILD_MODE=prod" >> $CM_ENV
-
+          if [ "$CM_BRANCH" = "main" ]; then
+            echo "BUILD_MODE=production" >> $CM_ENV
           else
-            echo "BUILD_MODE=dev" >> $CM_ENV
+            echo "BUILD_MODE=development" >> $CM_ENV
           fi
 
+          echo "Mode: $BUILD_MODE"
+
       # =========================================================
-      # BUILD IOS APP
+      # 6. BUILD ENGINE
       # =========================================================
-      - name: Build iOS
+      - name: Build Application
         script: |
           set -e
 
-          cd $FLUTTER_PROJECT_DIR
+          cd $FLUTTER_DIR
 
-          if [ "$BUILD_MODE" = "dev" ]; then
+          if [ "$BUILD_MODE" = "development" ]; then
             flutter build ios --debug --no-codesign
           else
             flutter build ipa --release
           fi
 
       # =========================================================
-      # AUTO VERSIONING
+      # 7. VERSIONING ENGINE
       # =========================================================
       - name: Auto Versioning
         script: |
           set +e
 
-          cd $FLUTTER_PROJECT_DIR/ios
-
+          cd $FLUTTER_DIR/ios
           agvtool new-version -all $BUILD_NUMBER || true
 
     artifacts:
-      - $FLUTTER_PROJECT_DIR/build/ios/ipa/*.ipa
-      - $FLUTTER_PROJECT_DIR/build/ios/iphoneos/Runner.app
+      - $FLUTTER_DIR/build/ios/ipa/*.ipa
+      - $FLUTTER_DIR/build/ios/iphoneos/Runner.app
 
     publishing:
 
       app_store_connect:
-
         auth: integration
 
         submit_to_testflight: true
