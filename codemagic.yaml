@@ -12,95 +12,106 @@ workflows:
       flutter: stable
       xcode: latest
 
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.base69d519273be8cf966434f77a.app
+
     cache:
       cache_paths:
         - ~/.pub-cache
-        - ~/.gradle
         - ios/Pods
 
     scripts:
 
-      # =========================================================
-      # 🚀 1. IOS PROJECT BOOTSTRAP (SELF-HEALING)
-      # =========================================================
-      - name: iOS Bootstrap Engine
+      # =====================================================
+      # FLUTTER + IOS AUTO SETUP
+      # =====================================================
+      - name: Bootstrap iOS Project
         script: |
           set -e
 
-          echo "🧠 iOS AUTONOMOUS BOOTSTRAP START"
-
           cd $CM_BUILD_DIR
+
+          echo "🧠 Checking Flutter project..."
 
           # Ensure Flutter project exists
           if [ ! -f pubspec.yaml ]; then
-            echo "❌ No Flutter project found → creating iOS-only Flutter project..."
-            flutter create . --platforms=ios
+            echo "❌ pubspec.yaml missing"
+            exit 1
           fi
 
-          # Ensure iOS folder exists
-          if [ ! -d ios ]; then
-            echo "⚠️ Missing ios/ → regenerating..."
-            flutter create . --platforms=ios
-          fi
-
-          echo "📦 Installing Flutter dependencies..."
+          echo "📦 Installing dependencies..."
           flutter clean
           flutter pub get
 
-          # Ensure Podfile exists
-          if [ ! -f ios/Podfile ]; then
-            echo "⚠️ Podfile missing → rebuilding iOS module..."
-            rm -rf ios
+          # Generate iOS if missing
+          if [ ! -d ios ]; then
+            echo "⚠️ ios folder missing → generating..."
             flutter create . --platforms=ios
           fi
 
-          echo "🍫 CocoaPods install starting..."
+          # Rebuild iOS module if Podfile missing
+          if [ ! -f ios/Podfile ]; then
+            echo "⚠️ Podfile missing → rebuilding iOS module..."
+
+            rm -rf ios
+
+            flutter create . --platforms=ios
+          fi
+
+          # Final validation
+          if [ ! -f ios/Podfile ]; then
+            echo "❌ Podfile generation failed"
+            exit 1
+          fi
+
+          echo "🍫 Installing CocoaPods..."
           cd ios
           pod install
           cd ..
 
-          echo "✅ iOS BOOTSTRAP COMPLETE"
+          echo "✅ iOS setup completed"
 
-      # =========================================================
-      # 🧪 2. QUALITY CHECK (SAFE)
-      # =========================================================
-      - name: Code Quality
+      # =====================================================
+      # CODE ANALYSIS
+      # =====================================================
+      - name: Analyze Code
         script: |
           set +e
           flutter analyze
+
+      # =====================================================
+      # TESTS
+      # =====================================================
+      - name: Run Tests
+        script: |
+          set +e
           flutter test
 
-      # =========================================================
-      # 🚀 3. BUILD IOS APP
-      # =========================================================
-      - name: Build iOS App
-        script: |
-          set -e
-
-          echo "🚀 Building iOS App..."
-
-          if [ "$CM_BRANCH" = "main" ]; then
-            flutter build ipa --release
-          else
-            flutter build ios --debug --no-codesign
-          fi
-
-      # =========================================================
-      # 🔢 4. AUTO VERSIONING
-      # =========================================================
-      - name: Versioning
+      # =====================================================
+      # AUTO VERSIONING
+      # =====================================================
+      - name: Auto Versioning
         script: |
           set +e
 
           cd ios
+
           agvtool new-version -all $BUILD_NUMBER || true
+
           cd ..
 
-          echo "🔢 Version updated"
+      # =====================================================
+      # BUILD IPA
+      # =====================================================
+      - name: Build IPA
+        script: |
+          set -e
+
+          flutter build ipa --release
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - build/ios/iphoneos/Runner.app
 
     publishing:
 
