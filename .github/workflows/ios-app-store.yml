@@ -2,81 +2,132 @@ name: iOS App Store Build
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+
   workflow_dispatch:
 
 jobs:
   build_and_upload:
     runs-on: macos-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Set up Node
+    env:
+      BUNDLE_ID: com.tiligo.app
+      XCODE_WORKSPACE: ios/App/App.xcworkspace
+      XCODE_SCHEME: App
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
         uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          node-version: 20
           cache: npm
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web app
+      - name: Build web application
         run: npm run build
 
-      - name: Add Capacitor iOS platform
+      - name: Add iOS platform if missing
         run: |
-          if [ ! -d ios ]; then
+          if [ ! -d "ios" ]; then
             npx cap add ios
           fi
 
-      - name: Sync Capacitor assets
-        run: npm run capacitor:sync
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
 
       - name: Install CocoaPods
         run: |
           cd ios/App
+          pod deintegrate || true
           pod install --repo-update
 
-      - name: Create Xcode export options
+      #########################################################
+      # APPLE SIGNING SETUP
+      #########################################################
+
+      - name: Install Apple certificate
+        env:
+          BUILD_CERTIFICATE_BASE64: ${{ secrets.BUILD_CERTIFICATE_BASE64 }}
+          P12_PASSWORD: ${{ secrets.P12_PASSWORD }}
+          KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
+        run: |
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+
+          echo -n "$BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+
+          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          security import $CERTIFICATE_PATH \
+            -P "$P12_PASSWORD" \
+            -A \
+            -t cert \
+            -f pkcs12 \
+            -k $KEYCHAIN_PATH
+
+          security list-keychain -d user -s $KEYCHAIN_PATH
+
+      - name: Install provisioning profile
+        env:
+          BUILD_PROVISION_PROFILE_BASE64: ${{ secrets.BUILD_PROVISION_PROFILE_BASE64 }}
+        run: |
+          PP_PATH=$RUNNER_TEMP/profile.mobileprovision
+
+          echo -n "$BUILD_PROVISION_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles
+
+      #########################################################
+      # EXPORT OPTIONS
+      #########################################################
+
+      - name: Create ExportOptions.plist
         run: |
           mkdir -p ios/App
-          cat > ios/App/ExportOptions.plist <<'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>method</key>
-  <string>app-store</string>
-  <key>uploadSymbols</key>
-  <true/>
-</dict>
-</plist>
-EOF
+
+          cat > ios/App/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store</string>
+
+            <key>signingStyle</key>
+            <string>automatic</string>
+
+            <key>stripSwiftSymbols</key>
+            <true/>
+
+            <key>compileBitcode</key>
+            <false/>
+
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+      #########################################################
+      # BUILD IPA
+      #########################################################
 
       - name: Archive iOS app
         run: |
           mkdir -p build
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -sdk iphoneos -archivePath $PWD/build/TiliGo.xcarchive archive
-          xcodebuild -exportArchive -archivePath $PWD/build/TiliGo.xcarchive -exportOptionsPlist ios/App/ExportOptions.plist -exportPath $PWD/build/ipa
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
-        with:
-          name: TiliGo-ipa
-          path: build/ipa
-
-      - name: Write App Store Connect API key
-        if: secrets.APP_STORE_CONNECT_API_KEY_JSON != ''
-        run: |
-          mkdir -p fastlane
-          cat > fastlane/AppStoreConnectAPI.json <<'EOF'
-${{ secrets.APP_STORE_CONNECT_API_KEY_JSON }}
-EOF
-
-      - name: Install Fastlane
-        if: secrets.APP_STORE_CONNECT_API_KEY_JSON != ''
-        run: gem install fastlane -NV
-
-      - name: Upload to App Store
-        if: secrets.APP_STORE_CONNECT_API_KEY_JSON != ''
-        run: fastlane pilot upload --api_key_path fastlane/AppStoreConnectAPI.json --ipa build/ipa/TiliGo.ipa --skip_submission true
+          xcodebuild \
+            -workspace "$XCODE_WORKSPACE" \
+            -scheme "$XCODE_SCHEME" \
+            -configuration Release \
+            -sdk iphoneos \
+            -archive
