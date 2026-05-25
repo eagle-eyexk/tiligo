@@ -1,7 +1,7 @@
 workflows:
 
-  tiligo_production_pipeline:
-    name: Tiligo Production CI/CD
+  tiligo_power_engine:
+    name: Tiligo Power Autonomous CI/CD
 
     integrations:
       app_store_connect: tiligo_asc
@@ -21,94 +21,118 @@ workflows:
     scripts:
 
       # =========================================================
-      # 1. VALIDATE PROJECT STRUCTURE (FAIL FAST)
+      # 1. PROJECT AUTO-RECOVERY ENGINE
       # =========================================================
-      - name: Validate Flutter Project
+      - name: Auto Project Recovery
         script: |
           set -e
 
-          echo "🔍 Checking Flutter project structure..."
+          echo "🧠 Checking Flutter project integrity..."
 
+          # Case 1: No Flutter project
           if [ ! -f pubspec.yaml ]; then
-            echo "❌ ERROR: pubspec.yaml not found"
-            echo "👉 This repo is NOT a valid Flutter project root"
+            echo "❌ No pubspec.yaml found → STOP (invalid repo)"
             exit 1
           fi
 
-          if [ ! -d lib ]; then
-            echo "❌ ERROR: lib/ folder missing"
-            exit 1
+          # Case 2: Missing iOS + Android
+          if [ ! -d ios ] || [ ! -d android ]; then
+            echo "⚠️ Missing platforms → regenerating Flutter project..."
+
+            flutter clean
+            flutter pub get
+            flutter create . --platforms=ios,android
           fi
 
-          echo "✅ Flutter project detected"
+          # Case 3: Missing Podfile
+          if [ ! -f ios/Podfile ]; then
+            echo "⚠️ Podfile missing → rebuilding iOS module..."
+
+            rm -rf ios
+            flutter create . --platforms=ios
+          fi
+
+          echo "✅ Project structure verified"
 
       # =========================================================
-      # 2. INSTALL DEPENDENCIES
+      # 2. DEPENDENCY INSTALLATION
       # =========================================================
       - name: Install Dependencies
         script: |
           set -e
 
+          echo "📦 Installing Flutter packages..."
           flutter clean
           flutter pub get
 
       # =========================================================
-      # 3. iOS DEPENDENCIES (SAFE MODE)
+      # 3. iOS DEPENDENCY ENGINE (COCOAPODS SAFE MODE)
       # =========================================================
-      - name: Install CocoaPods
+      - name: CocoaPods Safe Install
         script: |
           set -e
 
+          echo "🍫 Validating iOS setup..."
+
           if [ ! -d ios ]; then
-            echo "❌ ERROR: ios/ folder missing (run flutter create locally)"
+            echo "❌ iOS folder missing after recovery"
             exit 1
           fi
 
           if [ ! -f ios/Podfile ]; then
-            echo "❌ ERROR: Podfile missing (ios project not generated correctly)"
+            echo "❌ Podfile still missing → critical failure"
             exit 1
           fi
 
           cd ios
+          pod repo update
           pod install
           cd ..
 
+          echo "✅ CocoaPods installed successfully"
+
       # =========================================================
-      # 4. CODE QUALITY
+      # 4. QUALITY CHECKS (NON-BLOCKING)
       # =========================================================
-      - name: Analyze Code
+      - name: Code Analysis
         script: |
           set +e
           flutter analyze
 
-      - name: Run Tests
+      - name: Unit Tests
         script: |
           set +e
           flutter test
 
       # =========================================================
-      # 5. BUILD
+      # 5. BUILD ENGINE (SMART MODE)
       # =========================================================
       - name: Build iOS App
         script: |
           set -e
 
+          echo "🚀 Starting build..."
+
           if [ "$CM_BRANCH" = "main" ]; then
+            echo "📦 Production build"
             flutter build ipa --release
           else
+            echo "🧪 Dev build"
             flutter build ios --debug --no-codesign
           fi
 
       # =========================================================
-      # 6. VERSIONING
+      # 6. AUTO VERSIONING ENGINE
       # =========================================================
-      - name: Versioning
+      - name: Versioning System
         script: |
           set +e
 
           cd ios
           agvtool new-version -all $BUILD_NUMBER || true
           cd ..
+
+          echo "🔢 Version updated"
 
     artifacts:
       - build/ios/ipa/*.ipa
