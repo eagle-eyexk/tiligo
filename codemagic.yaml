@@ -2,46 +2,47 @@ workflows:
   tiligo_smart_pipeline:
     name: Tiligo Enterprise CI/CD Pipeline
     instance_type: mac_mini_m2
+    max_build_duration: 120
     
     # =========================================================
-    # ROOT-LEVEL TRIGGERS
+    # TRIGGERS (Simplified - only basic patterns)
     # =========================================================
     triggering:
       events:
         - push
         - pull_request
         - tag
-      branches:
-        include:
-          - main
-          - develop
-          - release/*
-          - hotfix/*
-        exclude:
-          - docs/*
-          - '*.md'
-      tags:
-        include:
-          - v*
-      cancel_previous_builds: true
+      branch_patterns:
+        - pattern: main
+          include: true
+        - pattern: develop
+          include: true
+        - pattern: release/*
+          include: true
+        - pattern: hotfix/*
+          include: true
+        - pattern: docs/*
+          include: false
+      tag_patterns:
+        - pattern: v*
+          include: true
     
     # =========================================================
-    # ROOT-LEVEL INTEGRATIONS
+    # INTEGRATIONS
     # =========================================================
     integrations:
       app_store_connect: tiligo_asc
-      slack: tiligo_slack_webhook
     
     # =========================================================
-    # ROOT-LEVEL SETTINGS
+    # ENVIRONMENT (Codemagic uses 'environment' not 'environment_variables')
     # =========================================================
-    max_build_duration: 120
-    environment_variables:
-      APP_ENV: production
-      FLUTTER_ROOT: ~/development/flutter
+    environment:
+      flutter: stable
+      xcode: latest
+      cocoapods: default
     
     # =========================================================
-    # CACHE CONFIGURATION
+    # CACHE (Simplified - no extra fields)
     # =========================================================
     cache:
       cache_paths:
@@ -49,24 +50,11 @@ workflows:
         - ~/.gradle/caches
         - ios/Pods
         - build/ios/.symlinks
-      clear_cache_on_branch_change: true
-    
-    # =========================================================
-    # ENVIRONMENT
-    # =========================================================
-    environment:
-      flutter: 3.22.0
-      xcode: 15.4
-      ruby: 3.2.0
-      cocoapods: 1.15.2
     
     # =========================================================
     # SCRIPTS
     # =========================================================
     scripts:
-      # =========================================================
-      # ENVIRONMENT VALIDATION
-      # =========================================================
       - name: Validate Build Environment
         script: |
           set -e
@@ -86,20 +74,17 @@ workflows:
           
           echo "📦 Installing dependencies..."
           flutter clean
-          flutter pub get --no-example
+          flutter pub get
           
           if [ -d "ios" ]; then
             echo "📱 Installing CocoaPods..."
             cd ios
-            pod install --repo-update --silent
+            pod install --repo-update
             cd ..
           fi
           
           echo "✓ Dependencies ready"
       
-      # =========================================================
-      # QUALITY ASSURANCE
-      # =========================================================
       - name: Static Code Analysis
         script: |
           set -e
@@ -114,21 +99,10 @@ workflows:
           set -e
           
           echo "🧪 Running test suite..."
-          flutter test --coverage --test-randomize-ordering-seed=random
+          flutter test --coverage
           
           echo "✓ All tests passed"
       
-      - name: Coverage Report
-        script: |
-          set -e
-          
-          if [ -f "coverage/lcov.info" ]; then
-            echo "📊 Test coverage generated"
-          fi
-      
-      # =========================================================
-      # RELEASE STRATEGY
-      # =========================================================
       - name: Determine Deployment Strategy
         script: |
           set -e
@@ -136,7 +110,7 @@ workflows:
           BRANCH="${CM_BRANCH:-${CM_TAG}}"
           echo "📍 Source: $BRANCH"
           
-          if [[ "$BRANCH" == v* ]] || [[ "${CM_TAG}" != "" ]]; then
+          if [[ "$BRANCH" == v* ]] || [[ -n "${CM_TAG}" ]]; then
             BUILD_MODE="production"
             echo "🏷️ Release tag build"
           elif [[ "$BRANCH" == hotfix/* ]]; then
@@ -159,10 +133,7 @@ workflows:
           echo "BUILD_MODE=$BUILD_MODE" >> $CM_ENV
           echo "✅ Mode: $BUILD_MODE"
       
-      # =========================================================
-      # VERSION MANAGEMENT
-      # =========================================================
-      - name: Apply Semantic Versioning
+      - name: Apply Build Versioning
         script: |
           set -e
           
@@ -183,33 +154,17 @@ workflows:
           
           echo "VERSION=$FULL_VERSION" >> $CM_ENV
       
-      # =========================================================
-      # BUILD EXECUTION
-      # =========================================================
       - name: Build iOS Application
         script: |
           set -e
           
           echo "🔨 Building iOS ($BUILD_MODE)..."
           
-          case "$BUILD_MODE" in
-            production)
-              flutter build ipa \
-                --release \
-                --build-number="$BUILD_NUMBER" \
-                --dart-define=ENV=production
-              ;;
-            development)
-              flutter build ios \
-                --debug \
-                --no-codesign
-              ;;
-            debug)
-              flutter build ios \
-                --debug \
-                --no-codesign
-              ;;
-          esac
+          if [ "$BUILD_MODE" = "production" ]; then
+            flutter build ipa --release --build-number="$BUILD_NUMBER"
+          else
+            flutter build ios --debug --no-codesign
+          fi
           
           echo "✅ Build complete"
       
@@ -232,16 +187,15 @@ workflows:
           fi
     
     # =========================================================
-    # ROOT-LEVEL ARTIFACTS
+    # ARTIFACTS
     # =========================================================
     artifacts:
       - build/ios/ipa/*.ipa
       - build/ios/iphoneos/Runner.app
       - coverage/lcov.info
-      - build/coverage/html/
     
     # =========================================================
-    # ROOT-LEVEL PUBLISHING
+    # PUBLISHING (Codemagic schema compliant)
     # =========================================================
     publishing:
       app_store_connect:
@@ -249,17 +203,3 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - Internal Testers
-          - QA Team
-        skip_wait_for_build_processing: false
-      
-      slack:
-        channel: '#ci-cd'
-        notify_on_build_start: true
-        notify_on_success: true
-        notify_on_failure: true
-      
-      email:
-        recipients:
-          - engineering@tiligo.com
-        notify_on_success: false
-        notify_on_failure: true
