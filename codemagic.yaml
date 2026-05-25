@@ -1,7 +1,7 @@
 workflows:
 
   tiligo_smart_pipeline:
-    name: Tiligo Enterprise CI/CD Pipeline
+    name: Tiligo Smart CI/CD (Auto Detect + Production Ready)
 
     integrations:
       app_store_connect: tiligo_asc
@@ -21,105 +21,109 @@ workflows:
     scripts:
 
       # =========================================================
-      # ENVIRONMENT INITIALIZATION
+      # LOCATE FLUTTER PROJECT ROOT (FIXES pubspec.yaml ERROR)
       # =========================================================
-      - name: Initialize Build Environment
+      - name: Locate Flutter Project
         script: |
           set -e
 
-          echo "Initializing Flutter environment..."
+          echo "Searching for Flutter project root..."
+
+          FLUTTER_DIR=$(dirname $(find . -name pubspec.yaml | head -n 1))
+
+          if [ -z "$FLUTTER_DIR" ]; then
+            echo "ERROR: pubspec.yaml not found anywhere in repo"
+            exit 1
+          fi
+
+          echo "Flutter project found at: $FLUTTER_DIR"
+
+          echo "FLUTTER_PROJECT_DIR=$FLUTTER_DIR" >> $CM_ENV
+
+      # =========================================================
+      # CLEAN + INSTALL
+      # =========================================================
+      - name: Clean & Install Dependencies
+        script: |
+          set -e
+
+          cd $FLUTTER_PROJECT_DIR
 
           flutter clean
           flutter pub get
-
-          echo "Installing CocoaPods dependencies..."
 
           cd ios
           pod install
           cd ..
 
       # =========================================================
-      # QUALITY ASSURANCE
+      # TESTS (NON-BLOCKING)
       # =========================================================
-      - name: Execute Automated Tests
+      - name: Run Tests
         script: |
           set +e
 
-          echo "Running Flutter test suite..."
-
+          cd $FLUTTER_PROJECT_DIR
           flutter test
 
-      - name: Perform Static Code Analysis
+      # =========================================================
+      # ANALYSIS (NON-BLOCKING)
+      # =========================================================
+      - name: Static Analysis
         script: |
           set +e
 
-          echo "Analyzing project source code..."
-
+          cd $FLUTTER_PROJECT_DIR
           flutter analyze
 
       # =========================================================
-      # RELEASE STRATEGY DETECTION
+      # BUILD MODE DETECTION
       # =========================================================
-      - name: Determine Deployment Mode
+      - name: Detect Build Mode
         script: |
           set -e
 
-          echo "Current branch: $CM_BRANCH"
+          echo "Branch: $CM_BRANCH"
 
           if [ "$CM_BRANCH" = "develop" ]; then
-            echo "BUILD_MODE=development" >> $CM_ENV
+            echo "BUILD_MODE=dev" >> $CM_ENV
 
           elif [ "$CM_BRANCH" = "main" ]; then
-            echo "BUILD_MODE=production" >> $CM_ENV
-
-          elif [[ "$CM_BRANCH" == v* ]]; then
-            echo "BUILD_MODE=release" >> $CM_ENV
+            echo "BUILD_MODE=prod" >> $CM_ENV
 
           else
-            echo "BUILD_MODE=development" >> $CM_ENV
+            echo "BUILD_MODE=dev" >> $CM_ENV
           fi
 
-          echo "Resolved build mode: $BUILD_MODE"
-
       # =========================================================
-      # APPLICATION BUILD PROCESS
+      # BUILD IOS APP
       # =========================================================
-      - name: Build iOS Application
+      - name: Build iOS
         script: |
           set -e
 
-          echo "Starting iOS build pipeline..."
+          cd $FLUTTER_PROJECT_DIR
 
-          if [ "$BUILD_MODE" = "development" ]; then
-
-            echo "Generating development build..."
-
+          if [ "$BUILD_MODE" = "dev" ]; then
             flutter build ios --debug --no-codesign
-
           else
-
-            echo "Generating signed release IPA..."
-
             flutter build ipa --release
-
           fi
 
       # =========================================================
-      # AUTOMATED VERSION MANAGEMENT
+      # AUTO VERSIONING
       # =========================================================
-      - name: Apply Automated Build Versioning
+      - name: Auto Versioning
         script: |
           set +e
 
-          echo "Applying build number: $BUILD_NUMBER"
+          cd $FLUTTER_PROJECT_DIR/ios
 
-          cd ios
           agvtool new-version -all $BUILD_NUMBER || true
-          cd ..
 
     artifacts:
-      - build/ios/ipa/*.ipa
-      - build/ios/iphoneos/Runner.app
+      - $FLUTTER_PROJECT_DIR/build/ios/ipa/*.ipa
+      - $FLUTTER_PROJECT_DIR/build/ios/iphoneos/Runner.app
 
     publishing:
 
