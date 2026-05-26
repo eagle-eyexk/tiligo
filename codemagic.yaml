@@ -11,34 +11,33 @@ workflows:
 
     scripts:
 
-      - name: Detect project root
+      - name: Debug project root
         script: |
-          echo "Repo structure:"
-          ls -R
+          echo "PWD:"
+          pwd
+          echo "Listing files:"
+          ls -la
+
+      - name: Verify Flutter project
+        script: |
+          test -f pubspec.yaml || (echo "ERROR: pubspec.yaml not found in root" && exit 1)
 
       - name: Install dependencies
-        script: |
-          flutter pub get
+        script: flutter pub get
 
-      # ONLY RUN PODS IF ios folder exists
-      - name: Install CocoaPods (safe check)
+      - name: Clean build
+        script: flutter clean
+
+      - name: Install CocoaPods
         script: |
-          if [ -d "ios" ]; then
+          if [ -d ios ]; then
             cd ios
             pod install --repo-update
             cd ..
-          else
-            echo "No ios folder found - skipping CocoaPods"
           fi
 
-      - name: Build iOS
-        script: |
-          if [ -d "ios" ]; then
-            flutter build ipa --release
-          else
-            echo "ERROR: No iOS project detected"
-            exit 1
-          fi
+      - name: Build iOS IPA
+        script: flutter build ipa --release
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -47,3 +46,5 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - Internal Testers
