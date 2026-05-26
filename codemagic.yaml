@@ -1,43 +1,81 @@
 workflows:
-  tiligo_smart_pipeline:
-    name: Tiligo CI/CD
+  tiligo_ios:
+    name: Tiligo iOS Production Pipeline
 
     integrations:
       app_store_connect: tiligo_asc
+
+    max_build_duration: 120
 
     environment:
       flutter: stable
       xcode: latest
 
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle
+        - ios/Pods
+
     scripts:
 
-      - name: Debug project root
+      # =========================================================
+      # VALIDATION STEP (prevents "no iOS project detected")
+      # =========================================================
+      - name: Validate Flutter Project
         script: |
-          echo "PWD:"
-          pwd
-          echo "Listing files:"
-          ls -la
+          set -e
+          echo "Checking project root..."
+          ls
 
-      - name: Verify Flutter project
+          test -f pubspec.yaml || (echo "ERROR: pubspec.yaml missing" && exit 1)
+          test -d ios || (echo "ERROR: ios folder missing" && exit 1)
+
+      # =========================================================
+      # DEPENDENCIES
+      # =========================================================
+      - name: Get Flutter Packages
         script: |
-          test -f pubspec.yaml || (echo "ERROR: pubspec.yaml not found in root" && exit 1)
+          set -e
+          flutter pub get
 
-      - name: Install dependencies
-        script: flutter pub get
-
-      - name: Clean build
-        script: flutter clean
-
-      - name: Install CocoaPods
+      - name: Clean Build
         script: |
-          if [ -d ios ]; then
-            cd ios
-            pod install --repo-update
-            cd ..
-          fi
+          flutter clean
 
+      # =========================================================
+      # iOS DEPENDENCIES (COCOAPODS)
+      # =========================================================
+      - name: Install CocoaPods Dependencies
+        script: |
+          set -e
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      # =========================================================
+      # TESTS (non-blocking)
+      # =========================================================
+      - name: Run Tests
+        script: |
+          set +e
+          flutter test
+
+      # =========================================================
+      # ANALYSIS (non-blocking)
+      # =========================================================
+      - name: Static Analysis
+        script: |
+          set +e
+          flutter analyze
+
+      # =========================================================
+      # BUILD IPA
+      # =========================================================
       - name: Build iOS IPA
-        script: flutter build ipa --release
+        script: |
+          set -e
+          flutter build ipa --release
 
     artifacts:
       - build/ios/ipa/*.ipa
@@ -48,3 +86,4 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - Internal Testers
+        submit_to_app_store: false
