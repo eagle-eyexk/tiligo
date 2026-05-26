@@ -1,258 +1,32 @@
-# =========================================================
-# IOS → APP STORE DEPLOYMENT PIPELINE (PRODUCTION-GRADE)
-# STACK: XCODE + FASTLANE + APP STORE CONNECT API
-# =========================================================
+workflows:
+  ios_release:
+    name: iOS Release Build
 
-# ---------------------------------------------------------
-# 1. INSTALL DEPENDENCIES
-# ---------------------------------------------------------
+    instance_type: mac_mini_m2
 
-brew install fastlane
+    environment:
+      flutter: stable
 
-xcode-select --install
+      vars:
+        BUNDLE_ID: "com.base44.69d519273be8cf966434f77a.app"
 
-# Verify
-fastlane --version
-xcodebuild -version
+    scripts:
+      - name: Install dependencies
+        script: |
+          flutter pub get
 
+      - name: Clean build
+        script: |
+          flutter clean
 
-# ---------------------------------------------------------
-# 2. INITIALIZE FASTLANE
-# ---------------------------------------------------------
+      - name: Build iOS IPA
+        script: |
+          flutter build ipa --release
 
-cd ios
+    artifacts:
+      - build/ios/ipa/*.ipa
 
-fastlane init
-
-
-# ---------------------------------------------------------
-# 3. CREATE APP STORE CONNECT API KEY
-# ---------------------------------------------------------
-# App Store Connect:
-# Users and Access → Keys → Generate API Key
-#
-# Save:
-# - AuthKey_XXXXXXXX.p8
-# - KEY_ID
-# - ISSUER_ID
-#
-# Store key here:
-#
-# ios/fastlane/AuthKey.p8
-
-
-# ---------------------------------------------------------
-# 4. CREATE FASTFILE
-# ---------------------------------------------------------
-
-# ios/fastlane/Fastfile
-
-default_platform(:ios)
-
-platform :ios do
-
-  desc "Production App Store Release"
-
-  lane :release do
-
-    api_key = app_store_connect_api_key(
-      key_id: "YOUR_KEY_ID",
-      issuer_id: "YOUR_ISSUER_ID",
-      key_filepath: "./fastlane/AuthKey.p8",
-      duration: 1200,
-      in_house: false
-    )
-
-    increment_build_number(
-      xcodeproj: "YourApp.xcodeproj"
-    )
-
-    build_app(
-      scheme: "YourScheme",
-      export_method: "app-store",
-      clean: true,
-      output_directory: "./build",
-      output_name: "YourApp.ipa"
-    )
-
-    upload_to_app_store(
-      api_key: api_key,
-      skip_metadata: true,
-      skip_screenshots: true,
-      submit_for_review: false,
-      automatic_release: false,
-      force: true
-    )
-
-  end
-
-end
-
-
-# ---------------------------------------------------------
-# 5. CONFIGURE CODE SIGNING
-# ---------------------------------------------------------
-
-# OPTION A — AUTOMATIC SIGNING (RECOMMENDED)
-
-# Xcode →
-# Targets → Signing & Capabilities →
-# Enable:
-# [✓] Automatically manage signing
-
-# Team:
-# Select Apple Developer Team
-
-
-# OPTION B — FASTLANE MATCH (ENTERPRISE)
-# ---------------------------------------------------------
-
-fastlane match init
-
-fastlane match appstore
-
-
-# ---------------------------------------------------------
-# 6. BUILD + UPLOAD TO APP STORE
-# ---------------------------------------------------------
-
-fastlane ios release
-
-
-# =========================================================
-# OUTPUT
-# =========================================================
-#
-# SUCCESS PIPELINE:
-#
-# 1. Increment build number
-# 2. Clean archive
-# 3. Generate signed IPA
-# 4. Validate binary
-# 5. Upload to App Store Connect
-# 6. Ready for TestFlight/App Review
-#
-# =========================================================
-
-
-# =========================================================
-# OPTIONAL — CI/CD (GITHUB ACTIONS)
-# =========================================================
-
-# .github/workflows/ios-release.yml
-
-name: iOS Release
-
-on:
-  workflow_dispatch:
-
-jobs:
-  build:
-
-    runs-on: macos-latest
-
-    steps:
-
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Ruby
-        uses: ruby/setup-ruby@v1
-        with:
-          ruby-version: '3.2'
-
-      - name: Install Fastlane
-        run: gem install fastlane
-
-      - name: Install Pods
-        run: |
-          cd ios
-          pod install
-
-      - name: Deploy
-        run: |
-          cd ios
-          fastlane ios release
-
-
-# =========================================================
-# PURE XCODE CLI (NO FASTLANE)
-# =========================================================
-
-# BUILD ARCHIVE
-
-xcodebuild \
-  -workspace YourApp.xcworkspace \
-  -scheme YourScheme \
-  -configuration Release \
-  -archivePath build/YourApp.xcarchive \
-  archive
-
-
-# EXPORT IPA
-
-xcodebuild \
-  -exportArchive \
-  -archivePath build/YourApp.xcarchive \
-  -exportOptionsPlist ExportOptions.plist \
-  -exportPath build
-
-
-# UPLOAD IPA
-
-xcrun altool \
-  --upload-app \
-  -f build/YourApp.ipa \
-  -t ios \
-  --apiKey YOUR_KEY_ID \
-  --apiIssuer YOUR_ISSUER_ID
-
-
-# =========================================================
-# PRODUCTION HARDENING
-# =========================================================
-
-# REQUIRED:
-#
-# ✓ Version bump automation
-# ✓ Build number automation
-# ✓ API-key auth (NO Apple password)
-# ✓ Match signing sync
-# ✓ CI/CD deployment
-# ✓ Secrets via GitHub Secrets
-# ✓ Release lane separation
-# ✓ TestFlight staging
-# ✓ Crashlytics/Sentry integration
-# ✓ Release rollback strategy
-
-
-# =========================================================
-# COMMON FAILURE FIXES
-# =========================================================
-
-# Signing failure:
-#
-# Xcode → Clean Build Folder
-#
-# rm -rf ~/Library/Developer/Xcode/DerivedData
-
-# CocoaPods issues:
-#
-# pod deintegrate
-# pod install
-
-# Expired profiles:
-#
-# fastlane match nuke distribution
-
-# Build stuck:
-#
-# killall Xcode
-# reboot Mac
-
-
-# =========================================================
-# FINAL EXECUTION COMMAND
-# =========================================================
-
-cd ios && fastlane ios release
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
