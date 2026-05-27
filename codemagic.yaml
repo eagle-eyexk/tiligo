@@ -1,6 +1,6 @@
 workflows:
   tiligo-production:
-    name: Tiligo Auto Signing Pipeline
+    name: Tiligo Production
 
     instance_type: mac_mini_m2
     max_build_duration: 90
@@ -12,17 +12,12 @@ workflows:
       flutter: stable
 
       vars:
-        BUNDLE_ID: com.base69d519273be8cf966434f77a.app
+        BUNDLE_ID: com.tili-go.app
+        TEAM_ID: H4QUDPK7S3
 
       ios_signing:
         distribution_type: app_store
-        bundle_identifier: com.base69d519273be8cf966434f77a.app
-
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - ~/.gradle
-        - ~/Library/Caches/CocoaPods
+        bundle_identifier: com.tili-go.app
 
     triggering:
       events:
@@ -31,22 +26,32 @@ workflows:
         - pattern: main
           include: true
 
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle
+        - ~/Library/Caches/CocoaPods
+
     scripts:
       - name: Get dependencies
         script: flutter pub get
 
-      - name: Clean iOS
+      - name: Clean build
+        script: flutter clean
+
+      - name: Install pods
         script: |
           cd ios
-          rm -rf Pods Podfile.lock
           pod install
           cd ..
 
       - name: Build Android
-        script: flutter build appbundle --release
+        script: |
+          flutter build appbundle --release
 
-      - name: Build iOS (AUTO SIGN)
-        script: flutter build ipa --release
+      - name: Build iOS (automatic signing via tiligo_asc)
+        script: |
+          flutter build ipa --release
 
     artifacts:
       - build/**/outputs/**/*.aab
