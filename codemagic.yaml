@@ -6,13 +6,12 @@ workflows:
     max_build_duration: 90
 
     integrations:
-      app_store_connect: Codemagic
+      app_store_connect: tiligo_asc
 
     environment:
       flutter: stable
 
       vars:
-        APP_NAME: "Tiligo"
         BUNDLE_ID: "com.base69d519273be8cf966434f77a.app"
         PACKAGE_NAME: "com.base69d519273be8cf966434f77a.app"
 
@@ -35,27 +34,22 @@ workflows:
           include: true
 
     scripts:
-      - name: Install dependencies
-        script: |
-          flutter pub get
+      - name: Get packages
+        script: flutter pub get
 
-      - name: iOS pod install
+      - name: Install iOS pods
         script: |
           cd ios
           pod install
           cd ..
 
-      - name: Build Android AAB
+      - name: Build Android
         script: |
-          flutter build appbundle --release \
-            --build-name=1.0.0 \
-            --build-number=$BUILD_NUMBER
+          flutter build appbundle --release
 
-      - name: Build iOS IPA
+      - name: Build iOS
         script: |
-          flutter build ipa --release \
-            --build-name=1.0.0 \
-            --build-number=$BUILD_NUMBER
+          flutter build ipa --release
 
     artifacts:
       - build/**/outputs/**/*.aab
