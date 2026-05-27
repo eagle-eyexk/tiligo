@@ -1,9 +1,9 @@
 workflows:
-  tiligo_ios_fast:
-    name: Tiligo iOS Fast Pipeline
+  tiligo_ios:
+    name: Tiligo iOS Production Pipeline
 
     integrations:
-      app_store_connect: tiligo_asc
+      app_store_connect: Tiligo_asc
 
     max_build_duration: 60
 
@@ -22,83 +22,84 @@ workflows:
     scripts:
 
       # =========================================================
-      # LIGHTWEIGHT VALIDATION (FAST)
+      # VALIDATE PROJECT
       # =========================================================
-      - name: Validate Project
+      - name: Validate Flutter Project
         script: |
           set -e
-          test -f pubspec.yaml
+          echo "Checking project..."
+
+          test -f pubspec.yaml || (echo "Missing pubspec.yaml" && exit 1)
+          test -d lib || (echo "Missing lib folder" && exit 1)
 
       # =========================================================
-      # FLUTTER DEPENDENCIES (OPTIMIZED)
+      # FLUTTER DEPENDENCIES
       # =========================================================
-      - name: Flutter Pub Get
+      - name: Install Dependencies
         script: |
           set -e
           flutter pub get
 
       # =========================================================
-      # SKIP CLEAN (IMPORTANT SPEED BOOST)
+      # COCOAPODS (SAFE INSTALL)
       # =========================================================
-      - name: Skip Full Clean
-        script: |
-          echo "Skipping flutter clean for speed"
-
-      # =========================================================
-      # COCOAPODS (CACHED + NO REINSTALL IF POSSIBLE)
-      # =========================================================
-      - name: CocoaPods Install (Optimized)
+      - name: Ensure CocoaPods
         script: |
           set -e
 
           if ! command -v pod >/dev/null 2>&1; then
+            echo "Installing CocoaPods..."
             sudo gem install cocoapods --no-document
           fi
 
           pod --version
 
       # =========================================================
-      # POD INSTALL (ONLY IF NEEDED)
+      # IOS POD INSTALL (RELIABLE)
       # =========================================================
-      - name: Install Pods (Incremental)
+      - name: Install iOS Pods
         script: |
           set -e
 
           cd ios
 
-          if [ ! -d Pods ] || [ ! -f Podfile.lock ]; then
-            echo "Fresh pod install required"
-            pod install
-          else
-            echo "Using cached Pods"
+          if [ ! -f Podfile ]; then
+            echo "ERROR: Podfile missing. Run 'flutter create .' locally and commit ios folder."
+            exit 1
           fi
+
+          pod install --repo-update
 
           cd ..
 
       # =========================================================
-      # FAST ANALYSIS (NON-BLOCKING)
+      # QUALITY CHECKS (NON-BLOCKING)
       # =========================================================
-      - name: Analyze (Non-blocking)
+      - name: Tests
+        script: |
+          set +e
+          flutter test
+
+      - name: Analyze
         script: |
           set +e
           flutter analyze
 
       # =========================================================
-      # FAST TESTS (OPTIONAL)
+      # BUILD IPA
       # =========================================================
-      - name: Tests (Non-blocking)
-        script: |
-          set +e
-          flutter test
-
-      # =========================================================
-      # FAST BUILD (OPTIMIZED)
-      # =========================================================
-      - name: Build IPA (Fast)
+      - name: Build iOS IPA
         script: |
           set -e
 
-          flutter build ipa --release --no-tree-shake-icons
+          flutter clean
+          flutter pub get
+
+          cd ios
+          pod install
+          cd ..
+
+          flutter build ipa --release
 
     artifacts:
       - build/ios/ipa/*.ipa
