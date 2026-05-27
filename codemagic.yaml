@@ -3,7 +3,6 @@ workflows:
     name: Tiligo Production
 
     instance_type: mac_mini_m2
-    max_build_duration: 90
 
     integrations:
       app_store_connect: tiligo_asc
@@ -12,44 +11,29 @@ workflows:
       flutter: stable
 
       vars:
-        BUNDLE_ID: "com.base69d519273be8cf966434f77a.app"
-        PACKAGE_NAME: "com.base69d519273be8cf966434f77a.app"
+        BUNDLE_ID: com.base69d519273be8cf966434f77a.app
 
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.base69d519273be8cf966434f77a.app
-
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - ~/.gradle/caches
-        - ~/.gradle/wrapper
-        - ~/Library/Caches/CocoaPods
-
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
+        automatic_code_signing: true
 
     scripts:
-      - name: Get packages
+      - name: Get dependencies
         script: flutter pub get
 
-      - name: Install iOS pods
+      - name: Fetch signing files (CRITICAL FIX)
         script: |
-          cd ios
-          pod install
-          cd ..
+          app-store-connect fetch-signing-files \
+            "$BUNDLE_ID" \
+            --type IOS_APP_STORE \
+            --create
 
       - name: Build Android
-        script: |
-          flutter build appbundle --release
+        script: flutter build appbundle --release
 
       - name: Build iOS
-        script: |
-          flutter build ipa --release
+        script: flutter build ipa --release
 
     artifacts:
       - build/**/outputs/**/*.aab
@@ -59,9 +43,3 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        beta_groups:
-          - Internal Testers
-
-      email:
-        recipients:
-          - elgrandexx@icloud.com
