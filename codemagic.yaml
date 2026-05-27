@@ -1,9 +1,12 @@
 workflows:
   tiligo-production:
-    name: Tiligo Production CI/CD
+    name: Tiligo Production
 
     instance_type: mac_mini_m2
-    max_build_duration: 120
+    max_build_duration: 90
+
+    integrations:
+      app_store_connect: Codemagic
 
     environment:
       flutter: stable
@@ -17,14 +20,12 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.base69d519273be8cf966434f77a.app
 
-      android_signing:
-        - keystore_reference
-
     cache:
       cache_paths:
         - ~/.pub-cache
         - ~/.gradle/caches
         - ~/.gradle/wrapper
+        - ~/Library/Caches/CocoaPods
 
     triggering:
       events:
@@ -32,87 +33,41 @@ workflows:
       branch_patterns:
         - pattern: main
           include: true
-          source: true
 
     scripts:
-
-      - name: Environment diagnostics
+      - name: Install dependencies
         script: |
-          flutter --version
-          dart --version
-          java -version
-          xcodebuild -version
-
-      - name: Clean project
-        script: |
-          flutter clean
-          rm -rf ios/Pods
-          rm -rf ios/Podfile.lock
           flutter pub get
 
-      - name: Rewrite Android package globally
-        script: |
-          find android -type f \( -name "*.kt" -o -name "*.java" -o -name "*.gradle" \) -print0 | while IFS= read -r -d '' file; do
-            sed -i.bak "s/com\.[A-Za-z0-9._-]*/$PACKAGE_NAME/g" "$file" || true
-          done
-
-      - name: Rewrite Android namespace
-        script: |
-          sed -i.bak "s/namespace \".*\"/namespace \"$PACKAGE_NAME\"/g" android/app/build.gradle || true
-          sed -i.bak "s/applicationId \".*\"/applicationId \"$PACKAGE_NAME\"/g" android/app/build.gradle
-
-      - name: Rewrite iOS bundle identifiers
-        script: |
-          find ios -type f \( -name "*.pbxproj" -o -name "*.plist" -o -name "*.xcconfig" \) -print0 | while IFS= read -r -d '' file; do
-            sed -i '' "s/PRODUCT_BUNDLE_IDENTIFIER = .*;/PRODUCT_BUNDLE_IDENTIFIER = $BUNDLE_ID;/g" "$file" || true
-            sed -i '' "s/com\.[A-Za-z0-9._-]*/$BUNDLE_ID/g" "$file" || true
-          done
-
-      - name: Install CocoaPods
+      - name: iOS pod install
         script: |
           cd ios
-          pod repo update
           pod install
           cd ..
 
-      - name: Auto increment build number
+      - name: Build Android AAB
         script: |
-          BUILD_NUMBER=$(date +%s)
-          flutter build ipa --build-number=$BUILD_NUMBER --release --no-codesign
-          flutter build appbundle --build-number=$BUILD_NUMBER --release
+          flutter build appbundle --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER
 
-      - name: Build signed Android App Bundle
+      - name: Build iOS IPA
         script: |
-          flutter build appbundle --release
-
-      - name: Build signed APK
-        script: |
-          flutter build apk --release
-
-      - name: Build signed iOS IPA
-        script: |
-          flutter build ipa --release
+          flutter build ipa --release \
+            --build-name=1.0.0 \
+            --build-number=$BUILD_NUMBER
 
     artifacts:
       - build/**/outputs/**/*.aab
-      - build/**/outputs/**/*.apk
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
-      - flutter_drive.log
 
     publishing:
-
-      email:
-        recipients:
-          - your@email.com
-
       app_store_connect:
         auth: integration
         submit_to_testflight: true
         beta_groups:
           - Internal Testers
 
-      google_play:
-        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
-        track: internal
-        
+      email:
+        recipients:
+          - elgrandexx@icloud.com
