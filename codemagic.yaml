@@ -17,31 +17,12 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.tili-go.app
 
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-
     scripts:
-      - name: Get dependencies
-        script: flutter pub get
-
-      - name: Clean build
-        script: flutter clean
-
-      - name: Install iOS pods
-        script: |
-          cd ios
-          pod install
-          cd ..
-
-      - name: Build Android
-        script: flutter build appbundle --release
-
-      - name: Build iOS
-        script: flutter build ipa --release
+      - flutter pub get
+      - flutter clean
+      - cd ios && pod install && cd ..
+      - flutter build appbundle --release
+      - flutter build ipa --release
 
     artifacts:
       - build/**/outputs/**/*.aab
