@@ -16,34 +16,37 @@ workflows:
         bundle_identifier: com.tili-go.app
 
     scripts:
-
-      - name: Install Node dependencies
+      - name: Install dependencies
         script: npm install
 
-      - name: Build frontend (Vite)
+      - name: Build web assets
         script: npm run build
 
-      - name: Flutter clean & dependencies
+      - name: Flutter clean & get
         script: |
           flutter clean
           flutter pub get
 
-      - name: Install CocoaPods
+      - name: Install pods
         script: |
           cd ios
           pod install
           cd ..
 
-      - name: Build iOS (no signing step)
+      - name: Build iOS
         script: flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       app_store_connect:
         api_key:
           key_id: "1PZAKU8D1T5D"
           issuer_id: "PUT_YOUR_ISSUER_ID_HERE"
-          key: "$CM_ASC_KEY"
+          key: |
+            -----BEGIN PRIVATE KEY-----
+            MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgkJZ0E7bGPdaGqFeH
+            bOSOUjHy6Xsu2mmJBaCmXALj9QehRANCAAR1NEG1+5HVZRTYIZ0yawq+4d3IPVq3
+            VG4+v29Ojehk772Q0OGtqmg3AuOjdRh5qct04onVhFfBSVmTFubjAq1P
+            -----END PRIVATE KEY-----
