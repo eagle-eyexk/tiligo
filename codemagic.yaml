@@ -1,33 +1,21 @@
 workflows:
   ios-release:
     name: TiliGo iOS Release
-    max_build_duration: 60
+    max_build_duration: 90
 
     environment:
       flutter: stable
       xcode: latest
-      node: 18
-
-      vars:
-        BUNDLE_ID: "com.tili-go.app"
+      cocoapods: default
 
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.tili-go.app
 
     scripts:
-      - name: Install dependencies
-        script: npm install
+      - flutter pub get
 
-      - name: Build web assets
-        script: npm run build
-
-      - name: Flutter clean & get
-        script: |
-          flutter clean
-          flutter pub get
-
-      - name: Install pods
+      - name: Pods install
         script: |
           cd ios
           pod install
@@ -40,13 +28,11 @@ workflows:
       - build/ios/ipa/*.ipa
 
     publishing:
-  app_store_connect:
-    api_key:
-      key_id: "1PZAKU8D1T5D"
-      issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
-      key: |
-        -----BEGIN PRIVATE KEY-----
-        MIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQgkJZ0E7bGPdaGqFeH
-        bOSOUjHy6Xsu2mmJBaCmXALj9QehRANCAAR1NEG1+5HVZRTYIZ0yawq+4d3IPVq3
-        VG4+v29Ojehk772Q0OGtqmg3AuOjdRh5qct04onVhFfBSVmTFubjAq1P
-        -----END PRIVATE KEY-----
+      app_store_connect:
+        api_key:
+          key_id: "2B6Y97523V"
+          issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
+          key: |
+            -----BEGIN PRIVATE KEY-----
+            PASTE_CONTENT_OF_AuthKey_2B6Y97523V.p8
+            -----END PRIVATE KEY-----
