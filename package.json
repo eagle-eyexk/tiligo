@@ -75,7 +75,7 @@
     "react-hot-toast": "^2.6.0",
     "react-leaflet": "^4.2.1",
     "react-markdown": "^9.0.1",
-    "react-quill": "^2.0.0",
+    "react-quill": "^0.0.2",
     "react-resizable-panels": "^2.1.7",
     "react-router-dom": "^6.26.0",
     "recharts": "^2.15.4",
@@ -87,7 +87,7 @@
     "zod": "^3.24.2"
   },
   "devDependencies": {
-    "@capacitor/cli": "^6.0.0",
+    "@capacitor/cli": "^8.3.4",
     "@capacitor/ios": "^6.0.0",
     "@eslint/js": "^9.19.0",
     "@types/node": "^22.13.5",
