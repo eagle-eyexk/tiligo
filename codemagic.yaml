@@ -1,38 +1,46 @@
 workflows:
   ios-release:
-    name: TiliGo iOS Release
-    max_build_duration: 90
+    name: iOS Release Build
+    max_build_duration: 60
 
     environment:
       flutter: stable
       xcode: latest
       cocoapods: default
+      vars:
+        BUNDLE_ID: com.tili-go.app
 
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: com.tili-go.app
+      groups:
+        - app_store_credentials
 
     scripts:
-      - flutter pub get
+      - name: Install dependencies
+        script: |
+          flutter clean
+          flutter pub get
 
-      - name: Pods install
+      - name: Install pods
         script: |
           cd ios
           pod install
           cd ..
 
-      - name: Build iOS
-        script: flutter build ios --release --no-codesign
+      - name: Build iOS (no codesign)
+        script: |
+          flutter build ios --release --no-codesign
+
+      - name: Archive IPA
+        script: |
+          cd build/ios/iphoneos
+          mkdir Payload
+          cp -R Runner.app Payload/
+          zip -r app.ipa Payload
 
     artifacts:
-      - build/ios/ipa/*.ipa
+      - build/ios/iphoneos/app.ipa
 
     publishing:
       app_store_connect:
-        api_key:
-          key_id: "2B6Y97523V"
-          issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
-          key: |
-            -----BEGIN PRIVATE KEY-----
-            PASTE_CONTENT_OF_AuthKey_2B6Y97523V.p8
-            -----END PRIVATE KEY-----
+        api_key: $APP_STORE_CONNECT_API_KEY
+        key_id: $APP_STORE_CONNECT_KEY_ID
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
