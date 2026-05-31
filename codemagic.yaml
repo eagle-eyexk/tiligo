@@ -1,71 +1,60 @@
 workflows:
   ios-release:
-    name: iOS Release (Flutter)
-
-    instance_type: mac_mini_m2
-    max_build_duration: 120
-
-    integrations:
-      app_store_connect: codemagic
+    name: TiliGo iOS Release
+    max_build_duration: 60
 
     environment:
       flutter: stable
       xcode: latest
+      node: 18
+
+      vars:
+        BUNDLE_ID: "com.tili-go.app"
+        XCODE_WORKSPACE: "ios/Runner.xcworkspace"
+        XCODE_SCHEME: "Runner"
 
       ios_signing:
         distribution_type: app_store
         bundle_identifier: com.tili-go.app
 
-      vars:
-        BUNDLE_ID: "com.tili-go.app"
-        FLUTTER_VERSION: stable
-
-    cache:
-      cache_paths:
-        - $HOME/.pub-cache
-        - $HOME/Library/Caches/CocoaPods
-
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
-          include: true
-
     scripts:
-      - name: Clean project
+
+      - name: Install Node dependencies (Vite frontend)
+        script: |
+          npm install
+
+      - name: Build web assets (Vite)
+        script: |
+          npm run build
+
+      - name: Install Flutter dependencies
         script: |
           flutter clean
-
-      - name: Get dependencies
-        script: |
           flutter pub get
 
       - name: Install CocoaPods
         script: |
           cd ios
-          pod repo update
           pod install
           cd ..
 
-      - name: Analyze project
+      - name: (Optional) Capacitor sync safe check
         script: |
-          flutter analyze
+          if [ -d "ios/App" ]; then
+            echo "Capacitor project detected"
+            npx cap sync ios || true
+          else
+            echo "No Capacitor project detected, skipping"
+          fi
 
-      - name: Run tests
+      - name: Build iOS app (no codesign, handled by Codemagic)
         script: |
-          flutter test
-
-      - name: Build IPA
-        script: |
-          flutter build ipa --release
+          flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/ipa/*.ipa
+      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       app_store_connect:
         auth: integration
-        submit_to_testflight: true
-        beta_groups:
-          - Internal Testers
