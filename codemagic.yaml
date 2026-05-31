@@ -17,43 +17,32 @@ workflows:
         distribution_type: app_store
         bundle_identifier: com.tili-go.app
 
+      integrations:
+        app_store_connect: tiligo_asc
+
     scripts:
+      - name: Install Node dependencies
+        script: npm install
 
-      - name: Install Node dependencies (Vite frontend)
-        script: |
-          npm install
+      - name: Build web assets
+        script: npm run build
 
-      - name: Build web assets (Vite)
-        script: |
-          npm run build
-
-      - name: Install Flutter dependencies
+      - name: Flutter dependencies
         script: |
           flutter clean
           flutter pub get
 
-      - name: Install CocoaPods
+      - name: Install pods
         script: |
           cd ios
           pod install
           cd ..
 
-      - name: (Optional) Capacitor sync safe check
-        script: |
-          if [ -d "ios/App" ]; then
-            echo "Capacitor project detected"
-            npx cap sync ios || true
-          else
-            echo "No Capacitor project detected, skipping"
-          fi
-
-      - name: Build iOS app (no codesign, handled by Codemagic)
-        script: |
-          flutter build ios --release --no-codesign
+      - name: Build iOS
+        script: flutter build ios --release --no-codesign
 
     artifacts:
       - build/ios/ipa/*.ipa
-      - /tmp/xcodebuild_logs/*.log
 
     publishing:
       app_store_connect:
