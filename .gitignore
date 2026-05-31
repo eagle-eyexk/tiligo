@@ -34,3 +34,9 @@ ios/build
 
 .env
 .vite
+
+# ============================================
+# CAPACITOR iOS - DO NOT IGNORE THESE
+# ============================================
+# The Podfile is REQUIRED for building
+# Do not ignore: ios/App/Podfile
