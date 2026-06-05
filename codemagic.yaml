@@ -1,9 +1,4 @@
-# =============================================================================
-# TILIGO — CODEMAGIC iOS BUILD (FIXED YAML)
-# =============================================================================
-
 workflows:
-  
   ios-build:
     name: "iOS Build"
     instance_type: mac_mini_m2
@@ -15,7 +10,7 @@ workflows:
         - tiligo_app_config
       vars:
         NODE_VERSION: "20"
-        XCODE_VERSION: "15.4"
+        XCODE_VERSION: "16.1"
         COCOAPODS_VERSION: "1.15.2"
       node: $NODE_VERSION
       xcode: $XCODE_VERSION
@@ -31,29 +26,27 @@ workflows:
     
     scripts:
       
-      - name: "Install dependencies"
+      - name: "Check Xcode version"
         script: |
-          npm ci --prefer-offline 2>/dev/null || npm install
+          echo "Available Xcode versions:"
+          ls /Applications/ | grep Xcode
+          echo ""
+          echo "Using: $(xcodebuild -version | head -1)"
+      
+      - name: "Install dependencies"
+        script: npm ci --prefer-offline 2>/dev/null || npm install
       
       - name: "Build web app"
-        script: |
-          npm run build
-          echo "Build output directories:"
-          ls -la dist/ 2>/dev/null || ls -la build/ 2>/dev/null || ls -la www/ 2>/dev/null || echo "No output dir found"
+        script: npm run build
       
       - name: "Create Podfile if missing"
         script: |
           if [ ! -f "ios/App/Podfile" ]; then
-            echo "Creating Podfile..."
             mkdir -p ios/App
-            
-            # Use tee to write the file without YAML indentation issues
             tee ios/App/Podfile << 'ENDOFPODFILE'
             require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-            
             platform :ios, '13.0'
             use_frameworks!
-            
             def capacitor_pods
               pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
               pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
@@ -61,11 +54,9 @@ workflows:
               pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
               pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
             end
-            
             target 'App' do
               capacitor_pods
             end
-            
             post_install do |installer|
               installer.pods_project.targets.each do |target|
                 target.build_configurations.each do |config|
@@ -75,10 +66,6 @@ workflows:
               capacitor_post_install(installer)
             end
             ENDOFPODFILE
-            
-            echo "Podfile created"
-          else
-            echo "Podfile already exists"
           fi
       
       - name: "Sync Capacitor"
@@ -90,15 +77,9 @@ workflows:
           pod install --repo-update
           cd ../..
       
-      - name: "List iOS project files"
-        script: |
-          echo "=== iOS project structure ==="
-          find ios/App -maxdepth 3 -type f | grep -v Pods | grep -v build | sort
-      
       - name: "Build iOS"
         script: |
           cd ios/App
-          
           xcodebuild \
             -workspace App.xcworkspace \
             -scheme App \
@@ -111,7 +92,6 @@ workflows:
             PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_NAME" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
             -allowProvisioningUpdates
-          
           cd ../..
       
       - name: "Export IPA"
@@ -121,8 +101,6 @@ workflows:
             -archivePath ios/App/build/App.xcarchive \
             -exportOptionsPlist ios/App/exportOptions.plist \
             -exportPath build/ios/ipa
-          
-          echo "IPA files:"
           ls -la build/ios/ipa/
     
     artifacts:
