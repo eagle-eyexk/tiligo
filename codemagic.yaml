@@ -33,9 +33,12 @@ workflows:
           
           npx cap add ios
           npx cap sync ios
-          cd ios/App && pod install --repo-update && cd ../..
           
-          cat > ios/App/exportOptions.plist << 'PLIST'
+          cd ios/App
+          pod init
+          pod install --repo-update
+          
+          cat > exportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -48,7 +51,6 @@ workflows:
           </plist>
           PLIST
           
-          cd ios/App
           xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
           xcodebuild -exportArchive -archivePath ../../build/ios/archive/App.xcarchive -exportPath ../../build/ios/ipa -exportOptionsPlist exportOptions.plist -allowProvisioningUpdates
     artifacts:
