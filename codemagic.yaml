@@ -24,13 +24,6 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
-      - name: Create Podfile if missing
-        script: |
-          if [ ! -f ios/App/Podfile ]; then
-            cd ios/App
-            pod init
-            cd ../..
-          fi
       - name: Install Pods
         script: cd ios/App && pod install --repo-update && cd ../..
       - name: Create export options
@@ -56,12 +49,14 @@ workflows:
             -configuration Release \
             archive \
             -archivePath ../../build/ios/archive/App.xcarchive \
-            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=H4QUDPK7S3 \
+            CODE_SIGN_STYLE=Automatic \
             -allowProvisioningUpdates
           xcodebuild -exportArchive \
             -archivePath ../../build/ios/archive/App.xcarchive \
             -exportPath ../../build/ios/ipa \
-            -exportOptionsPlist exportOptions.plist
+            -exportOptionsPlist exportOptions.plist \
+            -allowProvisioningUpdates
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
@@ -70,4 +65,3 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - Internal Testers
-        
