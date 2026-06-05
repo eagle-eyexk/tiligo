@@ -19,8 +19,8 @@
     "ios:open": "npm run ios:prepare && npm run capacitor:open"
   },
   "dependencies": {
-    "@base44/sdk": "^0.8.30",
-    "@base44/vite-plugin": "^1.0.20",
+    "@base44/sdk": "^0.8.31",
+    "@base44/vite-plugin": "^1.0.21",
     "@capacitor/core": "^8.3.4",
     "@hello-pangea/dnd": "^17.0.0",
     "@hookform/resolvers": "^4.1.2",
