@@ -26,15 +26,8 @@ workflows:
     
     scripts:
       
-      - name: "Check Xcode version"
-        script: |
-          echo "Available Xcode versions:"
-          ls /Applications/ | grep Xcode
-          echo ""
-          echo "Using: $(xcodebuild -version | head -1)"
-      
       - name: "Install dependencies"
-        script: npm ci --prefer-offline 2>/dev/null || npm install
+        script: npm install
       
       - name: "Build web app"
         script: npm run build
@@ -42,30 +35,34 @@ workflows:
       - name: "Create Podfile if missing"
         script: |
           if [ ! -f "ios/App/Podfile" ]; then
+            echo "Creating Podfile..."
             mkdir -p ios/App
-            tee ios/App/Podfile << 'ENDOFPODFILE'
-            require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-            platform :ios, '13.0'
-            use_frameworks!
-            def capacitor_pods
-              pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-              pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-              pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
-              pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
-              pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
-            end
-            target 'App' do
-              capacitor_pods
-            end
-            post_install do |installer|
-              installer.pods_project.targets.each do |target|
-                target.build_configurations.each do |config|
-                  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-                end
+            cat > ios/App/Podfile << 'EOF'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+          platform :ios, '13.0'
+          use_frameworks!
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+            pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+            pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+          end
+          target 'App' do
+            capacitor_pods
+          end
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
               end
-              capacitor_post_install(installer)
             end
-            ENDOFPODFILE
+            capacitor_post_install(installer)
+          end
+          EOF
+            echo "Podfile created"
+          else
+            echo "Podfile already exists"
           fi
       
       - name: "Sync Capacitor"
