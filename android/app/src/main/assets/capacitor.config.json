@@ -1,0 +1,19 @@
+{
+	"appId": "com.tiligo.app",
+	"appName": "Tiligo",
+	"webDir": "dist",
+	"bundledWebRuntime": false,
+	"ios": {
+		"scheme": "App",
+		"contentInset": "automatic",
+		"allowsLinkPreview": false,
+		"scrollEnabled": true
+	},
+	"server": {
+		"iosScheme": "tiligo",
+		"hostname": "localhost",
+		"allowNavigation": [
+			"*"
+		]
+	}
+}
