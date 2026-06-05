@@ -12,56 +12,39 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Setup Node.js 22
-        uses: actions/setup-node@v4
-        with:
-          node-version: '22'
-
-      - name: Verify Node version
+      - name: Force Node 22
         run: |
+          curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm install 22
+          nvm use 22
           node --version
           npm --version
-          echo "NODE VERSION CHECK"
-          node -e "const v=process.version; if(!v.startsWith('v22')){console.log('Wrong Node!'); process.exit(1)} else {console.log('Node 22 OK')}"
+          echo "$NVM_DIR/nvm.sh" >> $GITHUB_ENV
 
-      - name: Install ALL dependencies
+      - name: Install dependencies
         run: |
-          rm -rf node_modules package-lock.json
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22
           npm install
           npm install @capacitor/core @capacitor/cli @capacitor/ios @capacitor/app @capacitor/haptics @capacitor/keyboard @capacitor/status-bar
 
-      - name: Build web app
-        run: npm run build
-
-      - name: Setup iOS from scratch
+      - name: Build web
         run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22
+          npm run build
+
+      - name: Setup iOS
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22
           rm -rf ios/
           npx cap add ios
-          
-          cat > ios/App/Podfile << 'PODFILE'
-          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-          platform :ios, '13.0'
-          use_frameworks!
-          def capacitor_pods
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-            pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
-            pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
-            pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
-          end
-          target 'App' do
-            capacitor_pods
-          end
-          post_install do |installer|
-            installer.pods_project.targets.each do |target|
-              target.build_configurations.each do |config|
-                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-              end
-            end
-            capacitor_post_install(installer)
-          end
-          PODFILE
-          
           npx cap sync ios
 
       - name: Pod install
