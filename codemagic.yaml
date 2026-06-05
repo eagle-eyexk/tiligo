@@ -9,7 +9,7 @@ workflows:
         - tiligo_code_signing
         - tiligo_app_config
       vars:
-        NODE_VERSION: "20"
+        NODE_VERSION: "22"
         XCODE_VERSION: "16.1"
         COCOAPODS_VERSION: "1.15.2"
       node: $NODE_VERSION
