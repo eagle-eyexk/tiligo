@@ -1,0 +1,96 @@
+workflows:
+  tiligo-ios:
+    name: Tiligo TestFlight
+    instance_type: mac_mini_m2
+    max_build_duration: 90
+    environment:
+      vars:
+        NODE_VERSION: "22"
+        XCODE_VERSION: "16.1"
+        BUNDLE_ID: "com.tiligo.app"
+        APP_STORE_ID: "6777145744"
+      node: $NODE_VERSION
+      xcode: $XCODE_VERSION
+    
+    triggering:
+      events:
+        - push
+        - tag
+      branch_patterns:
+        - pattern: 'main'
+          include: true
+      tag_patterns:
+        - pattern: 'v*'
+          include: true
+      cancel_previous_builds: true
+    
+    scripts:
+      - name: Install Node 22
+        script: |
+          brew install node@22
+          echo 'export PATH="/usr/local/opt/node@22/bin:$PATH"' >> $HOME/.bash_profile
+          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          node --version
+
+      - name: Install deps
+        script: |
+          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          npm install
+          npm install @capacitor/ios
+
+      - name: Build web
+        script: |
+          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          npm run build
+
+      - name: Capacitor sync
+        script: |
+          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          npx cap sync ios
+
+      - name: Pod install
+        script: |
+          cd ios/App
+          pod install
+          cd ../..
+
+      - name: Build IPA
+        script: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath build/App.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            DEVELOPMENT_TEAM="H4QUDPK7S3"
+          cd ../..
+
+      - name: Export IPA
+        script: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath ios/App/build/App.xcarchive \
+            -exportPath build/ios/ipa \
+            -exportOptionsPlist ios/App/exportOptions.plist
+          ls -la build/ios/ipa/
+    
+    artifacts:
+      - build/ios/ipa/*.ipa
+    
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_KEY
+        key_id: "2H8MJ5ZP26"
+        issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
+        submit_to_testflight: true
+      
+      email:
+        recipients:
+          - agentextern@gmail.com
+        notify:
+          success: true
+          failure: true
