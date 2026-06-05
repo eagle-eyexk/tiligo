@@ -1,9 +1,10 @@
 workflows:
-  ios-build:
-    name: "iOS Build"
+  ios-release:
+    name: Tiligo TestFlight
     instance_type: mac_mini_m2
-    max_build_duration: 90
+    max_build_duration: 120
     environment:
+<<<<<<< HEAD
       groups:
         - tiligo_app_store_connect
         - tiligo_code_signing
@@ -16,109 +17,51 @@ workflows:
       xcode: $XCODE_VERSION
       cocoapods: $COCOAPODS_VERSION
     
+=======
+      xcode: latest
+      cocoapods: default
+    integrations:
+      app_store_connect: tiligo_asc
+>>>>>>> a6082d78ba06dfda57cb0c48c2ed861aa3036827
     triggering:
       events:
         - push
       branch_patterns:
-        - pattern: 'main'
+        - pattern: main
           include: true
-      cancel_previous_builds: true
-    
     scripts:
-      
-      - name: "Check Xcode version"
+      - name: Build Everything
         script: |
-          echo "Available Xcode versions:"
-          ls /Applications/ | grep Xcode
-          echo ""
-          echo "Using: $(xcodebuild -version | head -1)"
-      
-      - name: "Install dependencies"
-        script: npm ci --prefer-offline 2>/dev/null || npm install
-      
-      - name: "Build web app"
-        script: npm run build
-      
-      - name: "Create Podfile if missing"
-        script: |
-          if [ ! -f "ios/App/Podfile" ]; then
-            mkdir -p ios/App
-            tee ios/App/Podfile << 'ENDOFPODFILE'
-            require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-            platform :ios, '13.0'
-            use_frameworks!
-            def capacitor_pods
-              pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-              pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-              pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
-              pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
-              pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
-            end
-            target 'App' do
-              capacitor_pods
-            end
-            post_install do |installer|
-              installer.pods_project.targets.each do |target|
-                target.build_configurations.each do |config|
-                  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-                end
-              end
-              capacitor_post_install(installer)
-            end
-            ENDOFPODFILE
-          fi
-      
-      - name: "Sync Capacitor"
-        script: npx cap sync ios
-      
-      - name: "Install CocoaPods"
-        script: |
-          cd ios/App
-          pod install --repo-update
-          cd ../..
-      
-      - name: "Build iOS"
-        script: |
-          cd ios/App
-          xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath build/App.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_NAME" \
-            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            -allowProvisioningUpdates
-          cd ../..
-      
-      - name: "Export IPA"
-        script: |
-          xcodebuild \
-            -exportArchive \
-            -archivePath ios/App/build/App.xcarchive \
-            -exportOptionsPlist ios/App/exportOptions.plist \
-            -exportPath build/ios/ipa
-          ls -la build/ios/ipa/
-    
+          #!/bin/bash
+          set -e
+          curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm install 22 && nvm use 22
+          rm -rf node_modules package-lock.json
+          npm install && npm install @rollup/rollup-darwin-arm64
+          npm run build
+          npx cap add ios && npx cap sync ios
+          cd ios/App && pod init && pod install --repo-update
+          cat > exportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>H4QUDPK7S3</string>
+          </dict>
+          </plist>
+          PLIST
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Manual -allowProvisioningUpdates
+          xcodebuild -exportArchive -archivePath ../../build/ios/archive/App.xcarchive -exportPath ../../build/ios/ipa -exportOptionsPlist exportOptions.plist -allowProvisioningUpdates
     artifacts:
       - build/ios/ipa/*.ipa
-      - ios/App/build/*.xcarchive
-    
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY
-        key_id: $APP_STORE_CONNECT_KEY_ID
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
         beta_groups:
-          - "Internal Testers"
-      
-      email:
-        recipients:
-          - builds@tiligo.com
-        notify:
-          success: true
-          failure: true
+          - Internal Testers
