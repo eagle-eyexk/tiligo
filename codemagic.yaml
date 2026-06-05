@@ -4,7 +4,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 120
     environment:
-      node: 22
+      node: 18
       xcode: latest
       cocoapods: default
     integrations:
@@ -16,27 +16,60 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Install and Build Web
+      - name: Install dependencies
+        script: npm install
+      - name: Build web app
+        script: npm run build
+      - name: Setup iOS
         script: |
-          npm install
-          npm run build
-      - name: iOS Platform
-        script: npx cap add ios && npx cap sync ios
-      - name: Pod Install
-        script: cd ios/App && pod install && cd ../..
+          npx cap add ios
+          npx cap sync ios
+          ls -la ios/App/
+      - name: Create Podfile if missing
+        script: |
+          if [ ! -f ios/App/Podfile ]; then
+            cd ios/App
+            pod init
+            sed -i '' "s/'App'/'App'/g" Podfile
+            echo "platform :ios, '13.0'" > Podfile
+            echo "use_frameworks!" >> Podfile
+            echo "target 'App' do" >> Podfile
+            echo "  pod 'Capacitor'" >> Podfile
+            echo "  pod 'CapacitorCordova'" >> Podfile
+            echo "end" >> Podfile
+            cd ../..
+          fi
+      - name: Install Pods
+        script: cd ios/App && pod install --repo-update && cd ../..
+      - name: Create export options
+        script: |
+          cat > ios/App/exportOptions.plist << 'EOF'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>H4QUDPK7S3</string>
+          </dict>
+          </plist>
+          EOF
       - name: Build IPA
         script: |
           cd ios/App
-          xcodebuild -project App.xcodeproj \
+          xcodebuild -workspace App.xcworkspace \
             -scheme App \
             -sdk iphoneos \
             -configuration Release \
             archive \
             -archivePath ../../build/ios/archive/App.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyIssuerID 6d7acece-2356-43c3-9946-6fd2cda5bf7d \
-            -authenticationKeyID 553BWFUTAM \
-            -authenticationKeyPath $APP_STORE_CONNECT_PRIVATE_KEY
+            CODE_SIGN_STYLE=Manual \
+            -allowProvisioningUpdates
+          xcodebuild -exportArchive \
+            -archivePath ../../build/ios/archive/App.xcarchive \
+            -exportPath ../../build/ios/ipa \
+            -exportOptionsPlist exportOptions.plist
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
