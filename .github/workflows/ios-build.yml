@@ -12,27 +12,33 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
         with:
           node-version: '22'
 
-      - run: npm install
-
-      - run: |
-          echo "=== Installing iOS platform ==="
-          npm install @capacitor/ios @capacitor/app @capacitor/haptics @capacitor/keyboard @capacitor/status-bar
-
-      - run: npm run build
-
-      - name: Setup iOS project
+      - name: Verify Node version
         run: |
-          if [ ! -d "ios" ]; then
-            npx cap add ios
-          fi
+          node --version
+          npm --version
+          echo "NODE VERSION CHECK"
+          node -e "const v=process.version; if(!v.startsWith('v22')){console.log('Wrong Node!'); process.exit(1)} else {console.log('Node 22 OK')}"
+
+      - name: Install ALL dependencies
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install
+          npm install @capacitor/core @capacitor/cli @capacitor/ios @capacitor/app @capacitor/haptics @capacitor/keyboard @capacitor/status-bar
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Setup iOS from scratch
+        run: |
+          rm -rf ios/
+          npx cap add ios
           
-          if [ ! -f "ios/App/Podfile" ]; then
-            mkdir -p ios/App
-            cat > ios/App/Podfile << 'PODFILE'
+          cat > ios/App/Podfile << 'PODFILE'
           require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
           platform :ios, '13.0'
           use_frameworks!
@@ -55,16 +61,13 @@ jobs:
             capacitor_post_install(installer)
           end
           PODFILE
-          fi
           
           npx cap sync ios
 
       - name: Pod install
         run: |
           cd ios/App
-          pod repo update 2>/dev/null || true
-          pod deintegrate 2>/dev/null || true
-          pod install --repo-update || pod install || pod install --verbose
+          pod install --repo-update
           cd ../..
 
       - name: Build iOS
@@ -77,38 +80,20 @@ jobs:
             -configuration Release \
             -archivePath build/App.xcarchive \
             archive \
-            -allowProvisioningUpdates \
-            CODE_SIGNING_ALLOWED=NO \
-            CODE_SIGNING_REQUIRED=NO
+            CODE_SIGNING_ALLOWED=NO
           cd ../..
 
       - name: Export IPA
         run: |
           mkdir -p build/ios/ipa
-          cat > ios/App/exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>development</string>
-              <key>teamID</key>
-              <string>0000000000</string>
-          </dict>
-          </plist>
-          PLIST
-          
           xcodebuild \
             -exportArchive \
             -archivePath ios/App/build/App.xcarchive \
             -exportPath build/ios/ipa \
             -exportOptionsPlist ios/App/exportOptions.plist 2>/dev/null || true
-          
-          ls -la build/ios/ipa/ 2>/dev/null || echo "IPA export skipped"
+          ls -la build/ios/ipa/
 
       - uses: actions/upload-artifact@v4
         with:
           name: tiligo-ios
-          path: |
-            build/ios/ipa/*.ipa
-            ios/App/build/*.xcarchive
+          path: build/ios/ipa/*.ipa
