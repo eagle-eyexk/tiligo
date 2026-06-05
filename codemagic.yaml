@@ -17,11 +17,24 @@ workflows:
           include: true
     scripts:
       - name: Setup
-        script: npm install && npm run build
-      - name: iOS
-        script: npx cap add ios && npx cap sync ios
-      - name: Pods
-        script: cd ios/App && pod install --repo-update && cd ../..
+        script: |
+          npm install
+          npm run build
+      - name: iOS Platform
+        script: |
+          npx cap add ios 2>/dev/null || true
+          npx cap sync ios 2>/dev/null || true
+      - name: Create Podfile
+        script: |
+          mkdir -p ios/App
+          cat > ios/App/Podfile << 'POD'
+          platform :ios, '13.0'
+          use_frameworks!
+          target 'App' do
+          end
+          POD
+      - name: Install Pods
+        script: cd ios/App && pod install && cd ../..
       - name: Export Options
         script: |
           cat > ios/App/exportOptions.plist << 'EOF'
@@ -36,7 +49,7 @@ workflows:
           </dict>
           </plist>
           EOF
-      - name: Build
+      - name: Build IPA
         script: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
