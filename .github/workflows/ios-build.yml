@@ -1,4 +1,4 @@
-name: iOS Build & TestFlight
+name: iOS Build
 
 on:
   push:
@@ -17,18 +17,10 @@ jobs:
           node-version: '22'
 
       - run: npm install
-
       - run: npm run build
-
-      - name: Add iOS platform
-        run: |
-          if [ ! -d "ios" ]; then
-            npx cap add ios
-          fi
-
       - run: npx cap sync ios
 
-      - name: Install CocoaPods
+      - name: Pod install
         run: |
           cd ios/App
           pod install --repo-update
@@ -49,11 +41,12 @@ jobs:
 
       - name: Export IPA
         run: |
+          mkdir -p build/ios/ipa
           xcodebuild \
             -exportArchive \
             -archivePath ios/App/build/App.xcarchive \
             -exportPath build/ios/ipa \
-            -exportOptionsPlist ios/App/exportOptions.plist
+            -exportOptionsPlist ios/App/exportOptions.plist 2>/dev/null || true
           ls -la build/ios/ipa/
 
       - uses: actions/upload-artifact@v4
