@@ -1,4 +1,9 @@
+# =============================================================================
+# TILIGO — CODEMAGIC iOS BUILD (FIXED YAML)
+# =============================================================================
+
 workflows:
+  
   ios-build:
     name: "iOS Build"
     instance_type: mac_mini_m2
@@ -26,13 +31,6 @@ workflows:
     
     scripts:
       
-      - name: "Pre-clean"
-        script: |
-          echo "=== Clean start ==="
-          # Remove any cached problematic files
-          rm -rf ~/Library/Developer/Xcode/DerivedData/*
-          rm -rf ~/.cocoapods/
-      
       - name: "Install dependencies"
         script: |
           npm ci --prefer-offline 2>/dev/null || npm install
@@ -40,159 +38,106 @@ workflows:
       - name: "Build web app"
         script: |
           npm run build
-          echo "Build output:"
-          ls -la dist/ 2>/dev/null || ls -la build/ 2>/dev/null || ls -la www/ 2>/dev/null || echo "No build output found"
+          echo "Build output directories:"
+          ls -la dist/ 2>/dev/null || ls -la build/ 2>/dev/null || ls -la www/ 2>/dev/null || echo "No output dir found"
       
-      - name: "Repair iOS project if missing Podfile"
+      - name: "Create Podfile if missing"
         script: |
-          if [ ! -f "ios/App/Podfile" ] && [ ! -f "ios/Podfile" ]; then
-            echo "⚠️  No Podfile found — creating..."
+          if [ ! -f "ios/App/Podfile" ]; then
+            echo "Creating Podfile..."
+            mkdir -p ios/App
             
-            # Detect project type
-            if [ -f "capacitor.config.json" ] || [ -f "capacitor.config.ts" ]; then
-              echo "Capacitor project detected"
-              mkdir -p ios/App
-              cat > ios/App/Podfile << 'PODFILE'
-require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-platform :ios, '13.0'
-use_frameworks!
-def capacitor_pods
-  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-end
-target 'App' do
-  capacitor_pods
-end
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
-    end
-  end
-  capacitor_post_install(installer)
-end
-PODFILE
-            else
-              echo "Flutter project detected"
-              mkdir -p ios
-              cat > ios/Podfile << 'PODFILE'
-platform :ios, '12.0'
-target 'Runner' do
-  use_frameworks!
-end
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '12.0'
-    end
-  end
-end
-PODFILE
-            fi
+            # Use tee to write the file without YAML indentation issues
+            tee ios/App/Podfile << 'ENDOFPODFILE'
+            require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+            
+            platform :ios, '13.0'
+            use_frameworks!
+            
+            def capacitor_pods
+              pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+              pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+              pod 'CapacitorHaptics', :path => '../../node_modules/@capacitor/haptics'
+              pod 'CapacitorKeyboard', :path => '../../node_modules/@capacitor/keyboard'
+              pod 'CapacitorStatusBar', :path => '../../node_modules/@capacitor/status-bar'
+            end
+            
+            target 'App' do
+              capacitor_pods
+            end
+            
+            post_install do |installer|
+              installer.pods_project.targets.each do |target|
+                target.build_configurations.each do |config|
+                  config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '13.0'
+                end
+              end
+              capacitor_post_install(installer)
+            end
+            ENDOFPODFILE
+            
+            echo "Podfile created"
+          else
+            echo "Podfile already exists"
           fi
       
-      - name: "Verify iOS project"
-        script: |
-          echo "============================================"
-          echo " VERIFYING iOS PROJECT"
-          echo "============================================"
-          
-          # List all files in ios/
-          echo ""
-          echo "=== Full ios/ directory listing ==="
-          find ios/ -type f -maxdepth 4 2>/dev/null | head -50 || echo "❌ ios/ directory is EMPTY or MISSING"
-          
-          echo ""
-          echo "=== Xcode projects ==="
-          find ios/ -name "*.xcodeproj" -o -name "*.xcworkspace" 2>/dev/null || echo "❌ No Xcode project/workspace found"
-          
-          echo ""
-          echo "=== Podfile ==="
-          find ios/ -name "Podfile" 2>/dev/null || echo "❌ No Podfile found"
-          
-          echo ""
-          echo "=== App source files ==="
-          find ios/ -name "*.swift" -o -name "*.m" -o -name "*.mm" 2>/dev/null || echo "No source files found"
-          
-          # The build WILL fail here if nothing exists
-          # This is intentional - we need the iOS project files
-          
-          if [ -z "$(find ios/ -name '*.xcodeproj' 2>/dev/null)" ]; then
-            echo ""
-            echo "============================================"
-            echo " ❌ FATAL: No Xcode project exists in ios/"
-            echo "============================================"
-            echo ""
-            echo "The iOS project files are missing from the repository."
-            echo "You MUST commit the ios/ directory with the Xcode project."
-            echo ""
-            echo "Run locally:"
-            echo "  npx cap add ios        (for Capacitor)"
-            echo "  flutter create --platforms=ios .  (for Flutter)"
-            echo "  git add ios/ && git commit && git push"
-            echo ""
-            exit 1
-          fi
-          
-          echo ""
-          echo "✅ iOS project verified successfully"
+      - name: "Sync Capacitor"
+        script: npx cap sync ios
       
       - name: "Install CocoaPods"
         script: |
-          echo "Installing CocoaPods..."
-          
-          PODFILE_DIR=$(dirname "$(find ios/ -name Podfile -type f | head -1)")
-          
-          if [ -z "$PODFILE_DIR" ]; then
-            echo "❌ Cannot find Podfile directory"
-            exit 1
-          fi
-          
-          cd "$PODFILE_DIR"
-          echo "Running pod install in: $(pwd)"
-          
+          cd ios/App
           pod install --repo-update
-          
-          cd -
+          cd ../..
       
-      - name: "Build IPA"
+      - name: "List iOS project files"
         script: |
-          # Find workspace
-          WORKSPACE=$(find ios/ -name "*.xcworkspace" -type d | head -1)
-          
-          if [ -z "$WORKSPACE" ]; then
-            echo "❌ No .xcworkspace found"
-            find ios/ -name "*.xcodeproj" -o -name "*.xcworkspace"
-            exit 1
-          fi
-          
-          SCHEME="App"
-          [ -f "pubspec.yaml" ] && SCHEME="Runner"
-          
-          echo "Building workspace: $WORKSPACE"
-          echo "Using scheme: $SCHEME"
-          
-          cd "$(dirname "$WORKSPACE")"
+          echo "=== iOS project structure ==="
+          find ios/App -maxdepth 3 -type f | grep -v Pods | grep -v build | sort
+      
+      - name: "Build iOS"
+        script: |
+          cd ios/App
           
           xcodebuild \
-            -workspace "$(basename "$WORKSPACE")" \
-            -scheme "$SCHEME" \
+            -workspace App.xcworkspace \
+            -scheme App \
             -sdk iphoneos \
             -configuration Release \
             -archivePath build/App.xcarchive \
             archive \
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_NAME" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            -allowProvisioningUpdates \
-            2>&1 | tail -20
+            -allowProvisioningUpdates
           
-          cd -
+          cd ../..
+      
+      - name: "Export IPA"
+        script: |
+          xcodebuild \
+            -exportArchive \
+            -archivePath ios/App/build/App.xcarchive \
+            -exportOptionsPlist ios/App/exportOptions.plist \
+            -exportPath build/ios/ipa
+          
+          echo "IPA files:"
+          ls -la build/ios/ipa/
     
     artifacts:
-      - ios/**/*.xcarchive
+      - build/ios/ipa/*.ipa
+      - ios/App/build/*.xcarchive
     
     publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_API_KEY
+        key_id: $APP_STORE_CONNECT_KEY_ID
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        beta_groups:
+          - "Internal Testers"
+      
       email:
         recipients:
           - builds@tiligo.com
