@@ -16,46 +16,27 @@ workflows:
         - pattern: main
           include: true
     scripts:
-      - name: Install dependencies
-        script: npm install
-      - name: Build web app
-        script: npm run build
-      - name: Add iOS platform
+      - name: Install and Build Web
+        script: |
+          npm install
+          npm run build
+      - name: iOS Platform
         script: npx cap add ios && npx cap sync ios
-      - name: Create export options
-        script: |
-          cat > ios/App/exportOptions.plist << 'EOF'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>H4QUDPK7S3</string>
-          </dict>
-          </plist>
-          EOF
-      - name: Install CocoaPods
+      - name: Pod Install
+        script: cd ios/App && pod install && cd ../..
+      - name: Build IPA
         script: |
           cd ios/App
-          pod install --repo-update || pod install
-          cd ../..
-      - name: Build and sign IPA
-        script: |
-          cd ios/App
-          ls -la *.xcworkspace 2>/dev/null || ls -la *.xcodeproj
-          WORKSPACE=$(ls *.xcworkspace 2>/dev/null | head -1)
-          if [ -z "$WORKSPACE" ]; then
-            WORKSPACE="App.xcodeproj"
-          fi
-          echo "Using: $WORKSPACE"
-          if [[ "$WORKSPACE" == *.xcworkspace ]]; then
-            xcodebuild -workspace $WORKSPACE -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
-          else
-            xcodebuild -project $WORKSPACE -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
-          fi
-          xcodebuild -exportArchive -archivePath ../../build/ios/archive/App.xcarchive -exportPath ../../build/ios/ipa -exportOptionsPlist exportOptions.plist -allowProvisioningUpdates
+          xcodebuild -project App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            archive \
+            -archivePath ../../build/ios/archive/App.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyIssuerID 6d7acece-2356-43c3-9946-6fd2cda5bf7d \
+            -authenticationKeyID 553BWFUTAM \
+            -authenticationKeyPath $APP_STORE_CONNECT_PRIVATE_KEY
     artifacts:
       - build/ios/ipa/*.ipa
     publishing:
