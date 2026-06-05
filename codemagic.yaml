@@ -7,15 +7,12 @@ workflows:
       vars:
         NODE_VERSION: "22"
         XCODE_VERSION: "16.1"
-        BUNDLE_ID: "com.tiligo.app"
-        APP_STORE_ID: "6777145744"
       node: $NODE_VERSION
       xcode: $XCODE_VERSION
     
     triggering:
       events:
         - push
-        - tag
       branch_patterns:
         - pattern: 'main'
           include: true
@@ -28,30 +25,33 @@ workflows:
       - name: Install Node 22
         script: |
           brew install node@22
-          echo 'export PATH="/usr/local/opt/node@22/bin:$PATH"' >> $HOME/.bash_profile
-          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.bash_profile
+          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           node --version
 
       - name: Install deps
         script: |
-          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           npm install
-          npm install @capacitor/ios
+          npm install @capacitor/ios @capacitor/app @capacitor/haptics @capacitor/keyboard @capacitor/status-bar
 
       - name: Build web
         script: |
-          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           npm run build
 
-      - name: Capacitor sync
+      - name: Setup iOS fresh
         script: |
-          export PATH="/usr/local/opt/node@22/bin:$PATH"
+          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+          rm -rf ios/
+          npx cap add ios
           npx cap sync ios
 
       - name: Pod install
         script: |
           cd ios/App
-          pod install
+          pod install --repo-update
+          ls -la App.xcworkspace
           cd ../..
 
       - name: Create export options
@@ -72,22 +72,20 @@ workflows:
               <true/>
               <key>compileBitcode</key>
               <false/>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>signingCertificate</key>
+              <string>Apple Distribution</string>
               <key>provisioningProfiles</key>
               <dict>
                   <key>com.tiligo.app</key>
                   <string>Tiligo App Store</string>
               </dict>
-              <key>signingStyle</key>
-              <string>manual</string>
-              <key>signingCertificate</key>
-              <string>Apple Distribution</string>
           </dict>
           </plist>
           PLIST
-          echo "=== Export options created ==="
-          cat ios/App/exportOptions.plist
 
-      - name: Build IPA
+      - name: Build archive
         script: |
           cd ios/App
           xcodebuild \
@@ -104,20 +102,11 @@ workflows:
 
       - name: Export IPA
         script: |
-          echo "=== Current directory ==="
-          pwd
-          echo "=== Files ==="
-          ls -la ios/App/
-          
-          mkdir -p build/ios/ipa
-          
           xcodebuild \
             -exportArchive \
             -archivePath ios/App/build/App.xcarchive \
             -exportPath build/ios/ipa \
             -exportOptionsPlist ios/App/exportOptions.plist
-          
-          echo "=== IPA output ==="
           ls -la build/ios/ipa/
     
     artifacts:
