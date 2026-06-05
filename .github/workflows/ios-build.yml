@@ -17,7 +17,12 @@ jobs:
           node-version: '22'
 
       - run: npm install
+
+      - name: Install Capacitor iOS platform
+        run: npm install @capacitor/ios
+
       - run: npm run build
+
       - run: npx cap sync ios
 
       - name: Pod install
