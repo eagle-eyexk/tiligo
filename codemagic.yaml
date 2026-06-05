@@ -37,7 +37,19 @@ workflows:
           </plist>
           EOF
       - name: Install CocoaPods
-        script: cd ios/App && pod install && cd ../..
+        script: |
+          cd ios/App
+          if [ ! -f Podfile ]; then
+            pod init
+            echo "platform :ios, '13.0'" > Podfile
+            echo "target 'App' do" >> Podfile
+            echo "  use_frameworks!" >> Podfile
+            echo "  pod 'Capacitor'" >> Podfile
+            echo "  pod 'CapacitorCordova'" >> Podfile
+            echo "end" >> Podfile
+          fi
+          pod install --repo-update || pod install
+          cd ../..
       - name: Build and sign IPA
         script: |
           cd ios/App
