@@ -33,30 +33,23 @@ workflows:
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           npm install
-          npm install @capacitor/ios @capacitor/app @capacitor/haptics @capacitor/keyboard @capacitor/status-bar
 
       - name: Build web
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           npm run build
 
-      - name: Setup iOS fresh
+      - name: Setup iOS
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           rm -rf ios/
           npx cap add ios
           npx cap sync ios
-
-      - name: Pod install
-        script: |
-          cd ios/App
-          pod install --repo-update
-          ls -la App.xcworkspace
-          cd ../..
+          echo "=== iOS files ==="
+          ls -la ios/App/
 
       - name: Create export options
         script: |
-          mkdir -p ios/App
           cat > ios/App/exportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -84,6 +77,12 @@ workflows:
           </dict>
           </plist>
           PLIST
+
+      - name: Resolve package dependencies
+        script: |
+          cd ios/App
+          xcodebuild -resolvePackageDependencies
+          cd ../..
 
       - name: Build archive
         script: |
