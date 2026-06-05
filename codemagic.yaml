@@ -4,7 +4,7 @@ workflows:
     instance_type: mac_mini_m2
     max_build_duration: 120
     environment:
-      node: 18
+      node: 22
       xcode: latest
       cocoapods: default
     integrations:
@@ -24,19 +24,11 @@ workflows:
         script: |
           npx cap add ios
           npx cap sync ios
-          ls -la ios/App/
       - name: Create Podfile if missing
         script: |
           if [ ! -f ios/App/Podfile ]; then
             cd ios/App
             pod init
-            sed -i '' "s/'App'/'App'/g" Podfile
-            echo "platform :ios, '13.0'" > Podfile
-            echo "use_frameworks!" >> Podfile
-            echo "target 'App' do" >> Podfile
-            echo "  pod 'Capacitor'" >> Podfile
-            echo "  pod 'CapacitorCordova'" >> Podfile
-            echo "end" >> Podfile
             cd ../..
           fi
       - name: Install Pods
@@ -78,3 +70,4 @@ workflows:
         submit_to_testflight: true
         beta_groups:
           - Internal Testers
+        
