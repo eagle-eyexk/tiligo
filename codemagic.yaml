@@ -27,18 +27,18 @@ workflows:
           nvm install 22
           nvm use 22
           
-          # Build web
+          # Build web app
           npm install
           npm run build
           
-          # iOS
+          # Setup iOS
           npx cap add ios
           npx cap sync ios
           cd ios/App
           pod install --repo-update
           
           # Export options
-          cat > exportOptions.plist << 'EOF'
+          cat > exportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -49,7 +49,7 @@ workflows:
               <string>H4QUDPK7S3</string>
           </dict>
           </plist>
-          EOF
+          PLIST
           
           # Build IPA
           xcodebuild -workspace App.xcworkspace \
