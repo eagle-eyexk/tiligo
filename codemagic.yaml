@@ -19,25 +19,15 @@ workflows:
         script: |
           #!/bin/bash
           set -e
-          
           curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          nvm install 22
-          nvm use 22
-          
+          nvm install 22 && nvm use 22
           rm -rf node_modules package-lock.json
-          npm install
-          npm install @rollup/rollup-darwin-arm64
+          npm install && npm install @rollup/rollup-darwin-arm64
           npm run build
-          
-          npx cap add ios
-          npx cap sync ios
-          
-          cd ios/App
-          pod init
-          pod install --repo-update
-          
+          npx cap add ios && npx cap sync ios
+          cd ios/App && pod init && pod install --repo-update
           cat > exportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -50,8 +40,7 @@ workflows:
           </dict>
           </plist>
           PLIST
-          
-          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
+          xcodebuild -workspace App.xcworkspace -scheme App -sdk iphoneos -configuration Release archive -archivePath ../../build/ios/archive/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Manual -allowProvisioningUpdates
           xcodebuild -exportArchive -archivePath ../../build/ios/archive/App.xcarchive -exportPath ../../build/ios/ipa -exportOptionsPlist exportOptions.plist -allowProvisioningUpdates
     artifacts:
       - build/ios/ipa/*.ipa
