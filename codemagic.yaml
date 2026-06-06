@@ -9,6 +9,7 @@ workflows:
         XCODE_VERSION: "16.1"
         APP_STORE_ID: "6777145744"
         BUNDLE_ID: "com.tili-go.tiligo"
+        TEAM_ID: "H4QUDPK7S3"
       node: $NODE_VERSION
       xcode: $XCODE_VERSION
       groups:
@@ -17,6 +18,7 @@ workflows:
     triggering:
       events:
         - push
+        - tag
       branch_patterns:
         - pattern: 'main'
           include: true
@@ -28,30 +30,35 @@ workflows:
     scripts:
       - name: Install Node 22
         script: |
-          brew install node@22
-          echo 'export PATH="/opt/homebrew/opt/node@22/bin:$PATH"' >> ~/.bash_profile
+          brew install node@22 2>/dev/null || true
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           node --version
+          npm --version
 
-      - name: Install deps
+      - name: Install dependencies
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+          rm -rf node_modules package-lock.json
           npm install
+          npm install @capacitor/ios
 
-      - name: Build web
+      - name: Build web app
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           npm run build
+          ls -la dist/
 
-      - name: Setup iOS
+      - name: Setup iOS project
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           rm -rf ios/
-          npx cap init Tiligo com.tili-go.tiligo --web-dir=dist --skip-appid-validation
+          npx cap init "Tiligo" "com.tili-go.tiligo" --web-dir=dist --skip-appid-validation
           npx cap add ios
           npx cap sync ios
+          echo "=== iOS project created ==="
+          ls -la ios/App/
 
-      - name: Build IPA
+      - name: Build archive
         script: |
           cd ios/App
           
@@ -62,46 +69,60 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
-            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_STYLE="Manual" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios"
+            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            -allowProvisioningUpdates \
+            2>&1 | tail -30
           
           if [ -d "/tmp/App.xcarchive" ]; then
-            mkdir -p /tmp/ipa
-            
-            cat > /tmp/export.plist << 'PLIST'
-            <?xml version="1.0" encoding="UTF-8"?>
-            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-            <plist version="1.0">
-            <dict>
-                <key>method</key>
-                <string>app-store</string>
-                <key>teamID</key>
-                <string>H4QUDPK7S3</string>
-                <key>signingStyle</key>
-                <string>manual</string>
-                <key>uploadSymbols</key>
-                <true/>
-                <key>compileBitcode</key>
-                <false/>
-            </dict>
-            </plist>
-            PLIST
-            
-            xcodebuild \
-              -exportArchive \
-              -archivePath /tmp/App.xcarchive \
-              -exportPath /tmp/ipa \
-              -exportOptionsPlist /tmp/export.plist
-            
-            mkdir -p $FCI_BUILD_DIR/build/ios/ipa
-            cp /tmp/ipa/*.ipa $FCI_BUILD_DIR/build/ios/ipa/ 2>/dev/null
-            ls -la $FCI_BUILD_DIR/build/ios/ipa/
+            echo "✅ Archive created"
           else
-            echo "Archive failed"
+            echo "❌ Archive failed"
             exit 1
           fi
+          
           cd ../..
+
+      - name: Export IPA
+        script: |
+          cat > /tmp/export.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>H4QUDPK7S3</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          PLIST
+          
+          mkdir -p /tmp/ipa
+          mkdir -p build/ios/ipa
+          
+          xcodebuild \
+            -exportArchive \
+            -archivePath /tmp/App.xcarchive \
+            -exportPath /tmp/ipa \
+            -exportOptionsPlist /tmp/export.plist 2>&1 | tail -20
+          
+          if ls /tmp/ipa/*.ipa 1>/dev/null 2>&1; then
+            cp /tmp/ipa/*.ipa build/ios/ipa/
+            echo "✅ IPA exported:"
+            ls -la build/ios/ipa/
+          else
+            echo "❌ IPA export failed"
+            exit 1
+          fi
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -112,7 +133,7 @@ workflows:
         key_id: "2H8MJ5ZP26"
         issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
         submit_to_testflight: true
-        submit_to_app_store: true
+        submit_to_app_store: false
       
       email:
         recipients:
