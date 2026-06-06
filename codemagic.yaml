@@ -9,6 +9,8 @@ workflows:
         XCODE_VERSION: "16.1"
       node: $NODE_VERSION
       xcode: $XCODE_VERSION
+      groups:
+        - tiligo_ios
     
     triggering:
       events:
@@ -33,6 +35,15 @@ workflows:
           
           cd ios/App
           
+          cat > exportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>app-store</string>
+          <key>teamID</key><string>H4QUDPK7S3</string>
+          </dict></plist>
+          PLIST
+          
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -40,24 +51,9 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
             -allowProvisioningUpdates
           
-          mkdir -p /tmp/ipa build/ios/ipa
-          
-          cat > exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-          <key>method</key><string>app-store</string>
-          <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>manual</string>
-          </dict></plist>
-          PLIST
-          
+          mkdir -p /tmp/ipa ../../build/ios/ipa
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
           cp /tmp/ipa/*.ipa ../../build/ios/ipa/
           ls -la ../../build/ios/ipa/
