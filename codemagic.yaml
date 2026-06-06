@@ -31,16 +31,7 @@ workflows:
           npm run build
           npx cap sync ios
           
-          echo "=== Checking code signing assets ==="
-          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles"
-          security find-identity -v -p codesigning 2>/dev/null || echo "No identities"
-          
           cd ios/App
-          
-          # Set bundle ID and team in project
-          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.tiligo.app" App/Info.plist
-          sed -i '' 's/DEVELOPMENT_TEAM = ""/DEVELOPMENT_TEAM = H4QUDPK7S3/g' App.xcodeproj/project.pbxproj 2>/dev/null || true
-          sed -i '' 's/DEVELOPMENT_TEAM = [^;]*/DEVELOPMENT_TEAM = H4QUDPK7S3/g' App.xcodeproj/project.pbxproj 2>/dev/null || true
           
           cat > exportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
@@ -48,6 +39,12 @@ workflows:
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingStyle</key><string>manual</string>
+          <key>provisioningProfiles</key>
+          <dict>
+              <key>com.tiligo.app</key>
+              <string>tiligo_ios</string>
+          </dict>
           </dict></plist>
           PLIST
           
@@ -60,7 +57,8 @@ workflows:
             archive \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
             CODE_SIGN_IDENTITY="Apple Distribution" \
-            -allowProvisioningUpdates
+            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
+            CODE_SIGN_STYLE=Manual
           
           mkdir -p /tmp/ipa ../../build/ios/ipa
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
