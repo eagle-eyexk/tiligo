@@ -37,6 +37,10 @@ workflows:
       - name: ARCHIVE
         script: |
           set -e
+          
+          echo "=== Checking available profiles ==="
+          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles found"
+          
           cd ios/App
           
           cat > exportOptions.plist << 'PLIST'
@@ -61,8 +65,8 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
-            2>&1 | tail -15
+            PROVISIONING_PROFILE="tiligo_ios" \
+            2>&1 | tail -20
           
           [ -d /tmp/App.xcarchive ] || exit 1
           cd ../..
