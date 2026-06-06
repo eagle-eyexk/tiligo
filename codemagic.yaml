@@ -23,38 +23,58 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
-      - name: Prepare
+      - name: AUTO SETUP EVERYTHING
         script: |
           set -e
+          
+          echo "=== Installing Node 22 ==="
           brew install node@22 2>/dev/null || true
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
-          node --version
-
-      - name: Install
-        script: |
-          set -e
-          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+          
+          echo "=== Installing Dependencies ==="
           npm install
           npm install @capacitor/ios
-
-      - name: Build
-        script: |
-          set -e
-          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+          
+          echo "=== Building Web App ==="
           npm run build
-
-      - name: iOS Setup
-        script: |
-          set -e
-          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+          
+          echo "=== Creating capacitor.config.json ==="
+          cat > capacitor.config.json << 'CONFIG'
+          {
+            "appId": "com.tili-go.tiligo",
+            "appName": "Tiligo",
+            "webDir": "dist",
+            "bundledWebRuntime": false
+          }
+          CONFIG
+          
+          echo "=== Creating iOS Project ==="
           rm -rf ios/
           npx cap add ios
           npx cap sync ios
-          echo "Done"
-
-      - name: Archive
-        script: |
-          set -e
+          
+          echo "=== Creating Export Options ==="
+          mkdir -p ios/App
+          cat > ios/App/exportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+              <key>teamID</key>
+              <string>H4QUDPK7S3</string>
+              <key>signingStyle</key>
+              <string>manual</string>
+              <key>uploadSymbols</key>
+              <true/>
+              <key>compileBitcode</key>
+              <false/>
+          </dict>
+          </plist>
+          PLIST
+          
+          echo "=== Building Archive ==="
           cd ios/App
           xcodebuild \
             -project App.xcodeproj \
@@ -68,27 +88,40 @@ workflows:
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
             PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
             -allowProvisioningUpdates 2>&1 | tail -10
-          [ -d /tmp/App.xcarchive ] || exit 1
+          
+          if [ ! -d "/tmp/App.xcarchive" ]; then
+            echo "Archive failed, trying without provisioning profile..."
+            xcodebuild \
+              -project App.xcodeproj \
+              -scheme App \
+              -sdk iphoneos \
+              -configuration Release \
+              -archivePath /tmp/App.xcarchive \
+              archive \
+              CODE_SIGN_STYLE=Manual \
+              CODE_SIGN_IDENTITY="Apple Distribution" \
+              DEVELOPMENT_TEAM="H4QUDPK7S3" \
+              -allowProvisioningUpdates 2>&1 | tail -10
+          fi
           cd ../..
-
-      - name: Export
-        script: |
-          set -e
-          cat > /tmp/export.plist << 'XPLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-            <key>method</key><string>app-store</string>
-            <key>teamID</key><string>H4QUDPK7S3</string>
-            <key>signingStyle</key><string>manual</string>
-            <key>uploadSymbols</key><true/>
-            <key>compileBitcode</key><false/>
-          </dict></plist>
-          XPLIST
+          
+          echo "=== Exporting IPA ==="
           mkdir -p /tmp/ipa build/ios/ipa
-          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist /tmp/export.plist 2>&1 | tail -5
-          cp /tmp/ipa/*.ipa build/ios/ipa/
-          ls -la build/ios/ipa/
+          xcodebuild \
+            -exportArchive \
+            -archivePath /tmp/App.xcarchive \
+            -exportPath /tmp/ipa \
+            -exportOptionsPlist ios/App/exportOptions.plist 2>&1 | tail -10
+          
+          if ls /tmp/ipa/*.ipa 1>/dev/null 2>&1; then
+            cp /tmp/ipa/*.ipa build/ios/ipa/
+            echo "=== SUCCESS ==="
+            ls -la build/ios/ipa/
+          else
+            echo "IPA export failed, checking archive..."
+            ls -la /tmp/App.xcarchive/
+            exit 1
+          fi
     
     artifacts:
       - build/ios/ipa/*.ipa
