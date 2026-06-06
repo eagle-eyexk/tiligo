@@ -32,14 +32,13 @@ jobs:
           PLIST
           xcodebuild -exportArchive -archivePath /tmp/app.xcarchive -exportPath build -exportOptionsPlist /tmp/export.plist
           ls -la build/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: app
-          path: build/*.ipa
       - name: Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v1
-        with:
-          app-path: build/*.ipa
-          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
-          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+        run: |
+          IPA=$(find build -name "*.ipa" | head -1)
+          echo "Uploading: $IPA"
+          echo "$APPSTORE_PRIVATE_KEY" > /tmp/key.p8
+          xcrun altool --upload-app --file "$IPA" --type ios --apiKey "$APPSTORE_KEY_ID" --apiIssuer "$APPSTORE_ISSUER_ID" --apiKeyPath /tmp/key.p8
+        env:
+          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
+          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
