@@ -1,0 +1,125 @@
+cd ~/tiligo
+
+# =============================================================================
+# 1. Fix capacitor.config.json
+# =============================================================================
+cat > capacitor.config.json << 'EOF'
+{
+  "appId": "com.tiligo.app",
+  "appName": "Tiligo",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}
+EOF
+
+# =============================================================================
+# 2. Create exportOptions.plist
+# =============================================================================
+mkdir -p ios
+cat > ios/exportOptions.plist << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>method</key>
+  <string>app-store</string>
+  <key>signingStyle</key>
+  <string>automatic</string>
+  <key>destination</key>
+  <string>upload</string>
+  <key>teamID</key>
+  <string>H4QUDPK7S3</string>
+  <key>uploadSymbols</key>
+  <true/>
+  <key>compileBitcode</key>
+  <false/>
+</dict>
+</plist>
+EOF
+
+# =============================================================================
+# 3. Create GitHub Actions workflow
+# =============================================================================
+mkdir -p .github/workflows
+cat > .github/workflows/ios.yml << 'EOF'
+name: iOS Build + Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  ios-build:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Install dependencies
+        run: |
+          npm install
+          npm install @capacitor/ios
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Install CocoaPods
+        run: |
+          cd ios/App
+          pod install --repo-update
+          cd ../..
+
+      - name: Build IPA
+        run: |
+          cd ios/App
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath /tmp/app.xcarchive \
+            archive \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM="H4QUDPK7S3" \
+            -allowProvisioningUpdates
+
+      - name: Export IPA
+        run: |
+          mkdir -p build
+          xcodebuild \
+            -exportArchive \
+            -archivePath /tmp/app.xcarchive \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -exportPath build
+          ls -la build/
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: tiligo-ios
+          path: build/*.ipa
+
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
+        with:
+          app-path: build/*.ipa
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+EOF
+
+# =============================================================================
+# 4. Commit and push everything
+# =============================================================================
+git add capacitor.config.json ios/exportOptions.plist .github/workflows/ios.yml
+git commit -m "feat: GitHub Actions CI/CD for iOS - fully automated"
+git push origin main
