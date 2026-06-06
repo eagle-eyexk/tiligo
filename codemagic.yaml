@@ -7,9 +7,6 @@ workflows:
       vars:
         NODE_VERSION: "22"
         XCODE_VERSION: "16.1"
-        BUNDLE: "com.tili-go.tiligo"
-        TEAM: "H4QUDPK7S3"
-        APPLE_ID: "6777145744"
       node: $NODE_VERSION
       xcode: $XCODE_VERSION
     
@@ -26,48 +23,39 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
-      - name: "1. Prepare Environment"
+      - name: Prepare
         script: |
           set -e
-          echo "=== Installing Node 22 ==="
           brew install node@22 2>/dev/null || true
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
-          echo "Node: $(node --version)"
-          echo "npm: $(npm --version)"
-          echo "Xcode: $(xcodebuild -version | head -1)"
-          echo "=== Environment Ready ==="
+          node --version
 
-      - name: "2. Install Dependencies"
+      - name: Install
         script: |
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
-          rm -rf node_modules package-lock.json
           npm install
           npm install @capacitor/ios
-          echo "=== Dependencies Installed ==="
 
-      - name: "3. Build Web Application"
+      - name: Build
         script: |
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           npm run build
-          [ -d "dist" ] && echo "=== Web Build Complete ===" || { echo "Build failed"; exit 1; }
 
-      - name: "4. Create iOS Project"
+      - name: iOS Setup
         script: |
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           rm -rf ios/
-          npx cap init "Tiligo" "com.tili-go.tiligo" --web-dir=dist --skip-appid-validation
           npx cap add ios
           npx cap sync ios
-          [ -d "ios/App/App.xcodeproj" ] && echo "=== iOS Project Created ===" || { echo "iOS project failed"; exit 1; }
+          echo "Done"
 
-      - name: "5. Archive iOS App"
+      - name: Archive
         script: |
           set -e
           cd ios/App
-          
           xcodebuild \
             -project App.xcodeproj \
             -scheme App \
@@ -75,42 +63,32 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
-            CODE_SIGN_STYLE="Manual" \
+            CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
             PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
-            -allowProvisioningUpdates 2>&1 | tail -20
-          
-          [ -d "/tmp/App.xcarchive" ] && echo "=== Archive Complete ===" || { echo "Archive failed"; exit 1; }
+            -allowProvisioningUpdates 2>&1 | tail -10
+          [ -d /tmp/App.xcarchive ] || exit 1
           cd ../..
 
-      - name: "6. Export IPA"
+      - name: Export
         script: |
           set -e
-          mkdir -p /tmp/ipa build/ios/ipa
-          
-          cat > /tmp/export.plist << 'PLIST'
+          cat > /tmp/export.plist << 'XPLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
+          <plist version="1.0"><dict>
             <key>method</key><string>app-store</string>
             <key>teamID</key><string>H4QUDPK7S3</string>
             <key>signingStyle</key><string>manual</string>
             <key>uploadSymbols</key><true/>
             <key>compileBitcode</key><false/>
-          </dict>
-          </plist>
-          PLIST
-          
-          xcodebuild \
-            -exportArchive \
-            -archivePath /tmp/App.xcarchive \
-            -exportPath /tmp/ipa \
-            -exportOptionsPlist /tmp/export.plist 2>&1 | tail -20
-          
-          cp /tmp/ipa/*.ipa build/ios/ipa/ 2>/dev/null
-          ls -la build/ios/ipa/*.ipa && echo "=== IPA Ready ===" || { echo "IPA export failed"; exit 1; }
+          </dict></plist>
+          XPLIST
+          mkdir -p /tmp/ipa build/ios/ipa
+          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist /tmp/export.plist 2>&1 | tail -5
+          cp /tmp/ipa/*.ipa build/ios/ipa/
+          ls -la build/ios/ipa/
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -122,14 +100,9 @@ workflows:
         issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
         submit_to_testflight: true
         submit_to_app_store: true
-      
       email:
         recipients:
           - agentextern@gmail.com
         notify:
           success: true
           failure: true
-      
-      slack:
-        channel: '#builds'
-        notify_on_build_start: true
