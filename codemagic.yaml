@@ -23,26 +23,26 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
-      - name: GOD MODE BUILD
+      - name: DEBUG
         script: |
-          set -e
-          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
-          brew install node@22 2>/dev/null || true
+          echo "PROFILE_BASE64 length: ${#PROFILE_BASE64}"
+          echo "First 50 chars: ${PROFILE_BASE64:0:50}"
           
-          PROFILE="$HOME/Library/MobileDevice/Provisioning Profiles/tiligo.mobileprovision"
-          mkdir -p "$(dirname "$PROFILE")"
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
           
-          if [ -n "$PROFILE_BASE64" ]; then
-            echo "$PROFILE_BASE64" | tr -d '\n\r' | base64 -d > "$PROFILE" 2>/dev/null
-            if [ -s "$PROFILE" ]; then
-              UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$(security cms -D -i "$PROFILE" 2>/dev/null)" 2>/dev/null || echo "unknown")
-              echo "Profile OK ($(wc -c < "$PROFILE") bytes) UUID: $UUID"
-            else
-              echo "Profile decode FAILED - writing raw"
-              echo "$PROFILE_BASE64" | base64 -d > "$PROFILE"
-            fi
+          printf '%s' "$PROFILE_BASE64" | base64 -d > "$HOME/Library/MobileDevice/Provisioning Profiles/tiligo.mobileprovision" 2>&1
+          
+          ls -la "$HOME/Library/MobileDevice/Provisioning Profiles/"
+          
+          if [ -s "$HOME/Library/MobileDevice/Provisioning Profiles/tiligo.mobileprovision" ]; then
+            echo "Profile OK"
+          else
+            echo "Profile decode FAILED - PROFILE_BASE64 is empty or invalid"
+            echo "Raw value starts with: ${PROFILE_BASE64:0:10}"
           fi
           
+          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
+          brew install node@22 2>/dev/null || true
           npm install && npm run build
           npx cap sync ios 2>/dev/null || { rm -rf ios/ && npx cap add ios && npx cap sync ios; }
           cd ios/App
@@ -53,10 +53,11 @@ workflows:
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingStyle</key><string>manual</string>
           </dict></plist>
           PLIST
           
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/App.xcarchive archive DEVELOPMENT_TEAM="H4QUDPK7S3" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/App.xcarchive archive DEVELOPMENT_TEAM="H4QUDPK7S3" CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="Apple Distribution"
           
           mkdir -p /tmp/ipa ../../build/ios/ipa
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
@@ -72,7 +73,6 @@ workflows:
         key_id: "2H8MJ5ZP26"
         issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
         submit_to_testflight: true
-        submit_to_app_store: true
       email:
         recipients:
           - agentextern@gmail.com
