@@ -45,88 +45,37 @@ workflows:
           rm -rf ios/
           npx cap add ios
           npx cap sync ios
-          echo "=== Available project files ==="
-          ls -la ios/App/
-          find ios/App -name "*.xcodeproj" -o -name "*.xcworkspace"
 
-      - name: Create export options
-        script: |
-          cat > ios/App/exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-              <key>teamID</key>
-              <string>H4QUDPK7S3</string>
-          </dict>
-          </plist>
-          PLIST
-
-      - name: Build and Export IPA
+      - name: Build unsigned IPA
         script: |
           cd ios/App
           
-          PROJECT=$(find . -name "*.xcodeproj" -maxdepth 1 | head -1)
-          WORKSPACE=$(find . -name "*.xcworkspace" -maxdepth 1 | head -1)
-          
-          if [ -n "$WORKSPACE" ]; then
-            BUILD_FLAG="-workspace $WORKSPACE"
-          elif [ -n "$PROJECT" ]; then
-            BUILD_FLAG="-project $PROJECT"
-          else
-            echo "No Xcode project found!"
-            exit 1
-          fi
-          
-          echo "Using: $BUILD_FLAG"
-          
           xcodebuild \
-            $BUILD_FLAG \
+            -project App.xcodeproj \
             -scheme App \
             -sdk iphoneos \
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            2>&1 | tail -20
+            CODE_SIGN_IDENTITY="-" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO
           
           if [ -d "/tmp/App.xcarchive" ]; then
-            echo "=== Archive created ==="
             mkdir -p /tmp/ipa
             
             xcodebuild \
               -exportArchive \
               -archivePath /tmp/App.xcarchive \
               -exportPath /tmp/ipa \
-              -exportOptionsPlist exportOptions.plist
+              -exportOptionsPlist /dev/stdin <<< '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>method</key><string>development</string><key>teamID</key><string>H4QUDPK7S3</string><key>signingStyle</key><string>manual</string><key>signingCertificate</key><string>-</string></dict></plist>'
             
             mkdir -p $FCI_BUILD_DIR/build/ios/ipa
             cp /tmp/ipa/*.ipa $FCI_BUILD_DIR/build/ios/ipa/ 2>/dev/null
             ls -la $FCI_BUILD_DIR/build/ios/ipa/
-          else
-            echo "Archive failed"
-            exit 1
           fi
-          
           cd ../..
     
     artifacts:
       - build/ios/ipa/*.ipa
-    
-    publishing:
-      app_store_connect:
-        api_key: $APP_STORE_CONNECT_KEY
-        key_id: "2H8MJ5ZP26"
-        issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
-        submit_to_testflight: true
-      
-      email:
-        recipients:
-          - agentextern@gmail.com
-        notify:
-          success: true
-          failure: true
