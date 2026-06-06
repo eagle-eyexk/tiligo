@@ -45,6 +45,9 @@ workflows:
           rm -rf ios/
           npx cap add ios
           npx cap sync ios
+          echo "=== Available project files ==="
+          ls -la ios/App/
+          find ios/App -name "*.xcodeproj" -o -name "*.xcworkspace"
 
       - name: Create export options
         script: |
@@ -65,8 +68,22 @@ workflows:
         script: |
           cd ios/App
           
+          PROJECT=$(find . -name "*.xcodeproj" -maxdepth 1 | head -1)
+          WORKSPACE=$(find . -name "*.xcworkspace" -maxdepth 1 | head -1)
+          
+          if [ -n "$WORKSPACE" ]; then
+            BUILD_FLAG="-workspace $WORKSPACE"
+          elif [ -n "$PROJECT" ]; then
+            BUILD_FLAG="-project $PROJECT"
+          else
+            echo "No Xcode project found!"
+            exit 1
+          fi
+          
+          echo "Using: $BUILD_FLAG"
+          
           xcodebuild \
-            -workspace App.xcworkspace \
+            $BUILD_FLAG \
             -scheme App \
             -sdk iphoneos \
             -configuration Release \
@@ -75,13 +92,10 @@ workflows:
             CODE_SIGN_STYLE=Manual \
             CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            2>&1 | tee /tmp/build.log
-          
-          echo "=== Build exit code: $? ==="
+            2>&1 | tail -20
           
           if [ -d "/tmp/App.xcarchive" ]; then
             echo "=== Archive created ==="
-            
             mkdir -p /tmp/ipa
             
             xcodebuild \
@@ -90,14 +104,11 @@ workflows:
               -exportPath /tmp/ipa \
               -exportOptionsPlist exportOptions.plist
             
-            echo "=== IPA files ==="
-            ls -la /tmp/ipa/
-            
             mkdir -p $FCI_BUILD_DIR/build/ios/ipa
-            cp /tmp/ipa/*.ipa $FCI_BUILD_DIR/build/ios/ipa/ 2>/dev/null || true
+            cp /tmp/ipa/*.ipa $FCI_BUILD_DIR/build/ios/ipa/ 2>/dev/null
+            ls -la $FCI_BUILD_DIR/build/ios/ipa/
           else
-            echo "=== Archive failed. Build log: ==="
-            tail -50 /tmp/build.log
+            echo "Archive failed"
             exit 1
           fi
           
