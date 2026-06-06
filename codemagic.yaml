@@ -28,35 +28,15 @@ workflows:
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           brew install node@22 2>/dev/null || true
-          npm install
-          npm run build
-          npx cap sync ios
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROFILE_BASE64" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/tiligo.mobileprovision
+          npm install && npm run build && npx cap sync ios
           cd ios/App
-          
-          cat > exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-          <key>method</key><string>app-store</string>
-          <key>teamID</key><string>H4QUDPK7S3</string>
-          </dict></plist>
-          PLIST
-          
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath /tmp/App.xcarchive \
-            archive \
-            DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            CODE_SIGN_STYLE=Automatic \
-            -allowProvisioningUpdates
-          
+          cat > exportOptions.plist <<< '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>method</key><string>app-store</string><key>teamID</key><string>H4QUDPK7S3</string></dict></plist>'
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/App.xcarchive archive DEVELOPMENT_TEAM="H4QUDPK7S3" CODE_SIGN_IDENTITY="Apple Distribution" CODE_SIGN_STYLE=Manual
           mkdir -p /tmp/ipa ../../build/ios/ipa
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
           cp /tmp/ipa/*.ipa ../../build/ios/ipa/
-          ls -la ../../build/ios/ipa/
     
     artifacts:
       - build/ios/ipa/*.ipa
@@ -67,7 +47,6 @@ workflows:
         key_id: "2H8MJ5ZP26"
         issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
         submit_to_testflight: true
-        submit_to_app_store: false
       email:
         recipients:
           - agentextern@gmail.com
