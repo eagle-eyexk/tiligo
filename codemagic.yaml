@@ -31,13 +31,10 @@ workflows:
           
           PROFILES="$HOME/Library/MobileDevice/Provisioning Profiles"
           mkdir -p "$PROFILES"
+          echo "$PROFILE_BASE64" | base64 -d > "$PROFILES/tiligo.mobileprovision"
           
-          echo "$PROFILE_BASE64" > /tmp/profile.b64
-          base64 -d -i /tmp/profile.b64 -o "$PROFILES/tiligo.mobileprovision" 2>/dev/null || \
-          base64 -D -i /tmp/profile.b64 -o "$PROFILES/tiligo.mobileprovision" 2>/dev/null || \
-          base64 --decode /tmp/profile.b64 > "$PROFILES/tiligo.mobileprovision" 2>/dev/null
-          
-          ls -la "$PROFILES/"
+          UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$(security cms -D -i "$PROFILES/tiligo.mobileprovision")" 2>/dev/null || echo "")
+          echo "Profile UUID: $UUID"
           
           npm install && npm run build
           npx cap sync ios 2>/dev/null || { rm -rf ios/ && npx cap add ios && npx cap sync ios; }
@@ -49,10 +46,22 @@ workflows:
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingStyle</key><string>manual</string>
+          <key>provisioningProfiles</key><dict><key>com.tiligo.app</key><string>tiligo_ios</string></dict>
           </dict></plist>
           PLIST
           
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/App.xcarchive archive DEVELOPMENT_TEAM="H4QUDPK7S3" CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath /tmp/App.xcarchive \
+            archive \
+            DEVELOPMENT_TEAM="H4QUDPK7S3" \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE="$PROFILES/tiligo.mobileprovision"
           
           mkdir -p /tmp/ipa ../../build/ios/ipa
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
