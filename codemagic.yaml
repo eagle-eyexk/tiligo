@@ -1,15 +1,18 @@
 workflows:
   tiligo-ios:
-    name: Tiligo TestFlight
+    name: Tiligo TestFlight & App Store
     instance_type: mac_mini_m2
     max_build_duration: 90
     environment:
       vars:
         NODE_VERSION: "22"
         XCODE_VERSION: "16.1"
-        APP_ID: "com.tili-go.tiligo"
+        APP_STORE_ID: "6777145744"
+        BUNDLE_ID: "com.tili-go.tiligo"
       node: $NODE_VERSION
       xcode: $XCODE_VERSION
+      groups:
+        - tiligo_ios
     
     triggering:
       events:
@@ -44,27 +47,11 @@ workflows:
         script: |
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           rm -rf ios/
-          
-          # Update capacitor config with correct ID
-          cat > capacitor.config.json << 'CONFIG'
-          {
-            "appId": "com.tili-go.tiligo",
-            "appName": "Tiligo",
-            "webDir": "dist",
-            "bundledWebRuntime": false,
-            "ios": {
-              "scheme": "App",
-              "contentInset": "automatic"
-            }
-          }
-          CONFIG
-          
-          # Add iOS with skip validation flag
           npx cap init Tiligo com.tili-go.tiligo --web-dir=dist --skip-appid-validation
           npx cap add ios
           npx cap sync ios
 
-      - name: Build unsigned IPA
+      - name: Build IPA
         script: |
           cd ios/App
           
@@ -76,24 +63,60 @@ workflows:
             -archivePath /tmp/App.xcarchive \
             archive \
             CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="-" \
-            CODE_SIGNING_REQUIRED=NO \
-            CODE_SIGNING_ALLOWED=NO
+            DEVELOPMENT_TEAM="H4QUDPK7S3" \
+            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios"
           
           if [ -d "/tmp/App.xcarchive" ]; then
             mkdir -p /tmp/ipa
+            
+            cat > /tmp/export.plist << 'PLIST'
+            <?xml version="1.0" encoding="UTF-8"?>
+            <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+            <plist version="1.0">
+            <dict>
+                <key>method</key>
+                <string>app-store</string>
+                <key>teamID</key>
+                <string>H4QUDPK7S3</string>
+                <key>signingStyle</key>
+                <string>manual</string>
+                <key>uploadSymbols</key>
+                <true/>
+                <key>compileBitcode</key>
+                <false/>
+            </dict>
+            </plist>
+            PLIST
             
             xcodebuild \
               -exportArchive \
               -archivePath /tmp/App.xcarchive \
               -exportPath /tmp/ipa \
-              -exportOptionsPlist /dev/stdin <<< '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>method</key><string>development</string><key>teamID</key><string>H4QUDPK7S3</string><key>signingStyle</key><string>manual</string><key>signingCertificate</key><string>-</string></dict></plist>'
+              -exportOptionsPlist /tmp/export.plist
             
             mkdir -p $FCI_BUILD_DIR/build/ios/ipa
             cp /tmp/ipa/*.ipa $FCI_BUILD_DIR/build/ios/ipa/ 2>/dev/null
             ls -la $FCI_BUILD_DIR/build/ios/ipa/
+          else
+            echo "Archive failed"
+            exit 1
           fi
           cd ../..
     
     artifacts:
       - build/ios/ipa/*.ipa
+    
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_KEY
+        key_id: "2H8MJ5ZP26"
+        issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
+        submit_to_testflight: true
+        submit_to_app_store: true
+      
+      email:
+        recipients:
+          - agentextern@gmail.com
+        notify:
+          success: true
+          failure: true
