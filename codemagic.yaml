@@ -32,9 +32,28 @@ workflows:
           npm run build
           npx cap sync ios
           cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/App.xcarchive archive DEVELOPMENT_TEAM="H4QUDPK7S3" CODE_SIGN_IDENTITY="Apple Distribution" -allowProvisioningUpdates
+          
+          cat > exportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>app-store</string>
+          <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingStyle</key><string>automatic</string>
+          </dict></plist>
+          PLIST
+          
+          xcodebuild \
+            -project App.xcodeproj \
+            -scheme App \
+            -sdk iphoneos \
+            -configuration Release \
+            -archivePath /tmp/App.xcarchive \
+            archive \
+            DEVELOPMENT_TEAM="H4QUDPK7S3" \
+            -allowProvisioningUpdates
+          
           mkdir -p /tmp/ipa ../../build/ios/ipa
-          cat > exportOptions.plist <<< '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>method</key><string>app-store</string><key>teamID</key><string>H4QUDPK7S3</string></dict></plist>'
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
           cp /tmp/ipa/*.ipa ../../build/ios/ipa/
           ls -la ../../build/ios/ipa/
