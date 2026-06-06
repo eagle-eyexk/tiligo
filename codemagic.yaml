@@ -22,28 +22,16 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
-      - name: FULL AUTO BUILD
+      - name: BUILD
         script: |
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           brew install node@22 2>/dev/null || true
-          npm install && npm install @capacitor/ios
+          npm install
           npm run build
-          rm -rf ios/ && npx cap add ios && npx cap sync ios
+          npx cap sync ios
           
           cd ios/App
-          
-          cat > exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-          <key>method</key><string>app-store</string>
-          <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>manual</string>
-          <key>uploadSymbols</key><true/>
-          <key>compileBitcode</key><false/>
-          </dict></plist>
-          PLIST
           
           xcodebuild \
             -project App.xcodeproj \
@@ -58,13 +46,21 @@ workflows:
             PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
             -allowProvisioningUpdates
           
-          [ -d /tmp/App.xcarchive ] || exit 1
-          cd ../..
-          
           mkdir -p /tmp/ipa build/ios/ipa
-          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist ios/App/exportOptions.plist
-          cp /tmp/ipa/*.ipa build/ios/ipa/
-          ls -la build/ios/ipa/
+          
+          cat > exportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>app-store</string>
+          <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingStyle</key><string>manual</string>
+          </dict></plist>
+          PLIST
+          
+          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
+          cp /tmp/ipa/*.ipa ../../build/ios/ipa/
+          ls -la ../../build/ios/ipa/
     
     artifacts:
       - build/ios/ipa/*.ipa
