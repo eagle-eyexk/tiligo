@@ -17,7 +17,7 @@ jobs:
       - run: npx cap sync ios
       - run: |
           cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/app.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/app.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
       - run: |
           mkdir -p build
           cat > /tmp/export.plist << 'PLIST'
@@ -26,6 +26,8 @@ jobs:
           <plist version="1.0"><dict>
           <key>method</key><string>debugging</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingCertificate</key><string>-</string>
+          <key>signingStyle</key><string>manual</string>
           </dict></plist>
           PLIST
           xcodebuild -exportArchive -archivePath /tmp/app.xcarchive -exportPath build -exportOptionsPlist /tmp/export.plist
