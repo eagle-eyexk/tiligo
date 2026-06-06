@@ -12,39 +12,27 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node 22
+      - name: FULL BUILD IN ONE STEP
         run: |
+          # Install Node 22
           curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
           export NVM_DIR="$HOME/.nvm"
           [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
           nvm install 22
           nvm use 22
           node --version
-
-      - name: Install dependencies
-        run: |
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          nvm use 22
+          
+          # Install dependencies
           npm install
           npm install @capacitor/ios
-
-      - name: Build web app
-        run: |
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          nvm use 22
+          
+          # Build web
           npm run build
-
-      - name: Sync Capacitor
-        run: |
-          export NVM_DIR="$HOME/.nvm"
-          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
-          nvm use 22
+          
+          # Sync Capacitor
           npx cap sync ios
-
-      - name: Build unsigned IPA
-        run: |
+          
+          # Build iOS
           cd ios/App
           xcodebuild \
             -project App.xcodeproj \
@@ -56,9 +44,8 @@ jobs:
             CODE_SIGNING_ALLOWED=NO \
             CODE_SIGNING_REQUIRED=NO
           cd ../..
-
-      - name: Export IPA
-        run: |
+          
+          # Export IPA
           mkdir -p build
           cat > /tmp/export.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
