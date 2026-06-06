@@ -23,7 +23,7 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
-      - name: AUTO SETUP EVERYTHING
+      - name: AUTO BUILD & DEPLOY
         script: |
           set -e
           
@@ -38,20 +38,17 @@ workflows:
           echo "=== Building Web App ==="
           npm run build
           
-          echo "=== Creating capacitor.config.json ==="
-          cat > capacitor.config.json << 'CONFIG'
-          {
-            "appId": "com.tili-go.tiligo",
-            "appName": "Tiligo",
-            "webDir": "dist",
-            "bundledWebRuntime": false
-          }
-          CONFIG
-          
           echo "=== Creating iOS Project ==="
           rm -rf ios/
+          
+          # Use valid ID first, then change it in Xcode
+          npx cap init Tiligo com.tiligo.app --web-dir=dist
           npx cap add ios
           npx cap sync ios
+          
+          # Now override with Apple-required bundle ID
+          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.tili-go.tiligo" ios/App/App/Info.plist
+          sed -i '' 's/com.tiligo.app/com.tili-go.tiligo/g' ios/App/App.xcodeproj/project.pbxproj
           
           echo "=== Creating Export Options ==="
           mkdir -p ios/App
@@ -70,6 +67,11 @@ workflows:
               <true/>
               <key>compileBitcode</key>
               <false/>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.tili-go.tiligo</key>
+                  <string>tiligo_ios</string>
+              </dict>
           </dict>
           </plist>
           PLIST
@@ -87,22 +89,9 @@ workflows:
             CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
             PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
-            -allowProvisioningUpdates 2>&1 | tail -10
+            -allowProvisioningUpdates 2>&1 | tail -15
           
-          if [ ! -d "/tmp/App.xcarchive" ]; then
-            echo "Archive failed, trying without provisioning profile..."
-            xcodebuild \
-              -project App.xcodeproj \
-              -scheme App \
-              -sdk iphoneos \
-              -configuration Release \
-              -archivePath /tmp/App.xcarchive \
-              archive \
-              CODE_SIGN_STYLE=Manual \
-              CODE_SIGN_IDENTITY="Apple Distribution" \
-              DEVELOPMENT_TEAM="H4QUDPK7S3" \
-              -allowProvisioningUpdates 2>&1 | tail -10
-          fi
+          [ -d "/tmp/App.xcarchive" ] || { echo "Archive failed"; exit 1; }
           cd ../..
           
           echo "=== Exporting IPA ==="
@@ -113,15 +102,9 @@ workflows:
             -exportPath /tmp/ipa \
             -exportOptionsPlist ios/App/exportOptions.plist 2>&1 | tail -10
           
-          if ls /tmp/ipa/*.ipa 1>/dev/null 2>&1; then
-            cp /tmp/ipa/*.ipa build/ios/ipa/
-            echo "=== SUCCESS ==="
-            ls -la build/ios/ipa/
-          else
-            echo "IPA export failed, checking archive..."
-            ls -la /tmp/App.xcarchive/
-            exit 1
-          fi
+          cp /tmp/ipa/*.ipa build/ios/ipa/ 2>/dev/null
+          echo "=== SUCCESS ==="
+          ls -la build/ios/ipa/
     
     artifacts:
       - build/ios/ipa/*.ipa
