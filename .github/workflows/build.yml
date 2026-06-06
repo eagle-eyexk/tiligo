@@ -31,14 +31,10 @@ jobs:
           </dict></plist>
           PLIST
           xcodebuild -exportArchive -archivePath /tmp/app.xcarchive -exportPath build -exportOptionsPlist /tmp/export.plist
-          ls -la build/
       - name: Upload to TestFlight
+        env:
+          PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
         run: |
           IPA=$(find build -name "*.ipa" | head -1)
-          echo "Uploading: $IPA"
-          echo "$APPSTORE_PRIVATE_KEY" > /tmp/key.p8
-          xcrun altool --upload-app --file "$IPA" --type ios --apiKey "$APPSTORE_KEY_ID" --apiIssuer "$APPSTORE_ISSUER_ID" --apiKeyPath /tmp/key.p8
-        env:
-          APPSTORE_PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
-          APPSTORE_KEY_ID: ${{ secrets.APPSTORE_KEY_ID }}
-          APPSTORE_ISSUER_ID: ${{ secrets.APPSTORE_ISSUER_ID }}
+          printf '%s' "$PRIVATE_KEY" > /tmp/key.p8
+          xcrun altool --upload-app --file "$IPA" --type ios --apiKey OUT3J5X9GQ1D --apiIssuer 6d7acece-2356-43c3-9946-6fd2cda5bf7d --apiKeyPath /tmp/key.p8
