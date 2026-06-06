@@ -41,6 +41,9 @@ workflows:
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
+          <key>signingStyle</key><string>manual</string>
+          <key>uploadSymbols</key><true/>
+          <key>compileBitcode</key><false/>
           </dict></plist>
           PLIST
           
@@ -51,6 +54,8 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
+            DEVELOPMENT_TEAM="H4QUDPK7S3" \
+            CODE_SIGN_STYLE=Manual \
             -allowProvisioningUpdates
           
           mkdir -p /tmp/ipa ../../build/ios/ipa
