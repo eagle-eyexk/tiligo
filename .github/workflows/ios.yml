@@ -1,58 +1,81 @@
-name: iOS Build + Deploy (Capacitor)
+name: iOS Build
 
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 jobs:
   ios-build:
-    runs-on: macos-latest
-
+    runs-on: macos-15
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - name: Setup Node 22
+        run: |
+          curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm install 22
+          nvm use 22
+          node --version
 
       - name: Install dependencies
-        run: npm install
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22
+          npm install
+          npm install @capacitor/ios
 
       - name: Build web app
-        run: npm run build
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22
+          npm run build
 
-      - name: Install Capacitor CLI
-        run: npm install -g @capacitor/cli
+      - name: Sync Capacitor
+        run: |
+          export NVM_DIR="$HOME/.nvm"
+          [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+          nvm use 22
+          npx cap sync ios
 
-      - name: Sync Capacitor iOS
-        run: npx cap sync ios
-
-      - name: Install CocoaPods
+      - name: Build unsigned IPA
         run: |
           cd ios/App
-          pod install
-
-      - name: Build IPA
-        run: |
-          xcodebuild -workspace ios/App/App.xcworkspace \
+          xcodebuild \
+            -project App.xcodeproj \
             -scheme App \
+            -sdk iphoneos \
             -configuration Release \
-            -archivePath build/app.xcarchive \
-            archive
+            -archivePath /tmp/app.xcarchive \
+            archive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO
+          cd ../..
 
       - name: Export IPA
         run: |
-          xcodebuild -exportArchive \
-            -archivePath build/app.xcarchive \
-            -exportOptionsPlist ios/exportOptions.plist \
+          mkdir -p build
+          cat > /tmp/export.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+          <key>method</key><string>development</string>
+          </dict></plist>
+          PLIST
+          xcodebuild \
+            -exportArchive \
+            -archivePath /tmp/app.xcarchive \
+            -exportOptionsPlist /tmp/export.plist \
             -exportPath build
+          ls -la build/
 
-      - name: Upload to TestFlight
-        uses: apple-actions/upload-testflight-build@v1
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
         with:
-          app-path: build/App.ipa
-          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
-          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
-          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
+          name: tiligo-ios
+          path: build/*.ipa
