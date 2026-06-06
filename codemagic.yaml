@@ -27,7 +27,6 @@ workflows:
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           brew install node@22 2>/dev/null || true
-          node --version
           npm install
           npm install @capacitor/ios
           npm run build
@@ -46,7 +45,7 @@ workflows:
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>automatic</string>
+          <key>signingStyle</key><string>manual</string>
           <key>uploadSymbols</key><true/>
           <key>compileBitcode</key><false/>
           </dict></plist>
@@ -59,9 +58,10 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
-            CODE_SIGN_STYLE=Automatic \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            -allowProvisioningUpdates \
+            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
             2>&1 | tail -15
           
           [ -d /tmp/App.xcarchive ] || exit 1
@@ -71,12 +71,7 @@ workflows:
         script: |
           set -e
           mkdir -p /tmp/ipa build/ios/ipa
-          xcodebuild \
-            -exportArchive \
-            -archivePath /tmp/App.xcarchive \
-            -exportPath /tmp/ipa \
-            -exportOptionsPlist ios/App/exportOptions.plist \
-            2>&1 | tail -10
+          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist ios/App/exportOptions.plist 2>&1 | tail -10
           cp /tmp/ipa/*.ipa build/ios/ipa/
           ls -la build/ios/ipa/
     
