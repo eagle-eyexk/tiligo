@@ -22,58 +22,34 @@ workflows:
       cancel_previous_builds: true
     
     scripts:
-      - name: BUILD
+      - name: FULL AUTO BUILD
         script: |
           set -e
           export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
           brew install node@22 2>/dev/null || true
-          npm install
-          npm install @capacitor/ios
+          npm install && npm install @capacitor/ios
           npm run build
-          rm -rf ios/
-          npx cap add ios
-          npx cap sync ios
-
-      - name: ARCHIVE
-        script: |
-          set -e
+          rm -rf ios/ && npx cap add ios && npx cap sync ios
           
-          echo "=== Checking available profiles ==="
-          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles found"
+          echo "=== Installing profile ==="
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          echo "$PROVISIONING_PROFILE" | base64 -d > ~/Library/MobileDevice/Provisioning\ Profiles/tiligo.mobileprovision 2>/dev/null || true
+          
+          echo "=== Installing certificate ==="
+          echo "$CERTIFICATE" | base64 -d > /tmp/cert.p12 2>/dev/null || true
+          security create-keychain -p "" build.keychain 2>/dev/null || true
+          security default-keychain -s build.keychain 2>/dev/null || true
+          security unlock-keychain -p "" build.keychain 2>/dev/null || true
+          security import /tmp/cert.p12 -k build.keychain -P "$CERTIFICATE_PASSWORD" -A 2>/dev/null || true
+          security set-key-partition-list -S apple-tool:,apple: -s -k "" build.keychain 2>/dev/null || true
           
           cd ios/App
+          cat > exportOptions.plist <<< '<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd"><plist version="1.0"><dict><key>method</key><string>app-store</string><key>teamID</key><string>H4QUDPK7S3</string><key>signingStyle</key><string>manual</string><key>uploadSymbols</key><true/><key>compileBitcode</key><false/></dict></plist>'
           
-          cat > exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-          <key>method</key><string>app-store</string>
-          <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>manual</string>
-          <key>uploadSymbols</key><true/>
-          <key>compileBitcode</key><false/>
-          </dict></plist>
-          PLIST
-          
-          xcodebuild \
-            -project App.xcodeproj \
-            -scheme App \
-            -sdk iphoneos \
-            -configuration Release \
-            -archivePath /tmp/App.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            PROVISIONING_PROFILE="tiligo_ios" \
-            2>&1 | tail -20
-          
+          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/App.xcarchive archive CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM="H4QUDPK7S3" CODE_SIGN_IDENTITY="Apple Distribution" 2>&1 | tail -15
           [ -d /tmp/App.xcarchive ] || exit 1
           cd ../..
-
-      - name: EXPORT
-        script: |
-          set -e
+          
           mkdir -p /tmp/ipa build/ios/ipa
           xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist ios/App/exportOptions.plist 2>&1 | tail -10
           cp /tmp/ipa/*.ipa build/ios/ipa/
