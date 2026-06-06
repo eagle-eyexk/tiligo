@@ -37,6 +37,5 @@ jobs:
         run: |
           IPA=$(find build -name "*.ipa" | head -1)
           mkdir -p ~/private_keys
-          echo "$PRIVATE_KEY" > ~/private_keys/AuthKey_OUT3J5X9GQ1D.p8
-          wc -l ~/private_keys/AuthKey_OUT3J5X9GQ1D.p8
-          xcrun altool --upload-app --file "$IPA" --type ios --apiKey OUT3J5X9GQ1D --apiIssuer 6d7acece-2356-43c3-9946-6fd2cda5bf7d
+          echo "$PRIVATE_KEY" > ~/private_keys/AuthKey_H4QNZVUC63.p8
+          xcrun altool --upload-app --file "$IPA" --type ios --apiKey H4QNZVUC63 --apiIssuer 6d7acece-2356-43c3-9946-6fd2cda5bf7d
