@@ -31,21 +31,22 @@ workflows:
           npm run build
           rm -rf ios/ && npx cap add ios && npx cap sync ios
           
-          echo "=== Fix bundle ID in Xcode ==="
-          /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier com.tiligo.app" ios/App/App/Info.plist
-          
           cd ios/App
+          
           cat > exportOptions.plist << 'PLIST'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>manual</string>
+          <key>signingStyle</key><string>automatic</string>
           <key>uploadSymbols</key><true/>
           <key>compileBitcode</key><false/>
           </dict></plist>
           PLIST
+          
+          # Register Apple account and fetch profile automatically
+          xcodebuild -resolvePackageDependencies 2>/dev/null || true
           
           xcodebuild \
             -project App.xcodeproj \
@@ -54,10 +55,11 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
+            -allowProvisioningUpdates \
+            -authenticationKeyID "2H8MJ5ZP26" \
+            -authenticationKeyIssuerID "6d7acece-2356-43c3-9946-6fd2cda5bf7d" \
+            -authenticationKeyPath /tmp/authkey.p8 \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
             2>&1 | tail -15
           
           [ -d /tmp/App.xcarchive ] || exit 1
