@@ -39,14 +39,11 @@ workflows:
           <plist version="1.0"><dict>
           <key>method</key><string>app-store</string>
           <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>automatic</string>
+          <key>signingStyle</key><string>manual</string>
           <key>uploadSymbols</key><true/>
           <key>compileBitcode</key><false/>
           </dict></plist>
           PLIST
-          
-          # Register Apple account and fetch profile automatically
-          xcodebuild -resolvePackageDependencies 2>/dev/null || true
           
           xcodebuild \
             -project App.xcodeproj \
@@ -55,18 +52,17 @@ workflows:
             -configuration Release \
             -archivePath /tmp/App.xcarchive \
             archive \
-            -allowProvisioningUpdates \
-            -authenticationKeyID "2H8MJ5ZP26" \
-            -authenticationKeyIssuerID "6d7acece-2356-43c3-9946-6fd2cda5bf7d" \
-            -authenticationKeyPath /tmp/authkey.p8 \
+            CODE_SIGN_STYLE=Manual \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
             DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            2>&1 | tail -15
+            PROVISIONING_PROFILE_SPECIFIER="tiligo_ios" \
+            -allowProvisioningUpdates
           
           [ -d /tmp/App.xcarchive ] || exit 1
           cd ../..
           
           mkdir -p /tmp/ipa build/ios/ipa
-          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist ios/App/exportOptions.plist 2>&1 | tail -10
+          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist ios/App/exportOptions.plist
           cp /tmp/ipa/*.ipa build/ios/ipa/
           ls -la build/ios/ipa/
     
