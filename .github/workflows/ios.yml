@@ -1,13 +1,13 @@
-name: iOS Build + Deploy
+name: iOS Build + Deploy (Capacitor)
 
 on:
   push:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   ios-build:
-    runs-on: macos-15
+    runs-on: macos-latest
+
     steps:
       - name: Checkout repo
         uses: actions/checkout@v4
@@ -15,51 +15,44 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-
-      - name: Verify Node
-        run: |
-          node --version
-          which node
+          node-version: 20
 
       - name: Install dependencies
-        run: |
-          npm install
-          npm install @capacitor/ios
+        run: npm install
 
       - name: Build web app
         run: npm run build
 
+      - name: Install Capacitor CLI
+        run: npm install -g @capacitor/cli
+
       - name: Sync Capacitor iOS
+        run: npx cap sync ios
+
+      - name: Install CocoaPods
         run: |
-          export NODE_OPTIONS="--max-old-space-size=4096"
-          npx cap sync ios
+          cd ios/App
+          pod install
 
       - name: Build IPA
         run: |
-          cd ios/App
-          xcodebuild \
-            -project App.xcodeproj \
+          xcodebuild -workspace ios/App/App.xcworkspace \
             -scheme App \
-            -sdk iphoneos \
             -configuration Release \
-            -archivePath /tmp/app.xcarchive \
-            archive \
-            CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            -allowProvisioningUpdates
+            -archivePath build/app.xcarchive \
+            archive
 
       - name: Export IPA
         run: |
-          mkdir -p build
-          xcodebuild \
-            -exportArchive \
-            -archivePath /tmp/app.xcarchive \
+          xcodebuild -exportArchive \
+            -archivePath build/app.xcarchive \
             -exportOptionsPlist ios/exportOptions.plist \
             -exportPath build
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v4
+      - name: Upload to TestFlight
+        uses: apple-actions/upload-testflight-build@v1
         with:
-          name: tiligo-ios
-          path: build/*.ipa
+          app-path: build/App.ipa
+          issuer-id: ${{ secrets.APPSTORE_ISSUER_ID }}
+          api-key-id: ${{ secrets.APPSTORE_KEY_ID }}
+          api-private-key: ${{ secrets.APPSTORE_PRIVATE_KEY }}
