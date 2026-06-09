@@ -1,4 +1,4 @@
-name: Auto Release (Version Bump + Tag + Publish)
+name: Master Auto Release Pipeline
 
 on:
   push:
@@ -13,7 +13,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
@@ -23,18 +23,30 @@ jobs:
         with:
           node-version: 22.x
 
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check if commit should trigger release
+        id: check
+        run: |
+          if git log -1 --pretty=%B | grep -q "\[skip release\]"; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Configure Git
+        if: steps.check.outputs.skip == 'false'
         run: |
           git config user.name "github-actions"
           git config user.email "github-actions@github.com"
 
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Bump version (patch)
+      - name: Bump version
+        if: steps.check.outputs.skip == 'false'
         run: |
           npm version patch -m "chore(release): %s [skip ci]"
 
-      - name: Push commit + tags
+      - name: Push changes + tags
+        if: steps.check.outputs.skip == 'false'
         run: |
           git push origin main --follow-tags
