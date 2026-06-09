@@ -1,33 +1,40 @@
-name: Build Web + Capacitor Sync
+name: Auto Version Bump & Release
 
 on:
   push:
     branches:
       - main
-  pull_request:
+
+permissions:
+  contents: write
 
 jobs:
-  build:
+  release:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Setup Node.js
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 22.x
-          cache: npm
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Build web application
-        run: npm run build
+      - name: Bump version (patch)
+        run: |
+          npm version patch -m "chore(release): %s [skip ci]"
 
-      - name: Install Capacitor CLI
-        run: npm install @capacitor/cli
-
-      - name: Sync Capacitor (iOS + Android projects)
-        run: npx cap sync
+      - name: Push commit + tags
+        run: |
+          git push origin main --follow-tags
