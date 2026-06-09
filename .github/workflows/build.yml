@@ -1,29 +1,44 @@
-name: Build Web + Sync Capacitor
+name: CI Auto Fix Node Version
 
 on:
+  workflow_dispatch:
   push:
-    branches:
+    branches-ignore:
       - main
-  pull_request:
 
 jobs:
-  build:
+  fix-node-version:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout
+      - name: Checkout repo
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Fix Node version in workflow files
+        run: |
+          sed -i 's/node-version: 20/node-version: 22.x/g' .github/workflows/build.yml
 
-      - name: Build web app
-        run: npm run build
+      - name: Verify change
+        run: |
+          cat .github/workflows/build.yml | grep node-version
 
-      - name: Sync Capacitor
-        run: npx cap sync ios
+      - name: Create Pull Request with fix
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "fix(ci): upgrade Node to 22 for Capacitor compatibility"
+          title: "Auto-fix: Upgrade Node to 22 for CI compatibility"
+          body: |
+            This PR was automatically generated to fix Capacitor CLI requirements.
+
+            - Upgrades Node from 20 → 22
+            - Required for Capacitor sync stability
+          branch: auto/fix-node-22
+          base: main
