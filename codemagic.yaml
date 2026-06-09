@@ -1,86 +1,54 @@
 workflows:
-  tiligo-ios:
-    name: Tiligo Production
-    instance_type: mac_mini_m2
-    max_build_duration: 120
+  ios-release:
+    name: iOS Release (Capacitor)
+
     environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
+
       vars:
-        NODE_VERSION: "22"
-        XCODE_VERSION: "16.1"
-      node: $NODE_VERSION
-      xcode: $XCODE_VERSION
-    
+        PACKAGE_NAME: "tiligo"
+
     triggering:
       events:
         - push
-        - tag
       branch_patterns:
-        - pattern: 'main'
-          include: true
-      tag_patterns:
-        - pattern: 'v*'
-          include: true
-      cancel_previous_builds: true
-    
+        - pattern: main
+
     scripts:
-      - name: BUILD
+      - name: Install dependencies
+        script: npm ci
+
+      - name: Build web app
+        script: npm run build
+
+      - name: Install Capacitor CLI
+        script: npm install -g @capacitor/cli
+
+      - name: Sync iOS project
+        script: npx cap sync ios
+
+      - name: Install CocoaPods
         script: |
-          set -e
-          export PATH="/opt/homebrew/opt/node@22/bin:$PATH"
-          brew install node@22 2>/dev/null || true
-          
-          PROFILES="$HOME/Library/MobileDevice/Provisioning Profiles"
-          mkdir -p "$PROFILES"
-          echo "$PROFILE_BASE64" | base64 -d > "$PROFILES/tiligo.mobileprovision"
-          
-          UUID=$(/usr/libexec/PlistBuddy -c "Print :UUID" /dev/stdin <<< "$(security cms -D -i "$PROFILES/tiligo.mobileprovision")" 2>/dev/null || echo "")
-          echo "Profile UUID: $UUID"
-          
-          npm install && npm run build
-          npx cap sync ios 2>/dev/null || { rm -rf ios/ && npx cap add ios && npx cap sync ios; }
           cd ios/App
-          
-          cat > exportOptions.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-          <key>method</key><string>app-store</string>
-          <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingStyle</key><string>manual</string>
-          <key>provisioningProfiles</key><dict><key>com.tiligo.app</key><string>tiligo_ios</string></dict>
-          </dict></plist>
-          PLIST
-          
+          pod install
+
+      - name: Build iOS app (Release)
+        script: |
           xcodebuild \
-            -project App.xcodeproj \
+            -workspace ios/App/App.xcworkspace \
             -scheme App \
-            -sdk iphoneos \
             -configuration Release \
-            -archivePath /tmp/App.xcarchive \
-            archive \
-            DEVELOPMENT_TEAM="H4QUDPK7S3" \
-            CODE_SIGN_STYLE=Manual \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
-            PROVISIONING_PROFILE="$PROFILES/tiligo.mobileprovision"
-          
-          mkdir -p /tmp/ipa ../../build/ios/ipa
-          xcodebuild -exportArchive -archivePath /tmp/App.xcarchive -exportPath /tmp/ipa -exportOptionsPlist exportOptions.plist
-          cp /tmp/ipa/*.ipa ../../build/ios/ipa/
-          ls -la ../../build/ios/ipa/
-    
+            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+            archive
+
     artifacts:
-      - build/ios/ipa/*.ipa
-    
+      - build/*.xcarchive
+      - ios/App/build/**/*.ipa
+
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_KEY
-        key_id: "2H8MJ5ZP26"
-        issuer_id: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
+        auth: integration
         submit_to_testflight: true
-        submit_to_app_store: true
-      email:
-        recipients:
-          - agentextern@gmail.com
-        notify:
-          success: true
-          failure: true
+        submit_to_app_store: false
