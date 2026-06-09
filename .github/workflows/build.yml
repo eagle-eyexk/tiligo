@@ -1,41 +1,29 @@
-name: Build & Deploy
+name: Build Web + Sync Capacitor
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
+  pull_request:
 
 jobs:
   build:
-    runs-on: macos-15
+    runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
         with:
-          node-version: 22
-      - run: npm install
-      - run: npm run build
-      - run: npx cap sync ios
-      - run: |
-          cd ios/App
-          xcodebuild -project App.xcodeproj -scheme App -sdk iphoneos -configuration Release -archivePath /tmp/app.xcarchive archive CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY=""
-      - run: |
-          mkdir -p build
-          cat > /tmp/export.plist << 'PLIST'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0"><dict>
-          <key>method</key><string>debugging</string>
-          <key>teamID</key><string>H4QUDPK7S3</string>
-          <key>signingCertificate</key><string>-</string>
-          <key>signingStyle</key><string>manual</string>
-          </dict></plist>
-          PLIST
-          xcodebuild -exportArchive -archivePath /tmp/app.xcarchive -exportPath build -exportOptionsPlist /tmp/export.plist
-      - name: Upload to TestFlight
-        env:
-          PRIVATE_KEY: ${{ secrets.APPSTORE_PRIVATE_KEY }}
-        run: |
-          IPA=$(find build -name "*.ipa" | head -1)
-          mkdir -p ~/private_keys
-          echo "$PRIVATE_KEY" > ~/private_keys/AuthKey_H4QNZVUC63.p8
-          xcrun altool --upload-app --file "$IPA" --type ios --apiKey H4QNZVUC63 --apiIssuer 6d7acece-2356-43c3-9946-6fd2cda5bf7d
+          node-version: 20
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Sync Capacitor
+        run: npx cap sync ios
