@@ -1,14 +1,11 @@
 workflows:
   ios-release:
-    name: iOS Release (Capacitor)
+    name: iOS Release (Capacitor Clean Build)
 
     environment:
       node: 22
       xcode: latest
       cocoapods: default
-
-      vars:
-        PACKAGE_NAME: "tiligo"
 
     triggering:
       events:
@@ -20,19 +17,20 @@ workflows:
       - name: Install dependencies
         script: npm ci
 
+      - name: Ensure Capacitor packages
+        script: |
+          npm install @capacitor/core @capacitor/cli @capacitor/app
+
       - name: Build web app
         script: npm run build
 
-      - name: Install Capacitor CLI
-        script: npm install -g @capacitor/cli
-
-      - name: Sync iOS project
+      - name: Sync Capacitor (iOS clean)
         script: npx cap sync ios
 
       - name: Install CocoaPods
         script: |
           cd ios/App
-          pod install
+          pod install --repo-update
 
       - name: Build iOS app (Release)
         script: |
