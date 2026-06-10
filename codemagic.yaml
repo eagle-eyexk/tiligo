@@ -1,166 +1,70 @@
 workflows:
-  ios-release:
-    name: iOS Release (Full Auto)
-    instance_type: mac_mini_m1
-    max_build_duration: 60
+  ios-production:
+    name: Tiligo iOS Production Build
 
     environment:
-      node: 22
-      xcode: latest
+      vars:
+        APP_ID: com.tiligo.app
+        CAPACITOR_APP_NAME: Tiligo
+        NODE_ENV: production
+
+      node: 20.11.1
+
+      xcode: 15.2
+
       cocoapods: default
-      groups:
-        - app_store_credentials
 
     triggering:
-      events:
-        - push
       branch_patterns:
         - pattern: main
+          include: true
 
     scripts:
-      - name: Install npm dependencies
+      - name: Install dependencies
         script: |
-          set -e
-          npm ci --prefer-offline 2>&1 | tail -20
+          npm ci
 
-      - name: Install all Capacitor packages
+      - name: Build web app (Vite)
         script: |
-          set -e
-          npm install \
-            @capacitor/core@^7.0.0 \
-            @capacitor/cli@^7.0.0 \
-            @capacitor/app@^7.0.0 \
-            @capacitor/ios@^7.0.0 \
-            @capacitor/haptics@^7.0.0 \
-            @capacitor/keyboard@^7.0.0 \
-            @capacitor/status-bar@^7.0.0 \
-            --save 2>&1
-          npx cap --version
+          npm run build
 
-      - name: Build web app
+      - name: Sync Capacitor iOS
         script: |
-          set -e
-          npm run build 2>&1 | tail -30
+          npx cap sync ios
 
-      - name: Add iOS platform
+      - name: Install iOS pods
         script: |
-          set -e
-          if [ ! -d "ios" ]; then npx cap add ios 2>&1; fi
-
-      - name: Sync Capacitor to iOS
-        script: |
-          set -e
-          npx cap sync ios 2>&1
-
-      - name: Generate correct Podfile
-        script: |
-          set -e
           cd ios/App
-          cat > _gen_podfile.sh << 'X'
-          #!/bin/bash
-          P=""
-          for d in ../../node_modules/@capacitor/*/; do
-            n=$(basename "$d")
-            case "$n" in core|cli|ios|cordova) continue ;; esac
-            if [ -f "$d/package.json" ]; then
-              P="${P}  pod 'Capacitor${n^}', :path => '../../node_modules/@capacitor/${n}'\n"
-            fi
-          done
-          cat > Podfile << 'Y'
-          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+          pod install
 
-          platform :ios, '14.0'
-          use_frameworks!
-
-          def capacitor_pods
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios/CapacitorCordova'
-          PLACEHOLDER
-          end
-
-          target 'App' do
-            capacitor_pods
-          end
-
-          post_install do |installer|
-            installer.pods_project.targets.each do |target|
-              target.build_configurations.each do |config|
-                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-              end
-            end
-          end
-          Y
-          sed -i '' "/PLACEHOLDER/c\\
-          $(echo -e "$P")" Podfile
-          X
-          chmod +x _gen_podfile.sh
-          ./_gen_podfile.sh
-          echo "=== Podfile ==="
-          cat Podfile
-
-      - name: Clean pod artifacts
+      - name: Set up iOS signing
         script: |
-          set -e
-          cd ios/App
-          rm -rf Pods Podfile.lock
-          pod deintegrate 2>/dev/null || true
+          echo "Signing handled via Codemagic App Store Connect integration"
 
-      - name: Install CocoaPods
+      - name: Build iOS archive (Release)
         script: |
-          set -e
-          cd ios/App
-          gem install cocoapods --no-document 2>&1 | tail -3
-          pod install --repo-update 2>&1 | tee _pod.log
-          if grep -qiE "error|failed|\[!\]" _pod.log; then
-            grep -iE "error|failed|\[!\]" _pod.log
-            exit 1
-          fi
-
-      - name: Verify workspace
-        script: |
-          set -e
-          test -d ios/App/App.xcworkspace || (echo "FATAL: No workspace"; ls ios/App/; exit 1)
-
-      - name: Set build number
-        script: |
-          BUILD=$(( $(date +%s) - 1700000000 ))
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist 2>/dev/null || true
-
-      - name: Archive
-        script: |
-          set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive 2>&1 | tail -30
-          test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
+          xcodebuild \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -sdk iphoneos \
+            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+            clean archive
 
       - name: Export IPA
         script: |
-          set -e
-          if [ ! -f ios/App/ExportOptions.plist ]; then
-            cat > ExportOptions.plist << 'X'
-          <?xml version="1.0" encoding="UTF-8"?>
-          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-          <plist version="1.0">
-          <dict>
-              <key>method</key>
-              <string>app-store</string>
-          </dict>
-          </plist>
-          X
-            EXPORT_OPTS="ExportOptions.plist"
-          else
-            EXPORT_OPTS="ios/App/ExportOptions.plist"
-          fi
-          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist "$EXPORT_OPTS" 2>&1 | tail -10
+          xcodebuild -exportArchive \
+            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+            -exportOptionsPlist ios/exportOptions.plist \
+            -exportPath $CM_BUILD_DIR/build/ipa
 
     artifacts:
+      - build/ipa/*.ipa
       - build/*.xcarchive
-      - build/*.ipa
 
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
-        key_id: $APP_STORE_CONNECT_KEY_ID
+        auth: integration
         submit_to_testflight: true
-        submit_to_app_store: false
+        beta_groups:
+          - internal
