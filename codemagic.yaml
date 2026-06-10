@@ -23,10 +23,19 @@ workflows:
           set -e
           npm ci --prefer-offline 2>&1 | tail -20
 
-      - name: Install Capacitor packages
+      - name: Install all Capacitor packages
         script: |
           set -e
-          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save 2>&1
+          npm install \
+            @capacitor/core@^7.0.0 \
+            @capacitor/cli@^7.0.0 \
+            @capacitor/app@^7.0.0 \
+            @capacitor/ios@^7.0.0 \
+            @capacitor/cordova@^7.0.0 \
+            @capacitor/haptics@^7.0.0 \
+            @capacitor/keyboard@^7.0.0 \
+            @capacitor/status-bar@^7.0.0 \
+            --save 2>&1
           npx cap --version
 
       - name: Build web app
@@ -44,37 +53,35 @@ workflows:
           set -e
           npx cap sync ios 2>&1
 
-      - name: Generate Podfile
+      - name: Generate correct Podfile
         script: |
           set -e
           cd ios/App
-          cat > generate_podfile.sh << 'SCRIPTEOF'
+          cat > _gen_podfile.sh << 'X'
           #!/bin/bash
-          PLUGINS=""
+          P=""
           for d in ../../node_modules/@capacitor/*/; do
-            name=$(basename "$d")
-            case "$name" in core|cli|ios|cordova) continue ;; esac
-            if [ -f "$d/package.json" ]; then
-              PLUGINS="${PLUGINS}  pod 'Capacitor${name^}', :path => '../../node_modules/@capacitor/${name}'\n"
-            fi
+            n=$(basename "$d")
+            case "$n" in core|cli|ios|cordova) continue ;; esac
+            [ -f "$d/package.json" ] && P="${P}  pod 'Capacitor${n^}', :path => '../../node_modules/@capacitor/${n}'\n"
           done
-          cat > Podfile << 'PODEOF'
+          cat > Podfile << 'Y'
           require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-          
+
           platform :ios, '14.0'
           use_frameworks!
-          
+
           def capacitor_pods
             pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
             pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/cordova'
           PLACEHOLDER
           end
-          
+
           target 'App' do
             capacitor_pods
           end
-          
+
           post_install do |installer|
             installer.pods_project.targets.each do |target|
               target.build_configurations.each do |config|
@@ -82,12 +89,12 @@ workflows:
               end
             end
           end
-          PODEOF
+          Y
           sed -i '' "/PLACEHOLDER/c\\
-          $(echo -e "$PLUGINS")" Podfile
-          SCRIPTEOF
-          chmod +x generate_podfile.sh
-          ./generate_podfile.sh
+          $(echo -e "$P")" Podfile
+          X
+          chmod +x _gen_podfile.sh
+          ./_gen_podfile.sh
           echo "=== Podfile ==="
           cat Podfile
 
@@ -103,9 +110,9 @@ workflows:
           set -e
           cd ios/App
           gem install cocoapods --no-document 2>&1 | tail -3
-          pod install --repo-update 2>&1 | tee pod_install.log
-          if grep -qiE "error|failed|\[!\]" pod_install.log; then
-            grep -iE "error|failed|\[!\]" pod_install.log
+          pod install --repo-update 2>&1 | tee _pod.log
+          if grep -qiE "error|failed|\[!\]" _pod.log; then
+            grep -iE "error|failed|\[!\]" _pod.log
             exit 1
           fi
 
@@ -129,7 +136,7 @@ workflows:
         script: |
           set -e
           if [ ! -f ios/App/ExportOptions.plist ]; then
-            cat > ExportOptions.plist << 'PLIST'
+            cat > ExportOptions.plist << 'X'
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0">
@@ -138,7 +145,7 @@ workflows:
               <string>app-store</string>
           </dict>
           </plist>
-          PLIST
+          X
             EXPORT_OPTS="ExportOptions.plist"
           else
             EXPORT_OPTS="ios/App/ExportOptions.plist"
