@@ -1,34 +1,111 @@
 workflows:
-  ios-app-store:
-    name: iOS App Store
+  tiligo_smart_pipeline:
+    name: Tiligo Smart CI/CD (Auto Detect + Production Ready)
+    instance_type: mac_mini_m1
+    max_build_duration: 120
+
+    integrations:
+      app_store_connect: tiligo_asc
+
     environment:
-      ios_signing:
-        distribution_type: app_store
-        bundle_identifier: tiligo_asc
-      groups:
-        - app_store_connect_api
-      node: 20
-      xcode: 15
+      flutter: stable
+      xcode: latest
+      node: 22
+
+    cache:
+      cache_paths:
+        - ~/.pub-cache
+        - ~/.gradle
+        - ios/Pods
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+        - pattern: develop
+
     scripts:
-      - name: Build app
+      - name: Locate Flutter project
         script: |
-          npm ci
-          npm run build
-          npx cap sync ios
-          xcode-project build-archive \
-            --workspace "ios/App/App.xcworkspace" \
-            --scheme "App" \
-            --archive-path build/ios.xcarchive
-          xcode-project export-ipa \
-            --archive-path build/ios.xcarchive \
-            --output-path build/tiligo.ipa
+          set -e
+          FLUTTER_DIR=$(dirname $(find . -name pubspec.yaml -not -path "*/build/*" -not -path "*/.pub/*" -not -path "*/Pods/*" | head -n 1))
+          if [ -z "$FLUTTER_DIR" ]; then
+            echo "ERROR: pubspec.yaml not found anywhere in repo"
+            exit 1
+          fi
+          echo "Flutter project found at: $FLUTTER_DIR"
+          echo "FLUTTER_PROJECT_DIR=$FLUTTER_DIR" >> $CM_ENV
+
+      - name: Clean and install dependencies
+        script: |
+          set -e
+          cd $FLUTTER_PROJECT_DIR
+          flutter clean
+          flutter pub get
+          cd ios
+          pod install --repo-update
+          cd ..
+
+      - name: Run tests
+        script: |
+          set +e
+          cd $FLUTTER_PROJECT_DIR
+          flutter test --no-pub
+
+      - name: Static analysis
+        script: |
+          set +e
+          cd $FLUTTER_PROJECT_DIR
+          flutter analyze --no-pub
+
+      - name: Detect build mode
+        script: |
+          set -e
+          if [ "$CM_BRANCH" = "main" ]; then
+            echo "BUILD_MODE=prod" >> $CM_ENV
+          else
+            echo "BUILD_MODE=dev" >> $CM_ENV
+          fi
+          echo "Building in $BUILD_MODE mode on branch $CM_BRANCH"
+
+      - name: Build iOS
+        script: |
+          set -e
+          cd $FLUTTER_PROJECT_DIR
+          if [ "$BUILD_MODE" = "dev" ]; then
+            flutter build ios --debug --no-codesign
+          else
+            flutter build ipa --release \
+              --export-options-plist ios/ExportOptions.plist
+          fi
+
+      - name: Build Android
+        script: |
+          set -e
+          cd $FLUTTER_PROJECT_DIR
+          if [ "$BUILD_MODE" = "dev" ]; then
+            flutter build apk --debug
+          else
+            flutter build appbundle --release
+          fi
+
+      - name: Auto versioning
+        script: |
+          set +e
+          cd $FLUTTER_PROJECT_DIR/ios
+          agvtool new-version -all $BUILD_NUMBER || true
+
     artifacts:
-      - build/tiligo.ipa
+      - $FLUTTER_PROJECT_DIR/build/ios/ipa/*.ipa
+      - $FLUTTER_PROJECT_DIR/build/ios/iphoneos/Runner.app
+      - $FLUTTER_PROJECT_DIR/build/app/outputs/bundle/release/*.aab
+      - $FLUTTER_PROJECT_DIR/build/app/outputs/apk/debug/*.apk
+
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY
-        key_id: $APP_STORE_CONNECT_KEY_ID
-        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        auth: integration
         submit_to_testflight: true
-        submit_to_app_store: true
-        release_type: MANUAL
+        beta_groups:
+          - Internal Testers
+        submit_to_app_store: false
