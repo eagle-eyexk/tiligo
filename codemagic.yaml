@@ -60,16 +60,14 @@ workflows:
           cd ios/App
           sed -i '' "s/platform :ios, '[0-9]*\.[0-9]*'/platform :ios, '14.0'/" Podfile
           if ! grep -q "IPHONEOS_DEPLOYMENT_TARGET" Podfile; then
-            cat >> Podfile << 'PODEOF'
-
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-    end
-  end
-end
-PODEOF
+            echo "" >> Podfile
+            echo "post_install do |installer|" >> Podfile
+            echo "  installer.pods_project.targets.each do |target|" >> Podfile
+            echo "    target.build_configurations.each do |config|" >> Podfile
+            echo "      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'" >> Podfile
+            echo "    end" >> Podfile
+            echo "  end" >> Podfile
+            echo "end" >> Podfile
           fi
           echo "=== Podfile updated ==="
           cat Podfile
