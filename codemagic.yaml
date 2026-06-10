@@ -1,11 +1,15 @@
 workflows:
   ios-release:
     name: iOS Release (Capacitor Clean Build)
+    instance_type: mac_mini_m1
+    max_build_duration: 60
 
     environment:
       node: 22
       xcode: latest
       cocoapods: default
+      groups:
+        - app_store_credentials
 
     triggering:
       events:
@@ -14,37 +18,221 @@ workflows:
         - pattern: main
 
     scripts:
-      - name: Install dependencies
-        script: npm ci
+      # ------------------------------------------------------------
+      # STEP 1 — Install JS dependencies
+      # ------------------------------------------------------------
+      - name: Install npm dependencies
+        script: |
+          set -e
+          echo "=== Installing npm dependencies ==="
+          npm ci --prefer-offline 2>&1 | tail -20
+          echo "=== Dependencies installed ==="
 
+      # ------------------------------------------------------------
+      # STEP 2 — Ensure Capacitor core packages are present
+      # ------------------------------------------------------------
       - name: Ensure Capacitor packages
         script: |
-          npm install @capacitor/core @capacitor/cli @capacitor/app
+          set -e
+          echo "=== Ensuring Capacitor packages ==="
+          npm install @capacitor/core @capacitor/cli @capacitor/app --save 2>&1
+          npx cap --version
+          echo "=== Capacitor CLI ready ==="
 
+      # ------------------------------------------------------------
+      # STEP 3 — Build the web application
+      # ------------------------------------------------------------
       - name: Build web app
-        script: npm run build
+        script: |
+          set -e
+          echo "=== Building web app ==="
+          npm run build 2>&1 | tail -30
+          if [ ! -d "dist" ] && [ ! -d "build" ] && [ ! -d "www" ]; then
+            echo "ERROR: No build output directory found (dist, build, or www)"
+            exit 1
+          fi
+          echo "=== Web build complete ==="
 
-      - name: Sync Capacitor (iOS clean)
-        script: npx cap sync ios
+      # ------------------------------------------------------------
+      # STEP 4 — Add iOS platform (idempotent)
+      # ------------------------------------------------------------
+      - name: Add iOS platform if missing
+        script: |
+          set -e
+          echo "=== Checking iOS platform ==="
+          if [ ! -d "ios" ]; then
+            echo "Adding iOS platform..."
+            npx cap add ios 2>&1
+          else
+            echo "iOS platform already exists"
+          fi
 
+      # ------------------------------------------------------------
+      # STEP 5 — Sync web assets and plugins to iOS
+      # ------------------------------------------------------------
+      - name: Sync Capacitor to iOS
+        script: |
+          set -e
+          echo "=== Syncing Capacitor to iOS ==="
+          npx cap sync ios 2>&1 | tee "$CM_BUILD_DIR/cap-sync.log"
+          echo ""
+          echo "=== Sync log ==="
+          cat "$CM_BUILD_DIR/cap-sync.log"
+          echo ""
+          if grep -qi "error" "$CM_BUILD_DIR/cap-sync.log"; then
+            echo "ERROR: Capacitor sync reported errors"
+            exit 1
+          fi
+          echo "=== Sync complete ==="
+
+      # ------------------------------------------------------------
+      # STEP 6 — Debug environment (Ruby, CocoaPods, Podfile)
+      # ------------------------------------------------------------
+      - name: Debug CocoaPods environment
+        script: |
+          set -e
+          echo "=== Environment ==="
+          echo "Ruby: $(ruby --version)"
+          echo "Pod:  $(pod --version 2>/dev/null || echo 'NOT INSTALLED')"
+          echo "PWD:  $(pwd)"
+          echo ""
+          echo "=== Podfile check ==="
+          if [ -f "ios/App/Podfile" ]; then
+            echo "Podfile exists"
+            head -30 ios/App/Podfile
+          else
+            echo "ERROR: ios/App/Podfile not found"
+            echo "Contents of ios/App:"
+            ls -la ios/App/
+            exit 1
+          fi
+
+      # ------------------------------------------------------------
+      # STEP 7 — Clean stale CocoaPods artifacts
+      # ------------------------------------------------------------
+      - name: Clean previous pod artifacts
+        script: |
+          set -e
+          echo "=== Cleaning stale pod artifacts ==="
+          cd ios/App
+          rm -rf Pods Podfile.lock
+          pod deintegrate 2>/dev/null || echo "No existing workspace to deintegrate"
+          echo "=== Clean complete ==="
+
+      # ------------------------------------------------------------
+      # STEP 8 — CocoaPods install (the critical step)
+      # ------------------------------------------------------------
       - name: Install CocoaPods
         script: |
+          set -e
+          echo "=== Installing CocoaPods ==="
           cd ios/App
-          pod install --repo-update
 
+          # Ensure CocoaPods gem is current
+          gem install cocoapods --no-document 2>&1 | tail -5
+
+          # Run pod install with verbose output
+          pod install --repo-update --verbose 2>&1 | tee "$CM_BUILD_DIR/pod-install.log"
+
+          echo ""
+          echo "=== Pod install exit code: $? ==="
+
+          # Check for common error patterns
+          if grep -qi "error\|failed\|cannot\|abort" "$CM_BUILD_DIR/pod-install.log"; then
+            echo ""
+            echo "=== ERRORS DETECTED IN POD INSTALL ==="
+            grep -i "error\|failed\|cannot\|abort" "$CM_BUILD_DIR/pod-install.log"
+            exit 1
+          fi
+
+          echo "=== Pod install successful ==="
+
+      # ------------------------------------------------------------
+      # STEP 9 — Verify workspace was created
+      # ------------------------------------------------------------
+      - name: Verify workspace
+        script: |
+          set -e
+          echo "=== Verifying workspace ==="
+          if [ ! -d "ios/App/App.xcworkspace" ]; then
+            echo "ERROR: App.xcworkspace not found after pod install"
+            echo "Contents of ios/App:"
+            ls -la ios/App/
+            echo ""
+            echo "Full pod install log:"
+            cat "$CM_BUILD_DIR/pod-install.log"
+            exit 1
+          fi
+          echo "Workspace found:"
+          ls -la ios/App/App.xcworkspace/
+          echo "=== Verification complete ==="
+
+      # ------------------------------------------------------------
+      # STEP 10 — Increment build number
+      # ------------------------------------------------------------
+      - name: Set build number
+        script: |
+          set -e
+          echo "=== Setting build number ==="
+          BUILD_NUMBER=$(( $(date +%s) - 1700000000 ))
+          echo "Build number: $BUILD_NUMBER"
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" \
+            ios/App/App/Info.plist 2>/dev/null || echo "Info.plist not at expected path — skipping manual build number"
+          echo "=== Build number set ==="
+
+      # ------------------------------------------------------------
+      # STEP 11 — Archive the iOS application
+      # ------------------------------------------------------------
       - name: Build iOS app (Release)
         script: |
+          set -e
+          echo "=== Building iOS archive ==="
           xcodebuild \
             -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            archive
+            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
+            archive 2>&1 | tee "$CM_BUILD_DIR/xcodebuild.log"
+          echo ""
+          echo "=== Xcode build exit code: $? ==="
+          if [ ! -d "$CM_BUILD_DIR/build/App.xcarchive" ]; then
+            echo "ERROR: Archive was not created"
+            tail -100 "$CM_BUILD_DIR/xcodebuild.log"
+            exit 1
+          fi
+          echo "=== Archive created successfully ==="
 
+      # ------------------------------------------------------------
+      # STEP 12 — Export IPA from archive
+      # ------------------------------------------------------------
+      - name: Export IPA
+        script: |
+          set -e
+          echo "=== Exporting IPA ==="
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
+            -exportPath "$CM_BUILD_DIR/build" \
+            -exportOptionsPlist ios/App/ExportOptions.plist 2>&1 || \
+          xcodebuild \
+            -exportArchive \
+            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
+            -exportPath "$CM_BUILD_DIR/build" \
+            -exportOptionsPlist "$CM_BUILD_DIR/ExportOptions.plist" 2>&1
+          echo "=== IPA export complete ==="
+
+    # --------------------------------------------------------------
+    # ARTIFACTS
+    # --------------------------------------------------------------
     artifacts:
       - build/*.xcarchive
-      - ios/App/build/**/*.ipa
+      - build/*.ipa
+      - cap-sync.log
+      - pod-install.log
 
+    # --------------------------------------------------------------
+    # PUBLISHING — TestFlight
+    # --------------------------------------------------------------
     publishing:
       app_store_connect:
         api_key: $APP_STORE_CONNECT_API_KEY
