@@ -31,7 +31,6 @@ workflows:
             @capacitor/cli@^7.0.0 \
             @capacitor/app@^7.0.0 \
             @capacitor/ios@^7.0.0 \
-            @capacitor/cordova@^7.0.0 \
             @capacitor/haptics@^7.0.0 \
             @capacitor/keyboard@^7.0.0 \
             @capacitor/status-bar@^7.0.0 \
@@ -63,7 +62,9 @@ workflows:
           for d in ../../node_modules/@capacitor/*/; do
             n=$(basename "$d")
             case "$n" in core|cli|ios|cordova) continue ;; esac
-            [ -f "$d/package.json" ] && P="${P}  pod 'Capacitor${n^}', :path => '../../node_modules/@capacitor/${n}'\n"
+            if [ -f "$d/package.json" ]; then
+              P="${P}  pod 'Capacitor${n^}', :path => '../../node_modules/@capacitor/${n}'\n"
+            fi
           done
           cat > Podfile << 'Y'
           require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
@@ -74,7 +75,7 @@ workflows:
           def capacitor_pods
             pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/cordova'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios/CapacitorCordova'
           PLACEHOLDER
           end
 
