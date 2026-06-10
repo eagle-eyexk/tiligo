@@ -1,70 +1,96 @@
 workflows:
-  ios-production:
-    name: Tiligo iOS Production Build
-
+  ios-app-store-production:
+    name: iOS App Store Production
     environment:
+      ios_signing:
+        distribution_type: app_store
+        bundle_identifier: com.yourcompany.tiligo
+      groups:
+        - app_store_connect_api  # Create this group in Codemagic UI
+      node: 20.11.0
+      xcode: 15.4
       vars:
-        APP_ID: com.tiligo.app
-        CAPACITOR_APP_NAME: Tiligo
-        NODE_ENV: production
-
-      node: 20.11.1
-
-      xcode: 15.2
-
-      cocoapods: default
-
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APP_VERSION: "1.0.0"
+        BUILD_NUMBER: 1
     triggering:
+      events:
+        - push
+        - tag
       branch_patterns:
-        - pattern: main
+        - pattern: "main"
           include: true
-
+          source: true
+      cancel_previous_builds: true
     scripts:
-      - name: Install dependencies
+      - name: Install Node dependencies
         script: |
           npm ci
-
-      - name: Build web app (Vite)
+      
+      - name: Build web assets
         script: |
           npm run build
-
+      
       - name: Sync Capacitor iOS
         script: |
           npx cap sync ios
-
-      - name: Install iOS pods
+      
+      - name: Set version and build numbers
         script: |
           cd ios/App
-          pod install
-
-      - name: Set up iOS signing
+          /usr/libexec/PlistBuddy -c "Set :CFBundleShortVersionString $APP_VERSION" App/Info.plist
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" App/Info.plist
+      
+      - name: Add privacy permissions to Info.plist
         script: |
-          echo "Signing handled via Codemagic App Store Connect integration"
-
-      - name: Build iOS archive (Release)
+          cd ios/App
+          /usr/libexec/PlistBuddy -c "Add :NSCameraUsageDescription string 'TiliGo needs camera to scan QR codes'" App/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSPhotoLibraryUsageDescription string 'TiliGo needs photo access to upload profile pictures'" App/Info.plist 2>/dev/null || true
+          /usr/libexec/PlistBuddy -c "Add :NSFaceIDUsageDescription string 'TiliGo uses Face ID for secure login'" App/Info.plist 2>/dev/null || true
+      
+      - name: Build iOS archive
         script: |
-          xcodebuild \
-            -workspace ios/App/App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            clean archive
-
-      - name: Export IPA
+          xcode-project build-archive \
+            --workspace "$XCODE_WORKSPACE" \
+            --scheme "$XCODE_SCHEME" \
+            --archive-path build/ios.xcarchive
+      
+      - name: Export IPA for App Store
         script: |
-          xcodebuild -exportArchive \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            -exportOptionsPlist ios/exportOptions.plist \
-            -exportPath $CM_BUILD_DIR/build/ipa
-
+          xcode-project export-ipa \
+            --archive-path build/ios.xcarchive \
+            --export-options ios/App/exportOptions.plist \
+            --output-path build/tiligo.ipa
+      
+      - name: Validate IPA
+        script: |
+          altool --validate-app -f build/tiligo.ipa -t ios --apiKey $APP_STORE_CONNECT_KEY_ID --apiIssuer $APP_STORE_CONNECT_ISSUER_ID || true
     artifacts:
-      - build/ipa/*.ipa
-      - build/*.xcarchive
-
+      - build/tiligo.ipa
+      - /tmp/xcodebuild_logs/*.log
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_API_KEY
+        key_id: $APP_STORE_CONNECT_KEY_ID
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
         submit_to_testflight: true
-        beta_groups:
-          - internal
+        submit_to_app_store: true
+        export_compliance: true
+        release_type: AUTOMATIC
+        phased_release: false
+        skip_wait_for_build_processing: false
+        app_version: $APP_VERSION
+        build_number: $BUILD_NUMBER
+      email:
+        recipients:
+          - your-email@example.com  # Change to your email
+        notify:
+          success: true
+          failure: true
+      slack:
+        channel: '#builds'
+        notify_on_build_start: true
+        notify:
+          success: true
+          failure: true
