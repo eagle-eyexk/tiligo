@@ -8,7 +8,13 @@
   <key>signingStyle</key>
   <string>automatic</string>
 
+  <key>stripSwiftSymbols</key>
+  <true/>
+
+  <key>compileBitcode</key>
+  <false/>
+
   <key>destination</key>
-  <string>upload</string>
+  <string>export</string>
 </dict>
 </plist>
