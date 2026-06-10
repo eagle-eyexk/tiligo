@@ -18,118 +18,79 @@ workflows:
         - pattern: main
 
     scripts:
-      # ------------------------------------------------------------
-      # 1 — Install JS dependencies
-      # ------------------------------------------------------------
       - name: Install npm dependencies
         script: |
           set -e
           npm ci --prefer-offline 2>&1 | tail -20
 
-      # ------------------------------------------------------------
-      # 2 — Auto-fix Capacitor versions and install missing plugins
-      # ------------------------------------------------------------
-      - name: Auto-fix Capacitor packages
+      - name: Install Capacitor packages
         script: |
           set -e
-          echo "=== Installing all required Capacitor packages ==="
-          npm install \
-            @capacitor/core@^7.0.0 \
-            @capacitor/cli@^7.0.0 \
-            @capacitor/app@^7.0.0 \
-            @capacitor/ios@^7.0.0 \
-            @capacitor/haptics@^7.0.0 \
-            @capacitor/keyboard@^7.0.0 \
-            @capacitor/status-bar@^7.0.0 \
-            --save 2>&1
+          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save 2>&1
           npx cap --version
-          echo "=== Capacitor packages installed ==="
 
-      # ------------------------------------------------------------
-      # 3 — Build the web app
-      # ------------------------------------------------------------
       - name: Build web app
         script: |
           set -e
           npm run build 2>&1 | tail -30
 
-      # ------------------------------------------------------------
-      # 4 — Add iOS platform if missing
-      # ------------------------------------------------------------
       - name: Add iOS platform
         script: |
           set -e
-          if [ ! -d "ios" ]; then
-            npx cap add ios 2>&1
-          fi
+          if [ ! -d "ios" ]; then npx cap add ios 2>&1; fi
 
-      # ------------------------------------------------------------
-      # 5 — Sync Capacitor to iOS
-      # ------------------------------------------------------------
       - name: Sync Capacitor to iOS
         script: |
           set -e
           npx cap sync ios 2>&1
 
-      # ------------------------------------------------------------
-      # 6 — FULLY AUTOMATED PODFILE FIX
-      #     Replaces the entire Podfile with a known-good version.
-      #     No manual editing of the repo required.
-      # ------------------------------------------------------------
-      - name: Auto-generate correct Podfile
+      - name: Generate Podfile
         script: |
           set -e
           cd ios/App
-
-          # Backup original
-          cp Podfile Podfile.bak 2>/dev/null || true
-
-          # Detect which Capacitor plugins exist in node_modules
+          cat > generate_podfile.sh << 'SCRIPTEOF'
+          #!/bin/bash
           PLUGINS=""
-          for plugin_dir in ../../node_modules/@capacitor/*/; do
-            plugin_name=$(basename "$plugin_dir")
-            # Skip core, cli, ios (handled separately)
-            case "$plugin_name" in
-              core|cli|ios) continue ;;
-            esac
-            if [ -f "$plugin_dir/package.json" ]; then
-              PLUGINS="$PLUGINS  pod 'Capacitor${plugin_name^}', :path => '../../node_modules/@capacitor/${plugin_name}'\n"
+          for d in ../../node_modules/@capacitor/*/; do
+            name=$(basename "$d")
+            case "$name" in core|cli|ios|cordova) continue ;; esac
+            if [ -f "$d/package.json" ]; then
+              PLUGINS="${PLUGINS}  pod 'Capacitor${name^}', :path => '../../node_modules/@capacitor/${name}'\n"
             fi
           done
-
-          # Write the complete Podfile
-          cat > Podfile << PODEOF
-require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
-
-platform :ios, '14.0'
-use_frameworks!
-
-def capacitor_pods
-  pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-  pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-  pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/cordova'
-$(echo -e "$PLUGINS")
-end
-
-target 'App' do
-  capacitor_pods
-end
-
-post_install do |installer|
-  installer.pods_project.targets.each do |target|
-    target.build_configurations.each do |config|
-      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-    end
-  end
-end
-PODEOF
-
-          echo "=== Generated Podfile ==="
+          cat > Podfile << 'PODEOF'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+          
+          platform :ios, '14.0'
+          use_frameworks!
+          
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/cordova'
+          PLACEHOLDER
+          end
+          
+          target 'App' do
+            capacitor_pods
+          end
+          
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+              end
+            end
+          end
+          PODEOF
+          sed -i '' "/PLACEHOLDER/c\\
+          $(echo -e "$PLUGINS")" Podfile
+          SCRIPTEOF
+          chmod +x generate_podfile.sh
+          ./generate_podfile.sh
+          echo "=== Podfile ==="
           cat Podfile
 
-      # ------------------------------------------------------------
-      # 7 — Clean stale pod artifacts
-      # ------------------------------------------------------------
       - name: Clean pod artifacts
         script: |
           set -e
@@ -137,107 +98,56 @@ PODEOF
           rm -rf Pods Podfile.lock
           pod deintegrate 2>/dev/null || true
 
-      # ------------------------------------------------------------
-      # 8 — Install CocoaPods
-      # ------------------------------------------------------------
       - name: Install CocoaPods
         script: |
           set -e
           cd ios/App
           gem install cocoapods --no-document 2>&1 | tail -3
-          pod install --repo-update 2>&1 | tee "$CM_BUILD_DIR/pod-install.log"
-          if grep -qiE "error|failed|\[!\]" "$CM_BUILD_DIR/pod-install.log"; then
-            echo ""
-            echo "=========================================="
-            echo "POD INSTALL ERRORS:"
-            grep -iE "error|failed|\[!\]" "$CM_BUILD_DIR/pod-install.log"
-            echo "=========================================="
+          pod install --repo-update 2>&1 | tee pod_install.log
+          if grep -qiE "error|failed|\[!\]" pod_install.log; then
+            grep -iE "error|failed|\[!\]" pod_install.log
             exit 1
           fi
-          echo "=== Pods installed successfully ==="
 
-      # ------------------------------------------------------------
-      # 9 — Verify workspace exists
-      # ------------------------------------------------------------
       - name: Verify workspace
         script: |
           set -e
-          if [ ! -d "ios/App/App.xcworkspace" ]; then
-            echo "FATAL: App.xcworkspace not found"
-            echo "Contents of ios/App:"
-            ls -la ios/App/
-            exit 1
-          fi
-          echo "Workspace: OK"
+          test -d ios/App/App.xcworkspace || (echo "FATAL: No workspace"; ls ios/App/; exit 1)
 
-      # ------------------------------------------------------------
-      # 10 — Set build number
-      # ------------------------------------------------------------
       - name: Set build number
         script: |
-          BUILD_NUMBER=$(( $(date +%s) - 1700000000 ))
-          echo "Build number: $BUILD_NUMBER"
-          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD_NUMBER" \
-            ios/App/App/Info.plist 2>/dev/null || true
+          BUILD=$(( $(date +%s) - 1700000000 ))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist 2>/dev/null || true
 
-      # ------------------------------------------------------------
-      # 11 — Archive
-      # ------------------------------------------------------------
-      - name: Archive iOS app
+      - name: Archive
         script: |
           set -e
-          xcodebuild \
-            -workspace ios/App/App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
-            archive 2>&1 | tee "$CM_BUILD_DIR/xcodebuild.log"
-          if [ ! -d "$CM_BUILD_DIR/build/App.xcarchive" ]; then
-            echo "FATAL: Archive not created"
-            tail -100 "$CM_BUILD_DIR/xcodebuild.log"
-            exit 1
-          fi
-          echo "Archive: OK"
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive 2>&1 | tail -30
+          test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
 
-      # ------------------------------------------------------------
-      # 12 — Export IPA
-      # ------------------------------------------------------------
       - name: Export IPA
         script: |
           set -e
-          # Try standard ExportOptions locations
-          if [ -f "ios/App/ExportOptions.plist" ]; then
-            EXPORT_OPTS="ios/App/ExportOptions.plist"
-          elif [ -f "ExportOptions.plist" ]; then
+          if [ ! -f ios/App/ExportOptions.plist ]; then
+            cat > ExportOptions.plist << 'PLIST'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+          </dict>
+          </plist>
+          PLIST
             EXPORT_OPTS="ExportOptions.plist"
           else
-            # Generate a minimal one
-            cat > "$CM_BUILD_DIR/ExportOptions.plist" << PLIST
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>method</key>
-    <string>app-store</string>
-    <key>teamID</key>
-    <string>\${APP_STORE_TEAM_ID}</string>
-</dict>
-</plist>
-PLIST
-            EXPORT_OPTS="$CM_BUILD_DIR/ExportOptions.plist"
+            EXPORT_OPTS="ios/App/ExportOptions.plist"
           fi
-          xcodebuild \
-            -exportArchive \
-            -archivePath "$CM_BUILD_DIR/build/App.xcarchive" \
-            -exportPath "$CM_BUILD_DIR/build" \
-            -exportOptionsPlist "$EXPORT_OPTS" 2>&1 | tail -20
-          echo "IPA export: OK"
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist "$EXPORT_OPTS" 2>&1 | tail -10
 
-    # --------------------------------------------------------------
     artifacts:
       - build/*.xcarchive
       - build/*.ipa
-      - pod-install.log
 
     publishing:
       app_store_connect:
