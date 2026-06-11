@@ -1,111 +1,152 @@
 workflows:
-  tiligo_smart_pipeline:
-    name: Tiligo Smart CI/CD (Auto Detect + Production Ready)
+  ios-release:
+    name: iOS Release (Capacitor)
     instance_type: mac_mini_m1
-    max_build_duration: 120
-
-    integrations:
-      app_store_connect: tiligo_asc
+    max_build_duration: 60
 
     environment:
-      flutter: stable
-      xcode: latest
       node: 22
-
-    cache:
-      cache_paths:
-        - ~/.pub-cache
-        - ~/.gradle
-        - ios/Pods
+      xcode: latest
+      cocoapods: default
+      groups:
+        - app_store_credentials
 
     triggering:
       events:
         - push
       branch_patterns:
         - pattern: main
-        - pattern: develop
 
     scripts:
-      - name: Locate Flutter project
+      - name: Install npm dependencies
         script: |
           set -e
-          FLUTTER_DIR=$(dirname $(find . -name pubspec.yaml -not -path "*/build/*" -not -path "*/.pub/*" -not -path "*/Pods/*" | head -n 1))
-          if [ -z "$FLUTTER_DIR" ]; then
-            echo "ERROR: pubspec.yaml not found anywhere in repo"
+          npm ci --prefer-offline 2>&1 | tail -20
+
+      - name: Install Capacitor packages
+        script: |
+          set -e
+          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save 2>&1
+          npx cap --version
+
+      - name: Build web app
+        script: |
+          set -e
+          npm run build 2>&1 | tail -30
+
+      - name: Add iOS platform
+        script: |
+          set -e
+          if [ ! -d "ios" ]; then npx cap add ios 2>&1; fi
+
+      - name: Sync Capacitor to iOS
+        script: |
+          set -e
+          npx cap sync ios 2>&1
+
+      - name: Generate Podfile
+        script: |
+          set -e
+          cd ios/App
+          cat > _gen_podfile.sh << 'X'
+          #!/bin/bash
+          P=""
+          for d in ../../node_modules/@capacitor/*/; do
+            n=$(basename "$d")
+            case "$n" in core|cli|ios|cordova) continue ;; esac
+            if [ -f "$d/package.json" ]; then
+              P="${P}  pod 'Capacitor${n^}', :path => '../../node_modules/@capacitor/${n}'\n"
+            fi
+          done
+          cat > Podfile << 'Y'
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+          platform :ios, '14.0'
+          use_frameworks!
+          def capacitor_pods
+            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
+            pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
+            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios/CapacitorCordova'
+          PLACEHOLDER
+          end
+          target 'App' do
+            capacitor_pods
+          end
+          post_install do |installer|
+            installer.pods_project.targets.each do |target|
+              target.build_configurations.each do |config|
+                config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
+              end
+            end
+          end
+          Y
+          sed -i '' "/PLACEHOLDER/c\\
+          $(echo -e "$P")" Podfile
+          X
+          chmod +x _gen_podfile.sh
+          ./_gen_podfile.sh
+
+      - name: Clean pod artifacts
+        script: |
+          set -e
+          cd ios/App
+          rm -rf Pods Podfile.lock
+          pod deintegrate 2>/dev/null || true
+
+      - name: Install CocoaPods
+        script: |
+          set -e
+          cd ios/App
+          gem install cocoapods --no-document 2>&1 | tail -3
+          pod install --repo-update 2>&1 | tee _pod.log
+          if grep -qiE "error|failed|\[!\]" _pod.log; then
+            grep -iE "error|failed|\[!\]" _pod.log
             exit 1
           fi
-          echo "Flutter project found at: $FLUTTER_DIR"
-          echo "FLUTTER_PROJECT_DIR=$FLUTTER_DIR" >> $CM_ENV
 
-      - name: Clean and install dependencies
+      - name: Verify workspace
         script: |
           set -e
-          cd $FLUTTER_PROJECT_DIR
-          flutter clean
-          flutter pub get
-          cd ios
-          pod install --repo-update
-          cd ..
+          test -d ios/App/App.xcworkspace || (echo "FATAL: No workspace"; exit 1)
 
-      - name: Run tests
+      - name: Set build number
         script: |
-          set +e
-          cd $FLUTTER_PROJECT_DIR
-          flutter test --no-pub
+          BUILD=$(( $(date +%s) - 1700000000 ))
+          /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist 2>/dev/null || true
 
-      - name: Static analysis
-        script: |
-          set +e
-          cd $FLUTTER_PROJECT_DIR
-          flutter analyze --no-pub
-
-      - name: Detect build mode
+      - name: Archive
         script: |
           set -e
-          if [ "$CM_BRANCH" = "main" ]; then
-            echo "BUILD_MODE=prod" >> $CM_ENV
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive 2>&1 | tail -30
+          test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
+
+      - name: Export IPA
+        script: |
+          set -e
+          if [ ! -f ios/App/ExportOptions.plist ]; then
+            cat > ExportOptions.plist << 'X'
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+              <key>method</key>
+              <string>app-store</string>
+          </dict>
+          </plist>
+          X
+            EXPORT_OPTS="ExportOptions.plist"
           else
-            echo "BUILD_MODE=dev" >> $CM_ENV
+            EXPORT_OPTS="ios/App/ExportOptions.plist"
           fi
-          echo "Building in $BUILD_MODE mode on branch $CM_BRANCH"
-
-      - name: Build iOS
-        script: |
-          set -e
-          cd $FLUTTER_PROJECT_DIR
-          if [ "$BUILD_MODE" = "dev" ]; then
-            flutter build ios --debug --no-codesign
-          else
-            flutter build ipa --release \
-              --export-options-plist ios/ExportOptions.plist
-          fi
-
-      - name: Build Android
-        script: |
-          set -e
-          cd $FLUTTER_PROJECT_DIR
-          if [ "$BUILD_MODE" = "dev" ]; then
-            flutter build apk --debug
-          else
-            flutter build appbundle --release
-          fi
-
-      - name: Auto versioning
-        script: |
-          set +e
-          cd $FLUTTER_PROJECT_DIR/ios
-          agvtool new-version -all $BUILD_NUMBER || true
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist "$EXPORT_OPTS" 2>&1 | tail -10
 
     artifacts:
-      - $FLUTTER_PROJECT_DIR/build/ios/ipa/*.ipa
-      - $FLUTTER_PROJECT_DIR/build/ios/iphoneos/Runner.app
-      - $FLUTTER_PROJECT_DIR/build/app/outputs/bundle/release/*.aab
-      - $FLUTTER_PROJECT_DIR/build/app/outputs/apk/debug/*.apk
+      - build/*.xcarchive
+      - build/*.ipa
 
     publishing:
       app_store_connect:
-        auth: integration
+        api_key: $APP_STORE_CONNECT_API_KEY
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        key_id: $APP_STORE_CONNECT_KEY_ID
         submit_to_testflight: true
-        beta_groups:
-          - Internal Testers
         submit_to_app_store: false
