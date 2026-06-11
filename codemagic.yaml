@@ -44,6 +44,15 @@ workflows:
           set -e
           npx cap sync ios 2>&1
 
+      - name: Inject Team ID
+        script: |
+          set -e
+          cd ios/App
+          sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"H4QUDPK7S3\";/g" App.xcodeproj/project.pbxproj
+          sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"H4QUDPK7S3\";/g" App.xcodeproj/project.pbxproj
+          sed -i '' "s/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g" App.xcodeproj/project.pbxproj
+          echo "=== Team ID injected ==="
+
       - name: Generate Podfile
         script: |
           set -e
@@ -76,6 +85,12 @@ workflows:
                 config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
               end
             end
+            installer.pods_project.targets.each do |target|
+              target.build_phases.select { |p| p.respond_to?(:name) && p.name == "[CP] Embed Pods Frameworks" }.each do |phase|
+                phase.input_paths = phase.input_paths.uniq if phase.respond_to?(:input_paths)
+                phase.output_paths = phase.output_paths.uniq if phase.respond_to?(:output_paths)
+              end
+            end
           end
           Y
           sed -i '' "/PLACEHOLDER/c\\
@@ -98,55 +113,11 @@ workflows:
           gem install cocoapods --no-document 2>&1 | tail -3
           pod install --repo-update 2>&1 | tee _pod.log
           if grep -qi "no podspec found\|cannot find\|abort" _pod.log; then
-            echo "=== FATAL POD ERRORS ==="
+            echo "FATAL"
             grep -i "no podspec found\|cannot find\|abort" _pod.log
             exit 1
           fi
-          echo "=== Pods installed ==="
-
-      - name: Fix signing and duplicate frameworks
-        script: |
-          set -e
-          cd ios/App
-          cat > fix_build.sh << 'X'
-          #!/bin/bash
-
-          # 1. Set development team in build settings
-          TEAM_ID="${APP_STORE_TEAM_ID:-${CM_APPLE_TEAM_ID}}"
-          if [ -z "$TEAM_ID" ]; then
-            echo "WARNING: No team ID found. Checking Apple credentials..."
-            TEAM_ID=$(grep -r "DEVELOPMENT_TEAM" App.xcodeproj/project.pbxproj | head -1 | sed 's/.*= //;s/;//')
-          fi
-          echo "Using Team ID: ${TEAM_ID:-not set}"
-
-          # Set team in project.pbxproj
-          if [ -n "$TEAM_ID" ]; then
-            sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"$TEAM_ID\";/g" App.xcodeproj/project.pbxproj
-            sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"$TEAM_ID\";/g" App.xcodeproj/project.pbxproj
-          fi
-
-          # 2. Remove duplicate framework references
-          ruby -e '
-          pbxproj = File.read("App.xcodeproj/project.pbxproj")
-          # Remove duplicate PBXBuildFile entries for Capacitor and Cordova
-          seen = {}
-          new_lines = []
-          pbxproj.each_line do |line|
-            if line.include?("PBXBuildFile") && (line.include?("Capacitor") || line.include?("Cordova"))
-              if seen[line]
-                next
-              else
-                seen[line] = true
-              end
-            end
-            new_lines << line
-          end
-          File.write("App.xcodeproj/project.pbxproj", new_lines.join)
-          '
-          echo "=== Build settings fixed ==="
-          X
-          chmod +x fix_build.sh
-          ./fix_build.sh
+          echo "Pods installed"
 
       - name: Verify workspace
         script: |
@@ -161,7 +132,7 @@ workflows:
       - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Auto DEVELOPMENT_TEAM="${APP_STORE_TEAM_ID}" archive 2>&1 | tail -40
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=H4QUDPK7S3 -allowProvisioningUpdates archive 2>&1 | tail -50
           test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
 
       - name: Export IPA
@@ -175,6 +146,8 @@ workflows:
           <dict>
               <key>method</key>
               <string>app-store</string>
+              <key>teamID</key>
+              <string>H4QUDPK7S3</string>
           </dict>
           </plist>
           X
