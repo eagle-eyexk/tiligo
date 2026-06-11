@@ -104,6 +104,50 @@ workflows:
           fi
           echo "=== Pods installed ==="
 
+      - name: Fix signing and duplicate frameworks
+        script: |
+          set -e
+          cd ios/App
+          cat > fix_build.sh << 'X'
+          #!/bin/bash
+
+          # 1. Set development team in build settings
+          TEAM_ID="${APP_STORE_TEAM_ID:-${CM_APPLE_TEAM_ID}}"
+          if [ -z "$TEAM_ID" ]; then
+            echo "WARNING: No team ID found. Checking Apple credentials..."
+            TEAM_ID=$(grep -r "DEVELOPMENT_TEAM" App.xcodeproj/project.pbxproj | head -1 | sed 's/.*= //;s/;//')
+          fi
+          echo "Using Team ID: ${TEAM_ID:-not set}"
+
+          # Set team in project.pbxproj
+          if [ -n "$TEAM_ID" ]; then
+            sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"$TEAM_ID\";/g" App.xcodeproj/project.pbxproj
+            sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"$TEAM_ID\";/g" App.xcodeproj/project.pbxproj
+          fi
+
+          # 2. Remove duplicate framework references
+          ruby -e '
+          pbxproj = File.read("App.xcodeproj/project.pbxproj")
+          # Remove duplicate PBXBuildFile entries for Capacitor and Cordova
+          seen = {}
+          new_lines = []
+          pbxproj.each_line do |line|
+            if line.include?("PBXBuildFile") && (line.include?("Capacitor") || line.include?("Cordova"))
+              if seen[line]
+                next
+              else
+                seen[line] = true
+              end
+            end
+            new_lines << line
+          end
+          File.write("App.xcodeproj/project.pbxproj", new_lines.join)
+          '
+          echo "=== Build settings fixed ==="
+          X
+          chmod +x fix_build.sh
+          ./fix_build.sh
+
       - name: Verify workspace
         script: |
           set -e
@@ -117,7 +161,7 @@ workflows:
       - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive archive 2>&1 | tail -30
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Auto DEVELOPMENT_TEAM="${APP_STORE_TEAM_ID}" archive 2>&1 | tail -40
           test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
 
       - name: Export IPA
