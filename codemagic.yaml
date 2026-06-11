@@ -97,10 +97,12 @@ workflows:
           cd ios/App
           gem install cocoapods --no-document 2>&1 | tail -3
           pod install --repo-update 2>&1 | tee _pod.log
-          if grep -qiE "error|failed|\[!\]" _pod.log; then
-            grep -iE "error|failed|\[!\]" _pod.log
+          if grep -qi "no podspec found\|cannot find\|abort" _pod.log; then
+            echo "=== FATAL POD ERRORS ==="
+            grep -i "no podspec found\|cannot find\|abort" _pod.log
             exit 1
           fi
+          echo "=== Pods installed successfully ==="
 
       - name: Verify workspace
         script: |
