@@ -10,8 +10,6 @@ workflows:
       cocoapods: default
       groups:
         - app_store_credentials
-      vars:
-        CM_PROVISIONING_PROFILE: "Tili Distribution"
 
     triggering:
       events:
@@ -20,6 +18,14 @@ workflows:
         - pattern: main
 
     scripts:
+      - name: Install provisioning profile
+        script: |
+          set -e
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          PROFILE_UUID=$(grep -a -A1 "UUID" ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision 2>/dev/null | grep -o '[A-F0-9]\{8\}-[A-F0-9]\{4\}-[A-F0-9]\{4\}-[A-F0-9]\{4\}-[A-F0-9]\{12\}' | head -1)
+          echo "Found profile UUID: ${PROFILE_UUID:-none}"
+          ls ~/Library/MobileDevice/Provisioning\ Profiles/ 2>/dev/null || echo "No profiles directory yet"
+
       - name: Install npm dependencies
         script: |
           set -e
@@ -119,7 +125,7 @@ workflows:
       - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive PROVISIONING_PROFILE_SPECIFIER="Tili Distribution" DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Manual archive 2>&1 | tail -50
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates archive 2>&1 | tail -50
           test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
 
       - name: Export IPA
@@ -135,11 +141,6 @@ workflows:
               <string>app-store</string>
               <key>teamID</key>
               <string>H4QUDPK7S3</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.tiligo.app</key>
-                  <string>Tili Distribution</string>
-              </dict>
           </dict>
           </plist>
           X
