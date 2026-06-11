@@ -65,7 +65,6 @@ workflows:
           def capacitor_pods
             pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
             pod 'CapacitorApp', :path => '../../node_modules/@capacitor/app'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios/CapacitorCordova'
           PLACEHOLDER
           end
           target 'App' do
