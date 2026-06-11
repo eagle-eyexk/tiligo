@@ -17,6 +17,9 @@ workflows:
       branch_patterns:
         - pattern: main
 
+    code_signing:
+      automatic: true
+
     scripts:
       - name: Install npm dependencies
         script: |
@@ -43,15 +46,6 @@ workflows:
         script: |
           set -e
           npx cap sync ios 2>&1
-
-      - name: Inject Team ID
-        script: |
-          set -e
-          cd ios/App
-          sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"H4QUDPK7S3\";/g" App.xcodeproj/project.pbxproj
-          sed -i '' "s/DEVELOPMENT_TEAM = \"\";/DEVELOPMENT_TEAM = \"H4QUDPK7S3\";/g" App.xcodeproj/project.pbxproj
-          sed -i '' "s/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g" App.xcodeproj/project.pbxproj
-          echo "=== Team ID injected ==="
 
       - name: Generate Podfile
         script: |
@@ -83,12 +77,6 @@ workflows:
             installer.pods_project.targets.each do |target|
               target.build_configurations.each do |config|
                 config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '14.0'
-              end
-            end
-            installer.pods_project.targets.each do |target|
-              target.build_phases.select { |p| p.respond_to?(:name) && p.name == "[CP] Embed Pods Frameworks" }.each do |phase|
-                phase.input_paths = phase.input_paths.uniq if phase.respond_to?(:input_paths)
-                phase.output_paths = phase.output_paths.uniq if phase.respond_to?(:output_paths)
               end
             end
           end
@@ -132,7 +120,7 @@ workflows:
       - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=H4QUDPK7S3 -allowProvisioningUpdates archive 2>&1 | tail -50
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic archive 2>&1 | tail -50
           test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
 
       - name: Export IPA
