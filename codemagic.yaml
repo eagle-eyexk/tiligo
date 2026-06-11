@@ -102,7 +102,7 @@ workflows:
             grep -i "no podspec found\|cannot find\|abort" _pod.log
             exit 1
           fi
-          echo "=== Pods installed successfully ==="
+          echo "=== Pods installed ==="
 
       - name: Verify workspace
         script: |
