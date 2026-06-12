@@ -4,7 +4,7 @@ workflows:
     max_build_duration: 60
 
     integrations:
-      app_store_connect: Tiligo ASC   # <- MUST match Codemagic UI integration name
+      app_store_connect: tiligo_asc
 
     environment:
       vars:
@@ -22,16 +22,16 @@ workflows:
       - name: Install dependencies
         script: npm ci
 
-      - name: Build web
+      - name: Build web assets
         script: npm run build
 
-      - name: Sync Capacitor
+      - name: Sync Capacitor iOS
         script: npx cap sync ios
 
-      - name: Pods install
+      - name: Install CocoaPods
         script: cd ios/App && pod install
 
-      - name: Archive
+      - name: Archive iOS app
         script: |
           xcodebuild \
             -workspace ios/App/App.xcworkspace \
