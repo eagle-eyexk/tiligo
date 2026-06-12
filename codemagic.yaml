@@ -47,24 +47,30 @@ workflows:
       - name: Fix Xcode project signing
         script: |
           set -e
-          cd ios/App/App.xcodeproj
-          # Set development team on all targets
-          sed -i '' 's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = H4QUDPK7S3;/g' project.pbxproj
-          sed -i '' 's/DEVELOPMENT_TEAM = "''";/DEVELOPMENT_TEAM = H4QUDPK7S3;/g' project.pbxproj
-          # Enable automatic signing
-          sed -i '' 's/CODE_SIGN_STYLE = Manual;/CODE_SIGN_STYLE = Automatic;/g' project.pbxproj
-          # Set provisioning profile specifier
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = "";/PROVISIONING_PROFILE_SPECIFIER = "Tili Distribution";/g' project.pbxproj
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = "''";/PROVISIONING_PROFILE_SPECIFIER = "Tili Distribution";/g' project.pbxproj
-          echo "=== Signing injected into project.pbxproj ==="
-          grep -c "DEVELOPMENT_TEAM = H4QUDPK7S3" project.pbxproj
-          echo "occurrences of team ID found"
+          cd ios/App
+          # Find the App target section and inject signing settings
+          ruby -e '
+            pbxproj = File.read("App.xcodeproj/project.pbxproj")
+            
+            # For every build configuration (Debug, Release), add signing settings
+            pbxproj.gsub!(/buildSettings = \{/) do |match|
+              settings = match
+              settings += "\n\t\t\t\t\tCODE_SIGN_STYLE = Automatic;"
+              settings += "\n\t\t\t\t\tDEVELOPMENT_TEAM = H4QUDPK7S3;"
+              settings += "\n\t\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"Tili Distribution\";"
+              settings
+            end
+            
+            File.write("App.xcodeproj/project.pbxproj", pbxproj)
+          '
+          echo "=== Checking injected values ==="
+          grep -c "DEVELOPMENT_TEAM" App.xcodeproj/project.pbxproj || echo "0 found"
+          grep -c "CODE_SIGN_STYLE = Automatic" App.xcodeproj/project.pbxproj || echo "0 found"
 
       - name: Remove SwiftPM Capacitor
         script: |
           set -e
           cd ios/App
-          # Remove SwiftPM reference from project
           sed -i '' '/capacitor-swift-pm/d' App.xcodeproj/project.pbxproj 2>/dev/null || true
           rm -rf App.xcworkspace/xcshareddata/swiftpm 2>/dev/null || true
           echo "=== SwiftPM references removed ==="
@@ -83,7 +89,7 @@ workflows:
       - name: Build iOS
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=H4QUDPK7S3 PROVISIONING_PROFILE_SPECIFIER="Tili Distribution" -allowProvisioningUpdates archive 2>&1 | tail -30
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=H4QUDPK7S3 -allowProvisioningUpdates archive 2>&1 | tail -30
           test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
 
       - name: Export IPA
@@ -98,11 +104,6 @@ workflows:
               <string>app-store</string>
               <key>teamID</key>
               <string>H4QUDPK7S3</string>
-              <key>provisioningProfiles</key>
-              <dict>
-                  <key>com.tiligo.app</key>
-                  <string>Tili Distribution</string>
-              </dict>
           </dict>
           </plist>
           X
