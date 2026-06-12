@@ -31,51 +31,10 @@ workflows:
           if [ ! -d "ios" ]; then npx cap add ios 2>&1; fi
           npx cap sync ios 2>&1
 
-      - name: Hard fix Xcode project
-        script: |
-          set -e
-          cd ios/App
-          
-          # Remove SwiftPM reference entirely
-          ruby -e '
-            pbxproj = File.read("App.xcodeproj/project.pbxproj")
-            lines = pbxproj.lines.reject { |l| l.include?("capacitor-swift-pm") }
-            File.write("App.xcodeproj/project.pbxproj", lines.join)
-          '
-          
-          # Inject signing into every target
-          ruby -e '
-            pbxproj = File.read("App.xcodeproj/project.pbxproj")
-            
-            # Replace any existing signing settings
-            pbxproj.gsub!(/CODE_SIGN_STYLE = [^;]+;/, "CODE_SIGN_STYLE = Automatic;")
-            pbxproj.gsub!(/DEVELOPMENT_TEAM = [^;]+;/, "DEVELOPMENT_TEAM = H4QUDPK7S3;")
-            pbxproj.gsub!(/PROVISIONING_PROFILE_SPECIFIER = [^;]+;/, "PROVISIONING_PROFILE_SPECIFIER = \"\";")
-            
-            # For any buildSettings that dont have signing, add them
-            new_content = ""
-            pbxproj.each_line do |line|
-              new_content << line
-              if line.strip == "buildSettings = {"
-                new_content << "\t\t\t\t\tCODE_SIGN_STYLE = Automatic;\n"
-                new_content << "\t\t\t\t\tDEVELOPMENT_TEAM = H4QUDPK7S3;\n"
-                new_content << "\t\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"\";\n"
-              end
-            end
-            
-            File.write("App.xcodeproj/project.pbxproj", new_content)
-          '
-          
-          echo "=== Signing injected ==="
-          grep -c "DEVELOPMENT_TEAM = H4QUDPK7S3" App.xcodeproj/project.pbxproj
-          echo "=== SwiftPM removed ==="
-          grep -c "capacitor-swift-pm" App.xcodeproj/project.pbxproj || echo "0"
-
       - name: Pod install
         script: |
           set -e
           cd ios/App
-          rm -rf Pods Podfile.lock
           pod install --repo-update 2>&1 | tail -15
 
       - name: Set build number
@@ -86,7 +45,7 @@ workflows:
       - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates archive 2>&1 | grep -E "error:|warning:|ARCHIVE|SUCCEEDED|FAILED"
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="Tili Distribution" archive 2>&1 | grep -E "error:|ARCHIVE|SUCCEEDED|FAILED"
           test -d build/App.xcarchive || (echo "FATAL"; exit 1)
           echo "ARCHIVE SUCCEEDED"
 
@@ -102,6 +61,11 @@ workflows:
               <string>app-store</string>
               <key>teamID</key>
               <string>H4QUDPK7S3</string>
+              <key>provisioningProfiles</key>
+              <dict>
+                  <key>com.tiligo.app</key>
+                  <string>Tili Distribution</string>
+              </dict>
           </dict>
           </plist>
           X
