@@ -21,21 +21,21 @@ workflows:
       - name: Install dependencies
         script: |
           set -e
-          npm ci --prefer-offline 2>&1 | tail -10
-          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save 2>&1 | tail -5
+          npm ci --prefer-offline
+          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save
 
       - name: Build and sync
         script: |
           set -e
-          npm run build 2>&1 | tail -10
-          if [ ! -d "ios" ]; then npx cap add ios 2>&1; fi
-          npx cap sync ios 2>&1
+          npm run build
+          if [ ! -d "ios" ]; then npx cap add ios; fi
+          npx cap sync ios
 
       - name: Pod install
         script: |
           set -e
           cd ios/App
-          pod install --repo-update 2>&1 | tail -15
+          pod install --repo-update
 
       - name: Set build number
         script: |
@@ -45,8 +45,8 @@ workflows:
       - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=H4QUDPK7S3 PROVISIONING_PROFILE_SPECIFIER="Tili Distribution" archive 2>&1 | grep -E "error:|ARCHIVE SUCCEEDED|FAILED"
-          test -d build/App.xcarchive || (echo "FATAL"; exit 1)
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE_SPECIFIER="Tili Distribution" archive
+          test -d build/App.xcarchive || exit 1
 
       - name: Export IPA
         script: |
@@ -68,7 +68,7 @@ workflows:
           </dict>
           </plist>
           X
-          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist ExportOptions.plist 2>&1 | tail -5
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist ExportOptions.plist
 
     artifacts:
       - build/*.xcarchive
