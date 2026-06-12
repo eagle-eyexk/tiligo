@@ -20,9 +20,9 @@ const BUILD_STATUS = {
 
 // Known yaml-based workflows in TiliGo codemagic.yaml
 const YAML_WORKFLOWS = [
-  { id: "ios-app-store", name: "iOS App Store", emoji: "🍎", platform: "iOS" },
-  { id: "android-play-store", name: "Android Play Store", emoji: "🤖", platform: "Android" },
-  { id: "ios-app-store-testflight", name: "TestFlight (iOS)", emoji: "✈️", platform: "iOS" },
+  { id: "ios-release", name: "iOS Release (App Store)", emoji: "🍎", platform: "iOS" },
+  { id: "android-release", name: "Android Release (Play Store)", emoji: "🤖", platform: "Android" },
+  { id: "ios-testflight", name: "TestFlight (iOS)", emoji: "✈️", platform: "iOS" },
 ];
 
 export default function CodemagicPanel() {
