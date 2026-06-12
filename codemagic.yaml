@@ -1,6 +1,6 @@
 workflows:
   ios-release:
-    name: iOS Release (Capacitor)
+    name: iOS Release
     instance_type: mac_mini_m1
     max_build_duration: 60
 
@@ -18,73 +18,77 @@ workflows:
         - pattern: main
 
     scripts:
-      - name: Install npm dependencies
+      - name: Install dependencies
         script: |
           set -e
-          npm ci --prefer-offline 2>&1 | tail -20
+          npm ci --prefer-offline 2>&1 | tail -10
+          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save 2>&1 | tail -5
 
-      - name: Install Capacitor packages
+      - name: Build and sync
         script: |
           set -e
-          npm install @capacitor/core@^7.0.0 @capacitor/cli@^7.0.0 @capacitor/app@^7.0.0 @capacitor/ios@^7.0.0 @capacitor/haptics@^7.0.0 @capacitor/keyboard@^7.0.0 @capacitor/status-bar@^7.0.0 --save 2>&1
-          npx cap --version
-
-      - name: Build web app
-        script: |
-          set -e
-          npm run build 2>&1 | tail -30
-
-      - name: Add iOS platform
-        script: |
-          set -e
+          npm run build 2>&1 | tail -10
           if [ ! -d "ios" ]; then npx cap add ios 2>&1; fi
-
-      - name: Sync Capacitor to iOS
-        script: |
-          set -e
           npx cap sync ios 2>&1
 
-      - name: Fix Xcode signing to full automatic
+      - name: Hard fix Xcode project
         script: |
           set -e
           cd ios/App
+          
+          # Remove SwiftPM reference entirely
           ruby -e '
             pbxproj = File.read("App.xcodeproj/project.pbxproj")
-            pbxproj.gsub!(/CODE_SIGN_STYLE = Manual;/, "CODE_SIGN_STYLE = Automatic;")
-            pbxproj.gsub!(/PROVISIONING_PROFILE_SPECIFIER = "[^"]*";/, "PROVISIONING_PROFILE_SPECIFIER = \"\";")
-            pbxproj.gsub!(/DEVELOPMENT_TEAM = "";/, "DEVELOPMENT_TEAM = H4QUDPK7S3;")
-            pbxproj.gsub!(/DEVELOPMENT_TEAM = "[^"]*";/, "DEVELOPMENT_TEAM = H4QUDPK7S3;")
-            File.write("App.xcodeproj/project.pbxproj", pbxproj)
+            lines = pbxproj.lines.reject { |l| l.include?("capacitor-swift-pm") }
+            File.write("App.xcodeproj/project.pbxproj", lines.join)
           '
-          echo "=== Verification ==="
-          echo "Automatic signing:"
-          grep -c "CODE_SIGN_STYLE = Automatic" App.xcodeproj/project.pbxproj
-          echo "Team ID present:"
+          
+          # Inject signing into every target
+          ruby -e '
+            pbxproj = File.read("App.xcodeproj/project.pbxproj")
+            
+            # Replace any existing signing settings
+            pbxproj.gsub!(/CODE_SIGN_STYLE = [^;]+;/, "CODE_SIGN_STYLE = Automatic;")
+            pbxproj.gsub!(/DEVELOPMENT_TEAM = [^;]+;/, "DEVELOPMENT_TEAM = H4QUDPK7S3;")
+            pbxproj.gsub!(/PROVISIONING_PROFILE_SPECIFIER = [^;]+;/, "PROVISIONING_PROFILE_SPECIFIER = \"\";")
+            
+            # For any buildSettings that dont have signing, add them
+            new_content = ""
+            pbxproj.each_line do |line|
+              new_content << line
+              if line.strip == "buildSettings = {"
+                new_content << "\t\t\t\t\tCODE_SIGN_STYLE = Automatic;\n"
+                new_content << "\t\t\t\t\tDEVELOPMENT_TEAM = H4QUDPK7S3;\n"
+                new_content << "\t\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = \"\";\n"
+              end
+            end
+            
+            File.write("App.xcodeproj/project.pbxproj", new_content)
+          '
+          
+          echo "=== Signing injected ==="
           grep -c "DEVELOPMENT_TEAM = H4QUDPK7S3" App.xcodeproj/project.pbxproj
+          echo "=== SwiftPM removed ==="
+          grep -c "capacitor-swift-pm" App.xcodeproj/project.pbxproj || echo "0"
 
-      - name: Remove SwiftPM Capacitor duplicates
+      - name: Pod install
         script: |
           set -e
           cd ios/App
-          sed -i '' '/capacitor-swift-pm/d' App.xcodeproj/project.pbxproj 2>/dev/null || true
-          rm -rf App.xcworkspace/xcshareddata/swiftpm 2>/dev/null || true
-
-      - name: Install CocoaPods
-        script: |
-          set -e
-          cd ios/App
-          pod install --repo-update 2>&1 | tail -30
+          rm -rf Pods Podfile.lock
+          pod install --repo-update 2>&1 | tail -15
 
       - name: Set build number
         script: |
           BUILD=$(( $(date +%s) - 1700000000 ))
           /usr/libexec/PlistBuddy -c "Set :CFBundleVersion $BUILD" ios/App/App/Info.plist 2>/dev/null || true
 
-      - name: Build iOS
+      - name: Archive
         script: |
           set -e
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Automatic DEVELOPMENT_TEAM=H4QUDPK7S3 -allowProvisioningUpdates archive 2>&1 | tail -30
-          test -d build/App.xcarchive || (echo "FATAL: No archive"; exit 1)
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Automatic -allowProvisioningUpdates archive 2>&1 | grep -E "error:|warning:|ARCHIVE|SUCCEEDED|FAILED"
+          test -d build/App.xcarchive || (echo "FATAL"; exit 1)
+          echo "ARCHIVE SUCCEEDED"
 
       - name: Export IPA
         script: |
@@ -101,7 +105,7 @@ workflows:
           </dict>
           </plist>
           X
-          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist ExportOptions.plist 2>&1 | tail -10
+          xcodebuild -exportArchive -archivePath build/App.xcarchive -exportPath build -exportOptionsPlist ExportOptions.plist 2>&1 | tail -5
 
     artifacts:
       - build/*.xcarchive
