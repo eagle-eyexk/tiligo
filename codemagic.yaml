@@ -18,29 +18,6 @@ workflows:
         - pattern: main
 
     scripts:
-      - name: Install signing
-        script: |
-          set -e
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          PROFILES_DIR=~/Library/MobileDevice/Provisioning\ Profiles
-          
-          # Codemagic stores profiles in this env path
-          if [ -d "$CM_BUILD_DIR/../profiles" ]; then
-            cp "$CM_BUILD_DIR"/../profiles/*.mobileprovision "$PROFILES_DIR/" 2>/dev/null || true
-          fi
-          
-          # Also check the standard Codemagic profile location
-          if [ -d "$HOME/Library/MobileDevice/Provisioning Profiles" ]; then
-            echo "Profiles already present"
-          fi
-          
-          # List what we have
-          ls -la "$PROFILES_DIR/" 2>/dev/null || echo "No profiles directory"
-          
-          # Find any .mobileprovision anywhere
-          find / -name "*.mobileprovision" -maxdepth 5 2>/dev/null | head -5
-          find ~/Library -name "*.mobileprovision" 2>/dev/null | head -5
-
       - name: Install dependencies
         script: |
           set -e
@@ -68,12 +45,8 @@ workflows:
       - name: Archive
         script: |
           set -e
-          PROFILE_UUID=$(find ~/Library/MobileDevice/Provisioning\ Profiles -name "*.mobileprovision" -exec grep -a -A1 "UUID" {} \; | grep -o '[A-F0-9]\{8\}-[A-F0-9]\{4\}-[A-F0-9]\{4\}-[A-F0-9]\{4\}-[A-F0-9]\{12\}' | head -1)
-          echo "Profile UUID: ${PROFILE_UUID:-NOT FOUND}"
-          
-          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive DEVELOPMENT_TEAM=H4QUDPK7S3 CODE_SIGN_STYLE=Manual PROVISIONING_PROFILE="${PROFILE_UUID}" -allowProvisioningUpdates archive 2>&1 | grep -E "error:|ARCHIVE|SUCCEEDED|FAILED"
+          xcodebuild -workspace ios/App/App.xcworkspace -scheme App -configuration Release -archivePath build/App.xcarchive CODE_SIGN_STYLE=Manual DEVELOPMENT_TEAM=H4QUDPK7S3 PROVISIONING_PROFILE_SPECIFIER="Tili Distribution" archive 2>&1 | grep -E "error:|ARCHIVE SUCCEEDED|FAILED"
           test -d build/App.xcarchive || (echo "FATAL"; exit 1)
-          echo "ARCHIVE SUCCEEDED"
 
       - name: Export IPA
         script: |
