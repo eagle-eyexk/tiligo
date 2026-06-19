@@ -20,7 +20,7 @@
   },
   "dependencies": {
     "@base44/sdk": "^0.8.32",
-    "@base44/vite-plugin": "^1.0.21",
+    "@base44/vite-plugin": "^1.0.23",
     "@capacitor/action-sheet": "^7.0.0",
     "@capacitor/app": "^7.1.2",
     "@capacitor/app-launcher": "^7.0.0",
