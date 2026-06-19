@@ -1,0 +1,9 @@
+{
+  "appId": "com.tiligo.app",
+  "appName": "TiliGo",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "ios": {
+    "scheme": "TiliGo"
+  }
+}
