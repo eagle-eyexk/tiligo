@@ -3,6 +3,8 @@ workflows:
     name: iOS Release
     instance_type: mac_mini_m1
     max_build_duration: 120
+    integrations:
+      app_store_connect: tiligo_asc
     environment:
       node: 22
       xcode: latest
@@ -64,7 +66,5 @@ workflows:
       - /Users/builder/build/*.ipa
     publishing:
       app_store_connect:
-        api_key: $APP_STORE_CONNECT_API_KEY
-        issuer_id: 6d7acece-2356-43c3-9946-6fd2cda5bf7d
-        key_id: RR98G82857
+        auth: integration
         submit_to_testflight: true
