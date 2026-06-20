@@ -484,9 +484,6 @@ export default function Home() {
         quickReplies={["Ku është porosia ime?", "Sa kohë ka mbetur?", "Porosia u dorëzua?"]}
       />
 
-      {/* ═══ BUILD WITH BASE44 BANNER ═══ */}
-      <Base44RefBanner />
-
       {/* ═══ STAFF PORTAL ═══ */}
       <StaffPortalSection />
 
@@ -539,7 +536,6 @@ export default function Home() {
 /* ── Social links ─────────────────────────────────────── */
 import { Facebook, Instagram, Globe } from "lucide-react";
 import StaffPortalSection from "@/components/StaffPortalSection";
-import Base44RefBanner from "@/components/Base44RefBanner";
 import TicketForm from "@/components/TicketForm";
 import AgentChatButton from "@/components/AgentChatButton";
 function SocialLinks() {

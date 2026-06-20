@@ -6,7 +6,6 @@ import {
   Bell, Search, SlidersHorizontal, CircleDot, MessageSquare, Clock, AlertCircle
 } from "lucide-react";
 import StatementGenerator from "@/components/StatementGenerator";
-import CodemagicPanel from "@/components/CodemagicPanel";
 import SelectDrawer from "@/components/SelectDrawer";
 import { base44 } from "@/api/base44Client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -140,7 +139,6 @@ export default function AdminPanel() {
     { key: "coupons", label: "Coupons" },
     { key: "tickets", label: "Tickets", badge: tickets.filter(t => t.status === "open").length },
     { key: "statement", label: "Statement" },
-    { key: "cicd", label: "CI/CD 🚀" },
     { key: "settings", label: "Settings" },
   ];
 
@@ -611,8 +609,6 @@ export default function AdminPanel() {
             )}
 
             {tab === "statement" && <StatementGenerator orders={orders} mode="admin" entityName="TiliGo Admin" isAdmin={true} />}
-
-            {tab === "cicd" && <CodemagicPanel />}
 
             {/* SETTINGS */}
             {tab === "settings" && (
