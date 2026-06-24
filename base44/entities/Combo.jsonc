@@ -1,5 +1,5 @@
 {
-  "name": "Product",
+  "name": "Combo",
   "type": "object",
   "properties": {
     "business_id": {
@@ -11,23 +11,31 @@
     "description": {
       "type": "string"
     },
-    "price": {
+    "product_ids": {
+      "type": "string"
+    },
+    "combo_price": {
       "type": "number"
     },
     "image": {
       "type": "string"
     },
-    "category": {
-      "type": "string"
+    "valid_from": {
+      "type": "string",
+      "format": "date"
     },
-    "is_available": {
+    "valid_to": {
+      "type": "string",
+      "format": "date"
+    },
+    "is_active": {
       "type": "boolean",
       "default": true
     }
   },
   "required": [
+    "business_id",
     "name",
-    "price",
-    "business_id"
+    "combo_price"
   ]
 }

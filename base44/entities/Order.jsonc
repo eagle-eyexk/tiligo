@@ -2,7 +2,13 @@
   "name": "Order",
   "type": "object",
   "properties": {
-    "order_code": {
+    "customer_id": {
+      "type": "string"
+    },
+    "business_id": {
+      "type": "string"
+    },
+    "courier_id": {
       "type": "string"
     },
     "customer_name": {
@@ -11,131 +17,74 @@
     "customer_phone": {
       "type": "string"
     },
-    "customer_address": {
+    "items": {
       "type": "string"
     },
-    "customer_lat": {
-      "type": "number"
-    },
-    "customer_lng": {
-      "type": "number"
-    },
-    "delivery_lat": {
-      "type": "number"
-    },
-    "delivery_lng": {
-      "type": "number"
-    },
-    "items": {
-      "type": "array",
-      "items": {
-        "type": "object"
-      }
-    },
-    "total": {
+    "subtotal": {
       "type": "number"
     },
     "delivery_fee": {
       "type": "number"
     },
-    "business_id": {
-      "type": "string"
+    "discount": {
+      "type": "number",
+      "default": 0
     },
-    "business_name": {
-      "type": "string"
+    "total": {
+      "type": "number"
     },
     "status": {
       "type": "string",
       "enum": [
-        "e_re",
-        "pranuar",
-        "ne_pergatitje",
-        "gati_per_dorezim",
-        "ne_rruge",
-        "dorezuar",
-        "anuluar"
+        "placed",
+        "accepted",
+        "preparing",
+        "ready",
+        "assigned",
+        "picked_up",
+        "in_transit",
+        "delivered",
+        "cancelled"
       ],
-      "default": "e_re"
+      "default": "placed"
     },
-    "payment_method": {
-      "type": "string",
-      "default": "cash"
-    },
-    "delivery_id": {
-      "type": "string"
-    },
-    "delivery_name": {
+    "delivery_address": {
       "type": "string"
     },
     "notes": {
       "type": "string"
+    },
+    "payment_method": {
+      "type": "string",
+      "enum": [
+        "cash",
+        "card"
+      ],
+      "default": "cash"
+    },
+    "accepted_at": {
+      "type": "string"
+    },
+    "prepared_at": {
+      "type": "string"
+    },
+    "picked_up_at": {
+      "type": "string"
+    },
+    "delivered_at": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "review_comment": {
+      "type": "string"
     }
   },
   "required": [
-    "customer_name",
-    "customer_phone",
-    "customer_address",
+    "customer_id",
+    "business_id",
     "items",
-    "total",
-    "business_id"
-  ],
-  "rls": {
-    "create": {},
-    "read": {
-      "$or": [
-        {
-          "created_by": "{{user.email}}"
-        },
-        {
-          "data.business_id": "{{user.data.business_id}}"
-        },
-        {
-          "data.delivery_id": "{{user.data.delivery_id}}"
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "business"
-              }
-            },
-            {
-              "data.business_id": "{{user.data.business_id}}"
-            }
-          ]
-        },
-        {
-          "$and": [
-            {
-              "user_condition": {
-                "role": "delivery"
-              }
-            },
-            {
-              "data.delivery_id": "{{user.data.delivery_id}}"
-            }
-          ]
-        }
-      ]
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+    "total"
+  ]
 }

@@ -1,0 +1,64 @@
+{
+  "name": "CourierProfile",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "full_name": {
+      "type": "string"
+    },
+    "phone": {
+      "type": "string"
+    },
+    "vehicle_type": {
+      "type": "string",
+      "enum": [
+        "Bi\u00e7iklet\u00eb",
+        "Moto\u00e7iklet\u00eb",
+        "Vetur\u00eb"
+      ]
+    },
+    "plate_number": {
+      "type": "string"
+    },
+    "photo": {
+      "type": "string"
+    },
+    "is_online": {
+      "type": "boolean",
+      "default": false
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "pending",
+        "suspended"
+      ],
+      "default": "pending"
+    },
+    "rating": {
+      "type": "number",
+      "default": 5
+    },
+    "total_deliveries": {
+      "type": "number",
+      "default": 0
+    },
+    "total_earnings": {
+      "type": "number",
+      "default": 0
+    },
+    "current_lat": {
+      "type": "number"
+    },
+    "current_lng": {
+      "type": "number"
+    }
+  },
+  "required": [
+    "user_id",
+    "full_name"
+  ]
+}

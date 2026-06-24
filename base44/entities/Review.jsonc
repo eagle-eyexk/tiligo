@@ -1,0 +1,25 @@
+{
+  "name": "Review",
+  "type": "object",
+  "properties": {
+    "order_id": {
+      "type": "string"
+    },
+    "customer_id": {
+      "type": "string"
+    },
+    "business_id": {
+      "type": "string"
+    },
+    "rating": {
+      "type": "number"
+    },
+    "comment": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "business_id",
+    "rating"
+  ]
+}

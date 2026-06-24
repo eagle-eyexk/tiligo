@@ -5,10 +5,10 @@
     "code": {
       "type": "string"
     },
-    "description": {
-      "type": "string"
-    },
     "discount_amount": {
+      "type": "number"
+    },
+    "discount_percent": {
       "type": "number"
     },
     "is_active": {
@@ -17,49 +17,10 @@
     },
     "uses_left": {
       "type": "number",
-      "default": -1
+      "default": 100
     }
   },
   "required": [
-    "code",
-    "discount_amount"
-  ],
-  "rls": {
-    "create": {
-      "$or": [
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        },
-        {
-          "data.code": {
-            "$regex": "^WELCOME-"
-          }
-        }
-      ]
-    },
-    "read": {
-      "$or": [
-        {
-          "data.is_active": true
-        },
-        {
-          "user_condition": {
-            "role": "admin"
-          }
-        }
-      ]
-    },
-    "update": {
-      "user_condition": {
-        "role": "admin"
-      }
-    },
-    "delete": {
-      "user_condition": {
-        "role": "admin"
-      }
-    }
-  }
+    "code"
+  ]
 }

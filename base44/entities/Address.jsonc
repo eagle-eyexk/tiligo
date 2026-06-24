@@ -1,0 +1,29 @@
+{
+  "name": "Address",
+  "type": "object",
+  "properties": {
+    "user_id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "lat": {
+      "type": "number"
+    },
+    "lng": {
+      "type": "number"
+    },
+    "is_default": {
+      "type": "boolean",
+      "default": false
+    }
+  },
+  "required": [
+    "address",
+    "label"
+  ]
+}
