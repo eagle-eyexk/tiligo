@@ -1,0 +1,43 @@
+workflows:
+  ios_release:
+    name: TiliGo iOS Release
+
+    instance_type: mac_mini_m2
+
+    environment:
+      node: 18
+      xcode: latest
+
+      groups:
+        - appstore_credentials   # contains ASC API key in Codemagic UI
+
+    scripts:
+      - npm ci
+      - npm run build
+
+      - npx cap sync ios
+
+      - cd ios/App
+      - pod install
+
+      - xcodebuild \
+          -workspace App.xcworkspace \
+          -scheme App \
+          -configuration Release \
+          -sdk iphoneos \
+          -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+          archive
+
+      - xcodebuild \
+          -exportArchive \
+          -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+          -exportOptionsPlist ios/App/exportOptions.plist \
+          -exportPath $CM_BUILD_DIR/build/ipa
+
+    artifacts:
+      - build/ipa/*.ipa
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
