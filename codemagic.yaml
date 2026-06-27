@@ -1,6 +1,6 @@
 workflows:
   ios-production:
-    name: TiliGo iOS Production
+    name: TiliGo iOS Production Pipeline
 
     instance_type: mac_mini_m2
     max_build_duration: 120
@@ -15,11 +15,11 @@ workflows:
 
       vars:
         BUNDLE_ID: "com.tiligo.tilgo"
+        APPLE_TEAM_ID: "RR98G82857"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
         ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
         BUILD_DIR: "$CM_BUILD_DIR/build"
-        APPLE_TEAM_ID: "RR98G82857"
 
       groups:
         - code-signing
@@ -39,59 +39,50 @@ workflows:
 
     scripts:
 
-      # --------------------------------
+      # ----------------------------
       # 1. Install dependencies
-      # --------------------------------
+      # ----------------------------
       - name: Install Node dependencies
         script: |
           npm ci --prefer-offline --no-audit
 
-      # --------------------------------
-      # 2. Build web app
-      # --------------------------------
+      # ----------------------------
+      # 2. Build web layer
+      # ----------------------------
       - name: Build web app
         script: |
           npm run build
 
-      # --------------------------------
-      # 3. Clean Capacitor iOS (prevents broken Xcode state)
-      # --------------------------------
-      - name: Reset Capacitor iOS
+      # ----------------------------
+      # 3. HARD RESET Capacitor iOS
+      # prevents broken Xcode state
+      # ----------------------------
+      - name: Reset Capacitor iOS project
         script: |
           rm -rf ios
           npx cap add ios
           npx cap sync ios
           npx cap copy ios
 
-      # --------------------------------
+      # ----------------------------
       # 4. Install CocoaPods
-      # --------------------------------
-      - name: Install Pods
+      # ----------------------------
+      - name: Install CocoaPods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
-      # --------------------------------
-      # 5. FORCE SIGNING FIX (critical)
-      # --------------------------------
-      - name: Force iOS Signing Team
-        script: |
-          cd ios/App
-
-          find . -name project.pbxproj -exec sed -i '' \
-          's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = RR98G82857;/g' {} \;
-
-      # --------------------------------
-      # 6. Validate Xcode workspace
-      # --------------------------------
-      - name: Validate Xcode setup
+      # ----------------------------
+      # 5. VERIFY XCODE CONFIG
+      # ----------------------------
+      - name: Validate Xcode workspace
         script: |
           xcodebuild -list -workspace ios/App/App.xcworkspace
 
-      # --------------------------------
-      # 7. Archive build (FIXED signing)
-      # --------------------------------
+      # ----------------------------
+      # 6. CLEAN + ARCHIVE (FIXED SIGNING)
+      # ----------------------------
       - name: Build iOS Archive
         script: |
           xcodebuild clean \
@@ -104,11 +95,12 @@ workflows:
             -configuration Release \
             -archivePath $ARCHIVE_PATH \
             CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=$APPLE_TEAM_ID
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+            -allowProvisioningUpdates
 
-      # --------------------------------
-      # 8. Export IPA
-      # --------------------------------
+      # ----------------------------
+      # 7. EXPORT IPA
+      # ----------------------------
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
@@ -116,15 +108,16 @@ workflows:
             -exportPath $BUILD_DIR \
             -exportOptionsPlist ios/App/exportOptions.plist
 
-      # --------------------------------
-      # 9. VERIFY IPA (prevents fake success)
-      # --------------------------------
-      - name: Validate IPA Output
+      # ----------------------------
+      # 8. VALIDATE IPA OUTPUT
+      # prevents fake success builds
+      # ----------------------------
+      - name: Validate IPA output
         script: |
           IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
 
           if [ -z "$IPA" ]; then
-            echo "ERROR: IPA NOT GENERATED"
+            echo "BUILD FAILED: IPA NOT GENERATED"
             exit 1
           fi
 
