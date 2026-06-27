@@ -1,6 +1,7 @@
 workflows:
-  ios-release:
-    name: iOS Release
+  ios-self-healing:
+    name: TiliGo Self-Healing iOS CI
+
     instance_type: mac_mini_m2
     max_build_duration: 120
 
@@ -11,49 +12,168 @@ workflows:
       node: 22
       xcode: latest
       cocoapods: default
+
       vars:
-        BUNDLE_ID: "com.tiligo.tiligo"
-        APP_NAME: "TiliGo"
-        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
-        XCODE_SCHEME: "App"
+        BUNDLE_ID: "com.tiligo.tilgo"
+        APPLE_TEAM_ID: "RR98G82857"
+        WORKSPACE: "ios/App/App.xcworkspace"
+        SCHEME: "App"
+        ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
+        BUILD_DIR: "$CM_BUILD_DIR/build"
+
       groups:
         - code-signing
 
+    cache:
+      cache_paths:
+        - node_modules
+        - ~/.npm
+        - ios/App/Pods
+
     triggering:
-      events: [push]
+      events:
+        - push
       branch_patterns:
         - pattern: main
+          include: true
 
     scripts:
-      - name: Install and build web app
+
+      # =====================================================
+      # 1. CLEAN STATE (CAPACITOR SELF-HEAL)
+      # =====================================================
+      - name: Self-heal Capacitor iOS
         script: |
-          npm ci --prefer-offline
+          echo "Cleaning iOS state..."
+
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+
+          rm -rf ios
+          npx cap add ios
+          npx cap sync ios
+          npx cap copy ios
+
+      # =====================================================
+      # 2. INSTALL DEPENDENCIES
+      # =====================================================
+      - name: Install dependencies
+        script: |
+          npm ci --prefer-offline --no-audit
+
+      # =====================================================
+      # 3. BUILD WEB
+      # =====================================================
+      - name: Build web
+        script: |
           npm run build
 
-      - name: Sync Capacitor and install pods
+      # =====================================================
+      # 4. PODS (SELF-HEAL RETRY SAFE)
+      # =====================================================
+      - name: Install Pods
         script: |
-          if [ ! -d "ios" ]; then npx cap add ios; fi
-          npx cap sync ios
-          cd ios/App && pod install --repo-update && cd ../..
+          cd ios/App
+          pod install --repo-update || pod install
+          cd ../..
 
-      - name: Install provisioning profile
+      # =====================================================
+      # 5. SIGNING SELF-HEAL PATCH
+      # =====================================================
+      - name: Fix signing state
         script: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp signing/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "Injecting signing fixes..."
 
-      - name: Install certificate
+          export DEVELOPMENT_TEAM=$APPLE_TEAM_ID
+
+          # force bundle ID consistency
+          grep -rl "PRODUCT_BUNDLE_IDENTIFIER" ios/App \
+            | xargs sed -i '' "s/com.*tiligo.*/com.tiligo.tilgo/g" || true
+
+          # inject team if missing
+          find ios/App -name project.pbxproj -exec sed -i '' \
+            's/DEVELOPMENT_TEAM = "";/DEVELOPMENT_TEAM = RR98G82857;/g' {} \; || true
+
+      # =====================================================
+      # 6. VERIFY XCODE STATE
+      # =====================================================
+      - name: Validate Xcode
         script: |
-          security create-keychain -p build123 build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p build123 build.keychain
-          security import signing/distribution.cer -k build.keychain -A
-          security import signing/tili_distribution.key -k build.keychain -A
-          security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
+          xcodebuild -list -workspace ios/App/App.xcworkspace
+
+      # =====================================================
+      # 7. BUILD WITH AUTO-RECOVERY
+      # =====================================================
+      - name: Archive (attempt 1)
+        script: |
+          set +e
+
+          xcodebuild clean \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App
+
+          xcodebuild archive \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $ARCHIVE_PATH \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+            -allowProvisioningUpdates
+
+          STATUS=$?
+
+          if [ $STATUS -ne 0 ]; then
+            echo "First attempt failed — applying recovery fix..."
+
+            # recovery: refresh pods + retry signing context
+            cd ios/App
+            pod deintegrate
+            pod install
+            cd ../..
+
+            xcodebuild archive \
+              -workspace ios/App/App.xcworkspace \
+              -scheme App \
+              -configuration Release \
+              -archivePath $ARCHIVE_PATH \
+              CODE_SIGN_STYLE=Automatic \
+              DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+              -allowProvisioningUpdates
+          fi
+
+      # =====================================================
+      # 8. EXPORT IPA
+      # =====================================================
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath $ARCHIVE_PATH \
+            -exportPath $BUILD_DIR \
+            -exportOptionsPlist ios/App/exportOptions.plist
+
+      # =====================================================
+      # 9. VALIDATION GATE (NO FAKE SUCCESS)
+      # =====================================================
+      - name: Validate output
+        script: |
+          IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
+
+          if [ -z "$IPA" ]; then
+            echo "SELF-HEAL FAILED: IPA missing"
+            exit 1
+          fi
+
+          echo "IPA READY: $IPA"
 
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
+      - $CM_BUILD_DIR/App.xcarchive
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - internal
