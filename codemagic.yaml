@@ -1,26 +1,148 @@
-scripts:
+workflows:
+  ios-production:
+    name: TiliGo iOS Production (Clean CI)
 
-  - name: Clean signing conflict state
-    script: |
-      echo "Removing local signing artifacts (CRITICAL)"
-      rm -rf signing || true
-      rm -rf ios/App/*.mobileprovision || true
+    instance_type: mac_mini_m2
+    max_build_duration: 120
 
-  - name: Force automatic signing mode
-    script: |
-      export DEVELOPMENT_TEAM=RR98G82857
+    integrations:
+      app_store_connect: tiligo_asc
 
-  - name: Archive (single source of truth signing)
-    script: |
-      xcodebuild clean \
-        -workspace ios/App/App.xcworkspace \
-        -scheme App
+    environment:
+      node: 22
+      xcode: latest
+      cocoapods: default
 
-      xcodebuild archive \
-        -workspace ios/App/App.xcworkspace \
-        -scheme App \
-        -configuration Release \
-        -archivePath $CM_BUILD_DIR/App.xcarchive \
-        CODE_SIGN_STYLE=Automatic \
-        DEVELOPMENT_TEAM=RR98G82857 \
-        -allowProvisioningUpdates
+      vars:
+        BUNDLE_ID: "com.tiligo.tilgo"
+        TEAM_ID: "RR98G82857"
+        WORKSPACE: "ios/App/App.xcworkspace"
+        SCHEME: "App"
+        ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
+        BUILD_DIR: "$CM_BUILD_DIR/build"
+
+      groups:
+        - code-signing
+
+    cache:
+      cache_paths:
+        - node_modules
+        - ~/.npm
+        - ios/App/Pods
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
+          include: true
+
+    scripts:
+
+      # -----------------------------
+      # 1. Install dependencies
+      # -----------------------------
+      - name: Install dependencies
+        script: |
+          npm ci --prefer-offline --no-audit
+
+      # -----------------------------
+      # 2. Build web layer
+      # -----------------------------
+      - name: Build web app
+        script: |
+          npm run build
+
+      # -----------------------------
+      # 3. FULL Capacitor reset
+      # ensures clean iOS project
+      # -----------------------------
+      - name: Reset iOS (Capacitor clean build)
+        script: |
+          rm -rf ios
+          npx cap add ios
+          npx cap sync ios
+          npx cap copy ios
+
+      # -----------------------------
+      # 4. Install Pods
+      # -----------------------------
+      - name: Install CocoaPods
+        script: |
+          cd ios/App
+          pod install --repo-update
+          cd ../..
+
+      # -----------------------------
+      # 5. VERIFY PROJECT STATE
+      # -----------------------------
+      - name: Validate Xcode workspace
+        script: |
+          xcodebuild -list -workspace ios/App/App.xcworkspace
+
+      # -----------------------------
+      # 6. FORCE CLEAN SIGNING MODE
+      # ONLY Apple API signing allowed
+      # -----------------------------
+      - name: Enforce signing environment
+        script: |
+          export DEVELOPMENT_TEAM=$TEAM_ID
+
+          # Ensure bundle id consistency
+          grep -rl "PRODUCT_BUNDLE_IDENTIFIER" ios/App \
+            | xargs sed -i '' "s/com.*tiligo.*/com.tiligo.tilgo/g" || true
+
+      # -----------------------------
+      # 7. ARCHIVE (AUTO PROVISIONING)
+      # -----------------------------
+      - name: Archive iOS App
+        script: |
+
+          xcodebuild clean \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App
+
+          xcodebuild archive \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $ARCHIVE_PATH \
+            CODE_SIGN_STYLE=Automatic \
+            DEVELOPMENT_TEAM=$TEAM_ID \
+            -allowProvisioningUpdates
+
+      # -----------------------------
+      # 8. EXPORT IPA
+      # -----------------------------
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath $ARCHIVE_PATH \
+            -exportPath $BUILD_DIR \
+            -exportOptionsPlist ios/App/exportOptions.plist
+
+      # -----------------------------
+      # 9. VALIDATION GATE
+      # prevents fake success builds
+      # -----------------------------
+      - name: Validate IPA
+        script: |
+          IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
+
+          if [ -z "$IPA" ]; then
+            echo "ERROR: IPA NOT GENERATED"
+            exit 1
+          fi
+
+          echo "SUCCESS: IPA CREATED -> $IPA"
+
+    artifacts:
+      - $CM_BUILD_DIR/build/*.ipa
+      - $CM_BUILD_DIR/App.xcarchive
+
+    publishing:
+      app_store_connect:
+        auth: integration
+        submit_to_testflight: true
+        beta_groups:
+          - internal
