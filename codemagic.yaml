@@ -1,6 +1,6 @@
 workflows:
   ios-production:
-    name: TiliGo iOS Stable Build
+    name: TiliGo Production (Hard Reset CI)
 
     instance_type: mac_mini_m2
     max_build_duration: 120
@@ -19,7 +19,7 @@ workflows:
         WORKSPACE: "ios/App/App.xcworkspace"
         SCHEME: "App"
         ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
-        BUILD_DIR: "$CM_BUILD_DIR/build"
+        EXPORT_PATH: "$CM_BUILD_DIR/build"
 
       groups:
         - code-signing
@@ -39,37 +39,30 @@ workflows:
     scripts:
 
       # =====================================================
-      # 1. HARD RESET IOS (ELIMINATES CORRUPTION)
+      # 1. HARD RESET (ELIMINATES ALL CORRUPTION)
       # =====================================================
-      - name: Rebuild iOS clean (critical fix)
+      - name: FULL iOS rebuild (critical fix layer)
         script: |
-          echo "Deleting corrupted iOS project..."
-          rm -rf ios
+          echo "Destroying any broken iOS state..."
 
-          echo "Recreating Capacitor iOS..."
+          rm -rf ios
+          rm -rf node_modules/.cache || true
+
+          echo "Recreating Capacitor iOS project..."
+          npm ci --prefer-offline --no-audit
+          npm run build
+
           npx cap add ios
           npx cap sync ios
           npx cap copy ios
 
-          echo "Validating project exists..."
-          test -f ios/App/App.xcodeproj/project.pbxproj
+          test -f ios/App/App.xcodeproj/project.pbxproj || {
+            echo "ERROR: Xcode project not generated"
+            exit 1
+          }
 
       # =====================================================
-      # 2. INSTALL DEPENDENCIES
-      # =====================================================
-      - name: Install dependencies
-        script: |
-          npm ci --prefer-offline --no-audit
-
-      # =====================================================
-      # 3. BUILD WEB
-      # =====================================================
-      - name: Build web app
-        script: |
-          npm run build
-
-      # =====================================================
-      # 4. POD INSTALL (RECOVERY SAFE)
+      # 2. POD INSTALL (RECOVERY SAFE)
       # =====================================================
       - name: Install CocoaPods
         script: |
@@ -78,28 +71,28 @@ workflows:
           cd ../..
 
       # =====================================================
-      # 5. VALIDATE XCODE PROJECT INTEGRITY
+      # 3. VERIFY WORKSPACE + SCHEME
       # =====================================================
-      - name: Validate Xcode project integrity
+      - name: Validate Xcode workspace
         script: |
-          echo "Checking workspace..."
-
           xcodebuild -list -workspace ios/App/App.xcworkspace
 
-          echo "Checking scheme existence..."
+      - name: Validate scheme exists
+        script: |
           xcodebuild -list -workspace ios/App/App.xcworkspace | grep App
 
       # =====================================================
-      # 6. FORCE CLEAN SIGNING MODE
+      # 4. FORCE SIGNING MODE (NO MANUAL SIGNING)
       # =====================================================
-      - name: Enforce signing environment
+      - name: Enforce signing configuration
         script: |
           export DEVELOPMENT_TEAM=$TEAM_ID
+          echo "Signing set to team $TEAM_ID"
 
       # =====================================================
-      # 7. ARCHIVE (ONLY IF PROJECT IS VALID)
+      # 5. CLEAN ARCHIVE (APPLE API PROVISIONING ONLY)
       # =====================================================
-      - name: Build iOS archive (safe)
+      - name: Build iOS archive
         script: |
 
           set -e
@@ -118,28 +111,28 @@ workflows:
             -allowProvisioningUpdates
 
       # =====================================================
-      # 8. EXPORT IPA
+      # 6. EXPORT IPA
       # =====================================================
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
             -archivePath $ARCHIVE_PATH \
-            -exportPath $BUILD_DIR \
+            -exportPath $EXPORT_PATH \
             -exportOptionsPlist ios/App/exportOptions.plist
 
       # =====================================================
-      # 9. VALIDATE OUTPUT (NO FALSE SUCCESS)
+      # 7. VALIDATION GATE (NO FAKE SUCCESS)
       # =====================================================
       - name: Validate IPA output
         script: |
-          IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
+          IPA=$(find $EXPORT_PATH -name "*.ipa" | head -n 1)
 
           if [ -z "$IPA" ]; then
             echo "BUILD FAILED: IPA NOT GENERATED"
             exit 1
           fi
 
-          echo "SUCCESS: IPA GENERATED -> $IPA"
+          echo "BUILD SUCCESS: $IPA"
 
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
