@@ -1,6 +1,7 @@
 workflows:
   ios-production:
-    name: TiliGo iOS Production
+    name: TiliGo iOS Production Pipeline
+
     instance_type: mac_mini_m2
     max_build_duration: 120
 
@@ -16,14 +17,17 @@ workflows:
         BUNDLE_ID: "com.tiligo.tiligo"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        BUILD_PATH: "$CM_BUILD_DIR/build"
+        BUILD_DIR: "$CM_BUILD_DIR/build"
         ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
 
-      cache:
-        cache_paths:
-          - node_modules
-          - ~/.npm
-          - ios/App/Pods
+      groups:
+        - code-signing
+
+    cache:
+      cache_paths:
+        - node_modules
+        - ~/.npm
+        - ios/App/Pods
 
     triggering:
       events:
@@ -34,52 +38,50 @@ workflows:
 
     scripts:
 
-      # -------------------------
-      # 1. Install dependencies
-      # -------------------------
-      - name: Install Node deps
+      # -----------------------------------
+      # 1. Install dependencies (deterministic)
+      # -----------------------------------
+      - name: Install Node dependencies
         script: |
           npm ci --prefer-offline --no-audit
 
-      # -------------------------
+      # -----------------------------------
       # 2. Build web layer
-      # -------------------------
-      - name: Build web app
+      # -----------------------------------
+      - name: Build web application
         script: |
           npm run build
 
-      # -------------------------
-      # 3. HARD RESET Capacitor iOS
-      # prevents broken builds
-      # -------------------------
-      - name: Reset Capacitor iOS
+      # -----------------------------------
+      # 3. Reset Capacitor iOS (fixes broken builds)
+      # -----------------------------------
+      - name: Reset Capacitor iOS project
         script: |
           rm -rf ios
           npx cap add ios
           npx cap sync ios
           npx cap copy ios
 
-      # -------------------------
-      # 4. Install Pods
-      # -------------------------
-      - name: Install CocoaPods
+      # -----------------------------------
+      # 4. Install CocoaPods
+      # -----------------------------------
+      - name: Install Pods
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
-      # -------------------------
-      # 5. Validate Xcode setup
-      # prevents silent scheme issues
-      # -------------------------
-      - name: Validate Xcode workspace
+      # -----------------------------------
+      # 5. Validate Xcode workspace integrity
+      # -----------------------------------
+      - name: Validate Xcode setup
         script: |
           xcodebuild -list -workspace ios/App/App.xcworkspace
 
-      # -------------------------
-      # 6. Clean + Archive
-      # -------------------------
-      - name: Archive iOS App
+      # -----------------------------------
+      # 6. Clean + Archive (mandatory step)
+      # -----------------------------------
+      - name: Build iOS Archive
         script: |
           xcodebuild clean \
             -workspace ios/App/App.xcworkspace \
@@ -92,33 +94,31 @@ workflows:
             -archivePath $ARCHIVE_PATH \
             CODE_SIGN_STYLE=Automatic
 
-      # -------------------------
-      # 7. Export IPA
-      # -------------------------
+      # -----------------------------------
+      # 7. Export IPA (App Store build)
+      # -----------------------------------
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
             -archivePath $ARCHIVE_PATH \
-            -exportPath $BUILD_PATH \
+            -exportPath $BUILD_DIR \
             -exportOptionsPlist ios/App/exportOptions.plist
 
-      # -------------------------
-      # 8. HARD VALIDATION (CRITICAL FIX)
-      # prevents "green but empty build"
-      # -------------------------
-      - name: Validate IPA exists
+      # -----------------------------------
+      # 8. HARD VALIDATION (prevents fake green builds)
+      # -----------------------------------
+      - name: Validate IPA output
         script: |
           echo "Checking build output..."
-          ls -R $BUILD_PATH
 
-          IPA=$(find $BUILD_PATH -name "*.ipa" | head -n 1)
+          IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
 
           if [ -z "$IPA" ]; then
-            echo "ERROR: IPA NOT GENERATED"
+            echo "BUILD FAILED: IPA not generated"
             exit 1
           fi
 
-          echo "IPA FOUND: $IPA"
+          echo "IPA generated successfully: $IPA"
 
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
