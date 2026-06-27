@@ -1,92 +1,59 @@
 workflows:
   ios-release:
-    name: TiliGo iOS Release
-    max_build_duration: 60
+    name: iOS Release
     instance_type: mac_mini_m2
+    max_build_duration: 120
 
     integrations:
-      app_store_connect:
-        - tiligo_asc
+      app_store_connect: tiligo_asc
 
     environment:
-      node: 18
+      node: 22
       xcode: latest
       cocoapods: default
-
       vars:
         BUNDLE_ID: "com.tiligo.tiligo"
         APP_NAME: "TiliGo"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-        APP_STORE_CONNECT_KEY_ID: "RR98G82857"
-        APP_STORE_CONNECT_ISSUER_ID: "6d7acece-2356-43c3-9946-6fd2cda5bf7d"
+      groups:
+        - code-signing
 
-    # ✅ Correct placement: certificates at workflow root
-    certificates:
-      - distribution: app_store
-        bundle_id: $BUNDLE_ID
-        team_id: $APPLE_TEAM_ID
-        private_key: signing/AppStoreConnect.p8
-        certificate: signing/distribution.p12
-        password: $CERTIFICATE_PASSWORD
+    triggering:
+      events: [push]
+      branch_patterns:
+        - pattern: main
 
     scripts:
-      - name: 📦 Install dependencies
+      - name: Install and build web app
         script: |
-          npm ci || npm install
-
-      - name: 🏗️ Build web app
-        script: |
+          npm ci --prefer-offline
           npm run build
 
-      - name: 🔄 Sync Capacitor iOS
+      - name: Sync Capacitor and install pods
         script: |
+          if [ ! -d "ios" ]; then npx cap add ios; fi
           npx cap sync ios
+          cd ios/App && pod install --repo-update && cd ../..
 
-      - name: 📦 Install CocoaPods
+      - name: Install provisioning profile
         script: |
-          cd ios/App
-          pod install --repo-update
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp signing/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      - name: 🏗️ Build iOS archive
+      - name: Install certificate
         script: |
-          cd ios/App
-          xcodebuild \
-            -workspace App.xcworkspace \
-            -scheme App \
-            -configuration Release \
-            -sdk iphoneos \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            -allowProvisioningUpdates \
-            -allowProvisioningDeviceRegistration \
-            archive
-
-      - name: 📦 Export IPA
-        script: |
-          cd ios/App
-          xcodebuild \
-            -exportArchive \
-            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
-            -exportOptionsPlist ios/App/exportOptions.plist \
-            -exportPath $CM_BUILD_DIR/build/ipa \
-            -allowProvisioningUpdates \
-            -allowProvisioningDeviceRegistration
+          security create-keychain -p build123 build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p build123 build.keychain
+          security import signing/distribution.cer -k build.keychain -A
+          security import signing/tili_distribution.key -k build.keychain -A
+          security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
 
     artifacts:
-      - build/ipa/*.ipa
-      - build/App.xcarchive
+      - $CM_BUILD_DIR/build/*.ipa
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        submit_to_app_store: false
-        beta_build_auto_submit: true
-        build_log_retention: 30
-        auto_increment_build_number: true
-
-      email:
-        recipients:
-          - $USER_EMAIL
-        notify_on_success: true
-        notify_on_failure: true
