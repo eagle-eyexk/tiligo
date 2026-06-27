@@ -1,6 +1,6 @@
 workflows:
-  ios-release:
-    name: iOS Release
+  ios-production:
+    name: TiliGo iOS Production
     instance_type: mac_mini_m2
     max_build_duration: 120
 
@@ -11,49 +11,122 @@ workflows:
       node: 22
       xcode: latest
       cocoapods: default
+
       vars:
         BUNDLE_ID: "com.tiligo.tiligo"
-        APP_NAME: "TiliGo"
         XCODE_WORKSPACE: "ios/App/App.xcworkspace"
         XCODE_SCHEME: "App"
-      groups:
-        - code-signing
+        BUILD_PATH: "$CM_BUILD_DIR/build"
+        ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
+
+      cache:
+        cache_paths:
+          - node_modules
+          - ~/.npm
+          - ios/App/Pods
 
     triggering:
-      events: [push]
+      events:
+        - push
       branch_patterns:
         - pattern: main
+          include: true
 
     scripts:
-      - name: Install and build web app
+
+      # -------------------------
+      # 1. Install dependencies
+      # -------------------------
+      - name: Install Node deps
         script: |
-          npm ci --prefer-offline
+          npm ci --prefer-offline --no-audit
+
+      # -------------------------
+      # 2. Build web layer
+      # -------------------------
+      - name: Build web app
+        script: |
           npm run build
 
-      - name: Sync Capacitor and install pods
+      # -------------------------
+      # 3. HARD RESET Capacitor iOS
+      # prevents broken builds
+      # -------------------------
+      - name: Reset Capacitor iOS
         script: |
-          if [ ! -d "ios" ]; then npx cap add ios; fi
+          rm -rf ios
+          npx cap add ios
           npx cap sync ios
-          cd ios/App && pod install --repo-update && cd ../..
+          npx cap copy ios
 
-      - name: Install provisioning profile
+      # -------------------------
+      # 4. Install Pods
+      # -------------------------
+      - name: Install CocoaPods
         script: |
-          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
-          cp signing/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          cd ios/App
+          pod install --repo-update
+          cd ../..
 
-      - name: Install certificate
+      # -------------------------
+      # 5. Validate Xcode setup
+      # prevents silent scheme issues
+      # -------------------------
+      - name: Validate Xcode workspace
         script: |
-          security create-keychain -p build123 build.keychain
-          security default-keychain -s build.keychain
-          security unlock-keychain -p build123 build.keychain
-          security import signing/distribution.cer -k build.keychain -A
-          security import signing/tili_distribution.key -k build.keychain -A
-          security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
+          xcodebuild -list -workspace ios/App/App.xcworkspace
+
+      # -------------------------
+      # 6. Clean + Archive
+      # -------------------------
+      - name: Archive iOS App
+        script: |
+          xcodebuild clean \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App
+
+          xcodebuild archive \
+            -workspace ios/App/App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath $ARCHIVE_PATH \
+            CODE_SIGN_STYLE=Automatic
+
+      # -------------------------
+      # 7. Export IPA
+      # -------------------------
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath $ARCHIVE_PATH \
+            -exportPath $BUILD_PATH \
+            -exportOptionsPlist ios/App/exportOptions.plist
+
+      # -------------------------
+      # 8. HARD VALIDATION (CRITICAL FIX)
+      # prevents "green but empty build"
+      # -------------------------
+      - name: Validate IPA exists
+        script: |
+          echo "Checking build output..."
+          ls -R $BUILD_PATH
+
+          IPA=$(find $BUILD_PATH -name "*.ipa" | head -n 1)
+
+          if [ -z "$IPA" ]; then
+            echo "ERROR: IPA NOT GENERATED"
+            exit 1
+          fi
+
+          echo "IPA FOUND: $IPA"
 
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
+      - $CM_BUILD_DIR/App.xcarchive
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - internal
