@@ -1,6 +1,6 @@
 workflows:
   ios-production:
-    name: TiliGo iOS Production (Clean CI)
+    name: TiliGo iOS Stable Build
 
     instance_type: mac_mini_m2
     max_build_duration: 120
@@ -14,8 +14,8 @@ workflows:
       cocoapods: default
 
       vars:
-        BUNDLE_ID: "com.tiligo.tilgo"
         TEAM_ID: "RR98G82857"
+        BUNDLE_ID: "com.tiligo.tilgo"
         WORKSPACE: "ios/App/App.xcworkspace"
         SCHEME: "App"
         ARCHIVE_PATH: "$CM_BUILD_DIR/App.xcarchive"
@@ -28,7 +28,6 @@ workflows:
       cache_paths:
         - node_modules
         - ~/.npm
-        - ios/App/Pods
 
     triggering:
       events:
@@ -39,64 +38,71 @@ workflows:
 
     scripts:
 
-      # -----------------------------
-      # 1. Install dependencies
-      # -----------------------------
-      - name: Install dependencies
+      # =====================================================
+      # 1. HARD RESET IOS (ELIMINATES CORRUPTION)
+      # =====================================================
+      - name: Rebuild iOS clean (critical fix)
         script: |
-          npm ci --prefer-offline --no-audit
-
-      # -----------------------------
-      # 2. Build web layer
-      # -----------------------------
-      - name: Build web app
-        script: |
-          npm run build
-
-      # -----------------------------
-      # 3. FULL Capacitor reset
-      # ensures clean iOS project
-      # -----------------------------
-      - name: Reset iOS (Capacitor clean build)
-        script: |
+          echo "Deleting corrupted iOS project..."
           rm -rf ios
+
+          echo "Recreating Capacitor iOS..."
           npx cap add ios
           npx cap sync ios
           npx cap copy ios
 
-      # -----------------------------
-      # 4. Install Pods
-      # -----------------------------
+          echo "Validating project exists..."
+          test -f ios/App/App.xcodeproj/project.pbxproj
+
+      # =====================================================
+      # 2. INSTALL DEPENDENCIES
+      # =====================================================
+      - name: Install dependencies
+        script: |
+          npm ci --prefer-offline --no-audit
+
+      # =====================================================
+      # 3. BUILD WEB
+      # =====================================================
+      - name: Build web app
+        script: |
+          npm run build
+
+      # =====================================================
+      # 4. POD INSTALL (RECOVERY SAFE)
+      # =====================================================
       - name: Install CocoaPods
         script: |
           cd ios/App
-          pod install --repo-update
+          pod install --repo-update || pod install
           cd ../..
 
-      # -----------------------------
-      # 5. VERIFY PROJECT STATE
-      # -----------------------------
-      - name: Validate Xcode workspace
+      # =====================================================
+      # 5. VALIDATE XCODE PROJECT INTEGRITY
+      # =====================================================
+      - name: Validate Xcode project integrity
         script: |
+          echo "Checking workspace..."
+
           xcodebuild -list -workspace ios/App/App.xcworkspace
 
-      # -----------------------------
+          echo "Checking scheme existence..."
+          xcodebuild -list -workspace ios/App/App.xcworkspace | grep App
+
+      # =====================================================
       # 6. FORCE CLEAN SIGNING MODE
-      # ONLY Apple API signing allowed
-      # -----------------------------
+      # =====================================================
       - name: Enforce signing environment
         script: |
           export DEVELOPMENT_TEAM=$TEAM_ID
 
-          # Ensure bundle id consistency
-          grep -rl "PRODUCT_BUNDLE_IDENTIFIER" ios/App \
-            | xargs sed -i '' "s/com.*tiligo.*/com.tiligo.tilgo/g" || true
-
-      # -----------------------------
-      # 7. ARCHIVE (AUTO PROVISIONING)
-      # -----------------------------
-      - name: Archive iOS App
+      # =====================================================
+      # 7. ARCHIVE (ONLY IF PROJECT IS VALID)
+      # =====================================================
+      - name: Build iOS archive (safe)
         script: |
+
+          set -e
 
           xcodebuild clean \
             -workspace ios/App/App.xcworkspace \
@@ -111,9 +117,9 @@ workflows:
             DEVELOPMENT_TEAM=$TEAM_ID \
             -allowProvisioningUpdates
 
-      # -----------------------------
+      # =====================================================
       # 8. EXPORT IPA
-      # -----------------------------
+      # =====================================================
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
@@ -121,20 +127,19 @@ workflows:
             -exportPath $BUILD_DIR \
             -exportOptionsPlist ios/App/exportOptions.plist
 
-      # -----------------------------
-      # 9. VALIDATION GATE
-      # prevents fake success builds
-      # -----------------------------
-      - name: Validate IPA
+      # =====================================================
+      # 9. VALIDATE OUTPUT (NO FALSE SUCCESS)
+      # =====================================================
+      - name: Validate IPA output
         script: |
           IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
 
           if [ -z "$IPA" ]; then
-            echo "ERROR: IPA NOT GENERATED"
+            echo "BUILD FAILED: IPA NOT GENERATED"
             exit 1
           fi
 
-          echo "SUCCESS: IPA CREATED -> $IPA"
+          echo "SUCCESS: IPA GENERATED -> $IPA"
 
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
