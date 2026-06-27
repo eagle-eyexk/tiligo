@@ -1,6 +1,6 @@
 workflows:
   ios-production:
-    name: TiliGo iOS Production Pipeline
+    name: TiliGo iOS Auto Build
 
     instance_type: mac_mini_m2
     max_build_duration: 120
@@ -42,22 +42,21 @@ workflows:
       # ----------------------------
       # 1. Install dependencies
       # ----------------------------
-      - name: Install Node dependencies
+      - name: Install dependencies
         script: |
           npm ci --prefer-offline --no-audit
 
       # ----------------------------
-      # 2. Build web layer
+      # 2. Build web app
       # ----------------------------
       - name: Build web app
         script: |
           npm run build
 
       # ----------------------------
-      # 3. HARD RESET Capacitor iOS
-      # prevents broken Xcode state
+      # 3. FULL Capacitor reset (prevents broken iOS state)
       # ----------------------------
-      - name: Reset Capacitor iOS project
+      - name: Capacitor reset
         script: |
           rm -rf ios
           npx cap add ios
@@ -65,25 +64,32 @@ workflows:
           npx cap copy ios
 
       # ----------------------------
-      # 4. Install CocoaPods
+      # 4. Install pods
       # ----------------------------
-      - name: Install CocoaPods
+      - name: CocoaPods install
         script: |
           cd ios/App
           pod install --repo-update
           cd ../..
 
       # ----------------------------
-      # 5. VERIFY XCODE CONFIG
+      # 5. FORCE AUTO SIGNING + AUTO PROFILE CREATION
       # ----------------------------
-      - name: Validate Xcode workspace
+      - name: Enable automatic signing
+        script: |
+          export DEVELOPMENT_TEAM=$APPLE_TEAM_ID
+
+      # ----------------------------
+      # 6. Verify Xcode project
+      # ----------------------------
+      - name: Validate Xcode project
         script: |
           xcodebuild -list -workspace ios/App/App.xcworkspace
 
       # ----------------------------
-      # 6. CLEAN + ARCHIVE (FIXED SIGNING)
+      # 7. ARCHIVE (AUTO CREATES PROFILES)
       # ----------------------------
-      - name: Build iOS Archive
+      - name: Archive iOS app (auto provisioning)
         script: |
           xcodebuild clean \
             -workspace ios/App/App.xcworkspace \
@@ -96,10 +102,11 @@ workflows:
             -archivePath $ARCHIVE_PATH \
             CODE_SIGN_STYLE=Automatic \
             DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
-            -allowProvisioningUpdates
+            -allowProvisioningUpdates \
+            -authenticationKeyPath $CM_APP_STORE_CONNECT_PRIVATE_KEY_PATH
 
       # ----------------------------
-      # 7. EXPORT IPA
+      # 8. EXPORT IPA
       # ----------------------------
       - name: Export IPA
         script: |
@@ -109,19 +116,18 @@ workflows:
             -exportOptionsPlist ios/App/exportOptions.plist
 
       # ----------------------------
-      # 8. VALIDATE IPA OUTPUT
-      # prevents fake success builds
+      # 9. VALIDATE OUTPUT
       # ----------------------------
-      - name: Validate IPA output
+      - name: Validate IPA
         script: |
           IPA=$(find $BUILD_DIR -name "*.ipa" | head -n 1)
 
           if [ -z "$IPA" ]; then
-            echo "BUILD FAILED: IPA NOT GENERATED"
+            echo "ERROR: IPA NOT GENERATED"
             exit 1
           fi
 
-          echo "IPA GENERATED: $IPA"
+          echo "IPA CREATED: $IPA"
 
     artifacts:
       - $CM_BUILD_DIR/build/*.ipa
