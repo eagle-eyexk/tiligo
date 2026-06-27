@@ -1,33 +1,46 @@
 workflows:
   ios-release:
     name: iOS Release
-    instance_type: mac_mini_m1
+    instance_type: mac_mini_m2
     max_build_duration: 120
+
     integrations:
       app_store_connect: tiligo_asc
+
     environment:
       node: 22
       xcode: latest
       cocoapods: default
+      vars:
+        BUNDLE_ID: "com.tiligo.tiligo"
+        APP_NAME: "TiliGo"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
       groups:
         - code-signing
+
     triggering:
       events: [push]
-      branch_patterns: [{pattern: main}]
+      branch_patterns:
+        - pattern: main
+
     scripts:
-      - name: Install and build
+      - name: Install and build web app
         script: |
           npm ci --prefer-offline
           npm run build
-      - name: Sync and pod install
+
+      - name: Sync Capacitor and install pods
         script: |
           if [ ! -d "ios" ]; then npx cap add ios; fi
           npx cap sync ios
           cd ios/App && pod install --repo-update && cd ../..
+
       - name: Install provisioning profile
         script: |
           mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
           cp signing/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+
       - name: Install certificate
         script: |
           security create-keychain -p build123 build.keychain
@@ -36,8 +49,10 @@ workflows:
           security import signing/distribution.cer -k build.keychain -A
           security import signing/tili_distribution.key -k build.keychain -A
           security set-keychain-settings -t 3600 -l ~/Library/Keychains/build.keychain
+
     artifacts:
-      - /Users/builder/build/*.ipa
+      - $CM_BUILD_DIR/build/*.ipa
+
     publishing:
       app_store_connect:
         auth: integration
