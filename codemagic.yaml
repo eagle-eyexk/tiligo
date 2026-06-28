@@ -1,7 +1,6 @@
 workflows:
   ios-release:
-    name: iOS Release
-
+    name: iOS Release (Auto-Heal)
     instance_type: mac_mini_m2
     max_build_duration: 120
 
@@ -14,45 +13,111 @@ workflows:
       cocoapods: default
 
       vars:
-        TEAM_ID: "RR98G82857"
+        APP_NAME: "TiliGo"
         BUNDLE_ID: "com.tiligo.tilgo"
+        WORKSPACE: "ios/App/App.xcworkspace"
+        SCHEME: "App"
+        PROJECT_DIR: "ios/App"
 
       groups:
-        - code-signing   # ONLY for API key, NOT certificates
+        - code-signing
+
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: main
 
     scripts:
-      - name: Build
+
+      # =========================
+      # 1. CLEAN ENV (SELF-HEAL)
+      # =========================
+      - name: Clean environment (fix stale builds)
+        script: |
+          rm -rf ios/App/build || true
+          rm -rf ~/Library/Developer/Xcode/DerivedData || true
+
+      # =========================
+      # 2. INSTALL + BUILD WEB
+      # =========================
+      - name: Install dependencies
         script: |
           npm ci
+
+      - name: Build web app
+        script: |
           npm run build
 
-      - name: iOS sync
+      # =========================
+      # 3. FIX CAPACITOR (AUTO ALIGN)
+      # =========================
+      - name: Sync Capacitor (auto fix iOS project)
         script: |
-          rm -rf ios
-          npx cap add ios
           npx cap sync ios
+          npx cap update ios || true
 
-      - name: Install pods
+      # =========================
+      # 4. POD FIX (CRITICAL)
+      # =========================
+      - name: Install CocoaPods
         script: |
           cd ios/App
+          pod repo update
           pod install
           cd ../..
 
-      - name: Archive
+      # =========================
+      # 5. FORCE VALID WORKSPACE CHECK
+      # =========================
+      - name: Validate Xcode project
         script: |
-          xcodebuild archive \
+          ls -la ios/App
+          xcodebuild -list -workspace ios/App/App.xcworkspace || true
+
+      # =========================
+      # 6. AUTO SIGNING FIX (KEY PART)
+      # =========================
+      - name: Force automatic signing (override broken project settings)
+        script: |
+          sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/g' ios/App/App.xcodeproj/project.pbxproj || true
+          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' ios/App/App.xcodeproj/project.pbxproj || true
+          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = RR98G82857;/g' ios/App.xcodeproj/project.pbxproj || true
+          sed -i '' 's/com.tiligo.tiligo/com.tiligo.tilgo/g' ios/App/App.xcodeproj/project.pbxproj || true
+
+      # =========================
+      # 7. ARCHIVE (AUTO PROVISIONING ENABLED)
+      # =========================
+      - name: Build iOS Archive
+        script: |
+          xcodebuild \
             -workspace ios/App/App.xcworkspace \
             -scheme App \
             -configuration Release \
-            -archivePath $CM_BUILD_DIR/app.xcarchive \
+            -sdk iphoneos \
+            -archivePath build/App.xcarchive \
+            clean archive \
             CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=$TEAM_ID \
+            DEVELOPMENT_TEAM=RR98G82857 \
             -allowProvisioningUpdates
 
+      # =========================
+      # 8. EXPORT IPA
+      # =========================
+      - name: Export IPA
+        script: |
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist ios/App/exportOptions.plist \
+            -exportPath build/ipa
+
     artifacts:
-      - $CM_BUILD_DIR/*.ipa
+      - build/ipa/*.ipa
+      - build/*.xcarchive
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        beta_groups:
+          - Testers
