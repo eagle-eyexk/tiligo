@@ -1,6 +1,6 @@
 workflows:
   ios-release:
-    name: iOS Release (Auto-Heal)
+    name: TiliGo iOS Deterministic Build
     instance_type: mac_mini_m2
     max_build_duration: 120
 
@@ -15,9 +15,9 @@ workflows:
       vars:
         APP_NAME: "TiliGo"
         BUNDLE_ID: "com.tiligo.tilgo"
+        TEAM_ID: "RR98G82857"
         WORKSPACE: "ios/App/App.xcworkspace"
         SCHEME: "App"
-        PROJECT_DIR: "ios/App"
 
       groups:
         - code-signing
@@ -30,18 +30,20 @@ workflows:
 
     scripts:
 
-      # =========================
-      # 1. CLEAN ENV (SELF-HEAL)
-      # =========================
-      - name: Clean environment (fix stale builds)
+      # --------------------------------------------------
+      # 1. HARD RESET (ELIMINATES ALL DRIFT)
+      # --------------------------------------------------
+      - name: Clean workspace completely
         script: |
-          rm -rf ios/App/build || true
-          rm -rf ~/Library/Developer/Xcode/DerivedData || true
+          echo "Removing all iOS artifacts..."
+          rm -rf ios/App
+          rm -rf ~/Library/Developer/Xcode/DerivedData
+          rm -rf ~/Library/Caches/CocoaPods
 
-      # =========================
-      # 2. INSTALL + BUILD WEB
-      # =========================
-      - name: Install dependencies
+      # --------------------------------------------------
+      # 2. INSTALL DEPENDENCIES
+      # --------------------------------------------------
+      - name: Install Node dependencies
         script: |
           npm ci
 
@@ -49,47 +51,59 @@ workflows:
         script: |
           npm run build
 
-      # =========================
-      # 3. FIX CAPACITOR (AUTO ALIGN)
-      # =========================
-      - name: Sync Capacitor (auto fix iOS project)
+      # --------------------------------------------------
+      # 3. REBUILD IOS FROM CAPACITOR (SOURCE OF TRUTH)
+      # --------------------------------------------------
+      - name: Recreate iOS platform deterministically
         script: |
+          npx cap init TiliGo com.tiligo.tilgo --web-dir=dist || true
+          npx cap add ios || true
           npx cap sync ios
-          npx cap update ios || true
 
-      # =========================
-      # 4. POD FIX (CRITICAL)
-      # =========================
-      - name: Install CocoaPods
+      # --------------------------------------------------
+      # 4. FORCE CLEAN POD INSTALL
+      # --------------------------------------------------
+      - name: Install CocoaPods clean
         script: |
           cd ios/App
-          pod repo update
-          pod install
+          pod deintegrate || true
+          pod cache clean --all || true
+          pod install --repo-update
           cd ../..
 
-      # =========================
-      # 5. FORCE VALID WORKSPACE CHECK
-      # =========================
-      - name: Validate Xcode project
+      # --------------------------------------------------
+      # 5. VERIFY PROJECT INTEGRITY
+      # --------------------------------------------------
+      - name: Validate Xcode workspace
         script: |
-          ls -la ios/App
-          xcodebuild -list -workspace ios/App/App.xcworkspace || true
+          xcodebuild -list -workspace ios/App/App.xcworkspace
 
-      # =========================
-      # 6. AUTO SIGNING FIX (KEY PART)
-      # =========================
-      - name: Force automatic signing (override broken project settings)
+      # --------------------------------------------------
+      # 6. SIGNING NORMALIZATION (CRITICAL FIX LAYER)
+      # --------------------------------------------------
+      - name: Normalize signing configuration
         script: |
-          sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/g' ios/App/App.xcodeproj/project.pbxproj || true
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' ios/App/App.xcodeproj/project.pbxproj || true
-          sed -i '' 's/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = RR98G82857;/g' ios/App.xcodeproj/project.pbxproj || true
-          sed -i '' 's/com.tiligo.tiligo/com.tiligo.tilgo/g' ios/App/App.xcodeproj/project.pbxproj || true
+          PBX=ios/App/App.xcodeproj/project.pbxproj
 
-      # =========================
-      # 7. ARCHIVE (AUTO PROVISIONING ENABLED)
-      # =========================
-      - name: Build iOS Archive
+          # Force automatic signing only
+          sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/g' $PBX || true
+
+          # Remove hardcoded provisioning profiles
+          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' $PBX || true
+
+          # Fix team ID
+          sed -i '' "s/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" $PBX || true
+
+          # Fix bundle id drift
+          sed -i '' "s/com.tiligo.tiligo/com.tiligo.tilgo/g" $PBX || true
+
+      # --------------------------------------------------
+      # 7. DETERMNISTIC ARCHIVE (NO LOCAL SIGNING)
+      # --------------------------------------------------
+      - name: Archive iOS app
         script: |
+          set -o pipefail
+
           xcodebuild \
             -workspace ios/App/App.xcworkspace \
             -scheme App \
@@ -98,18 +112,19 @@ workflows:
             -archivePath build/App.xcarchive \
             clean archive \
             CODE_SIGN_STYLE=Automatic \
-            DEVELOPMENT_TEAM=RR98G82857 \
+            CODE_SIGN_IDENTITY="" \
+            DEVELOPMENT_TEAM=$TEAM_ID \
             -allowProvisioningUpdates
 
-      # =========================
+      # --------------------------------------------------
       # 8. EXPORT IPA
-      # =========================
+      # --------------------------------------------------
       - name: Export IPA
         script: |
           xcodebuild -exportArchive \
             -archivePath build/App.xcarchive \
-            -exportOptionsPlist ios/App/exportOptions.plist \
-            -exportPath build/ipa
+            -exportPath build/ipa \
+            -exportOptionsPlist ios/App/exportOptions.plist
 
     artifacts:
       - build/ipa/*.ipa
@@ -119,5 +134,3 @@ workflows:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
-        beta_groups:
-          - Testers
