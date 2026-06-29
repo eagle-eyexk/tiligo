@@ -1,136 +1,157 @@
 workflows:
   ios-release:
-    name: TiliGo iOS Deterministic Build
+    name: Pellazgo iOS Release
+    max_build_duration: 60
     instance_type: mac_mini_m2
-    max_build_duration: 120
 
     integrations:
-      app_store_connect: tiligo_asc
+      app_store_connect: pellazgo_asc
 
     environment:
-      node: 22
+      node: 18
       xcode: latest
       cocoapods: default
-
       vars:
-        APP_NAME: "TiliGo"
-        BUNDLE_ID: "com.tiligo.tilgo"
-        TEAM_ID: "RR98G82857"
-        WORKSPACE: "ios/App/App.xcworkspace"
-        SCHEME: "App"
-
-      groups:
-        - code-signing
-
-    triggering:
-      events:
-        - push
-      branch_patterns:
-        - pattern: main
+        BUNDLE_ID: "com.pellazgo.pellazgo"
+        APP_NAME: "Pellazgo"
+        XCODE_WORKSPACE: "ios/App/App.xcworkspace"
+        XCODE_SCHEME: "App"
+        APPLE_TEAM_ID: "H4QUDPK7S3"
+        CERT_PASSWORD: "xbGsHVMw"
 
     scripts:
-
-      # --------------------------------------------------
-      # 1. HARD RESET (ELIMINATES ALL DRIFT)
-      # --------------------------------------------------
-      - name: Clean workspace completely
+      # ──────────────────────────────────────────────────────────────
+      # 1. Install provisioning profile
+      # ──────────────────────────────────────────────────────────────
+      - name: Install provisioning profile
         script: |
-          echo "Removing all iOS artifacts..."
-          rm -rf ios/App
-          rm -rf ~/Library/Developer/Xcode/DerivedData
-          rm -rf ~/Library/Caches/CocoaPods
+          echo "📱 Installing provisioning profile..."
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp signing/*.mobileprovision ~/Library/MobileDevice/Provisioning\ Profiles/
+          echo "✅ Provisioning profiles installed:"
+          ls -la ~/Library/MobileDevice/Provisioning\ Profiles/
 
-      # --------------------------------------------------
-      # 2. INSTALL DEPENDENCIES
-      # --------------------------------------------------
-      - name: Install Node dependencies
+      # ──────────────────────────────────────────────────────────────
+      # 2. Set up certificate in keychain
+      # ──────────────────────────────────────────────────────────────
+      - name: Set up certificate
         script: |
-          npm ci
+          echo "🔐 Setting up certificate..."
+          security create-keychain -p build123 build.keychain
+          security default-keychain -s build.keychain
+          security unlock-keychain -p build123 build.keychain
+          security import signing/*.p12 -k build.keychain -P "$CERT_PASSWORD" -A
+          security set-keychain-settings -t 3600 -l build.keychain
+          echo "✅ Certificate installed"
 
-      - name: Build web app
+      # ──────────────────────────────────────────────────────────────
+      # 3. Fix Xcode project to use AUTOMATIC signing
+      # ──────────────────────────────────────────────────────────────
+      - name: Fix Xcode project signing
         script: |
+          echo "🔧 Setting Xcode project to AUTOMATIC signing..."
+          python3 -c "
+          import re
+          import os
+
+          PROJECT_FILE = 'ios/App/App.xcodeproj/project.pbxproj'
+
+          if not os.path.exists(PROJECT_FILE):
+              print('❌ Project file not found')
+              exit(1)
+
+          with open(PROJECT_FILE, 'r') as f:
+              content = f.read()
+
+          # Set to Automatic signing
+          content = re.sub(r'CODE_SIGN_STYLE = Manual;', 'CODE_SIGN_STYLE = Automatic;', content)
+          content = re.sub(r'CODE_SIGN_STYLE = .*?;', 'CODE_SIGN_STYLE = Automatic;', content)
+
+          # Remove manual profile specifier
+          content = re.sub(r'PROVISIONING_PROFILE_SPECIFIER = .*?;', '', content)
+
+          # Set DEVELOPMENT_TEAM
+          content = re.sub(r'DEVELOPMENT_TEAM = .*?;', 'DEVELOPMENT_TEAM = H4QUDPK7S3;', content)
+
+          # Update bundle ID
+          content = re.sub(r'PRODUCT_BUNDLE_IDENTIFIER = .*?;', 'PRODUCT_BUNDLE_IDENTIFIER = com.pellazgo.pellazgo;', content)
+
+          with open(PROJECT_FILE, 'w') as f:
+              f.write(content)
+
+          print('✅ Project set to Automatic signing')
+          "
+
+      # ──────────────────────────────────────────────────────────────
+      # 4. Install dependencies & build web app
+      # ──────────────────────────────────────────────────────────────
+      - name: Install dependencies & build web app
+        script: |
+          echo "📦 Installing dependencies..."
+          npm ci --prefer-offline
+          echo "🏗️ Building web app..."
           npm run build
 
-      # --------------------------------------------------
-      # 3. REBUILD IOS FROM CAPACITOR (SOURCE OF TRUTH)
-      # --------------------------------------------------
-      - name: Recreate iOS platform deterministically
+      # ──────────────────────────────────────────────────────────────
+      # 5. Sync Capacitor
+      # ──────────────────────────────────────────────────────────────
+      - name: Sync Capacitor
         script: |
-          npx cap init TiliGo com.tiligo.tilgo --web-dir=dist || true
-          npx cap add ios || true
+          echo "🔄 Syncing Capacitor..."
           npx cap sync ios
+          if [ -f "capacitor.config.json" ]; then
+            cp capacitor.config.json ios/App/App/
+            echo "✅ capacitor.config.json copied"
+          fi
 
-      # --------------------------------------------------
-      # 4. FORCE CLEAN POD INSTALL
-      # --------------------------------------------------
-      - name: Install CocoaPods clean
+      # ──────────────────────────────────────────────────────────────
+      # 6. Install CocoaPods
+      # ──────────────────────────────────────────────────────────────
+      - name: Install CocoaPods
         script: |
+          echo "📦 Installing CocoaPods..."
+          cd ios/App && pod install --repo-update
+
+      # ──────────────────────────────────────────────────────────────
+      # 7. Build archive (AUTOMATIC signing - NO manual profile)
+      # ──────────────────────────────────────────────────────────────
+      - name: Build archive
+        script: |
+          echo "🏗️ Building archive..."
           cd ios/App
-          pod deintegrate || true
-          pod cache clean --all || true
-          pod install --repo-update
-          cd ../..
-
-      # --------------------------------------------------
-      # 5. VERIFY PROJECT INTEGRITY
-      # --------------------------------------------------
-      - name: Validate Xcode workspace
-        script: |
-          xcodebuild -list -workspace ios/App/App.xcworkspace
-
-      # --------------------------------------------------
-      # 6. SIGNING NORMALIZATION (CRITICAL FIX LAYER)
-      # --------------------------------------------------
-      - name: Normalize signing configuration
-        script: |
-          PBX=ios/App/App.xcodeproj/project.pbxproj
-
-          # Force automatic signing only
-          sed -i '' 's/CODE_SIGN_STYLE = Manual/CODE_SIGN_STYLE = Automatic/g' $PBX || true
-
-          # Remove hardcoded provisioning profiles
-          sed -i '' 's/PROVISIONING_PROFILE_SPECIFIER = .*;//g' $PBX || true
-
-          # Fix team ID
-          sed -i '' "s/DEVELOPMENT_TEAM = .*;/DEVELOPMENT_TEAM = ${TEAM_ID};/g" $PBX || true
-
-          # Fix bundle id drift
-          sed -i '' "s/com.tiligo.tiligo/com.tiligo.tilgo/g" $PBX || true
-
-      # --------------------------------------------------
-      # 7. DETERMNISTIC ARCHIVE (NO LOCAL SIGNING)
-      # --------------------------------------------------
-      - name: Archive iOS app
-        script: |
-          set -o pipefail
-
           xcodebuild \
-            -workspace ios/App/App.xcworkspace \
+            -workspace App.xcworkspace \
             -scheme App \
             -configuration Release \
             -sdk iphoneos \
-            -archivePath build/App.xcarchive \
-            clean archive \
-            CODE_SIGN_STYLE=Automatic \
-            CODE_SIGN_IDENTITY="" \
-            DEVELOPMENT_TEAM=$TEAM_ID \
-            -allowProvisioningUpdates
+            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration \
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID \
+            archive
 
-      # --------------------------------------------------
-      # 8. EXPORT IPA
-      # --------------------------------------------------
+      # ──────────────────────────────────────────────────────────────
+      # 8. Export IPA
+      # ──────────────────────────────────────────────────────────────
       - name: Export IPA
         script: |
-          xcodebuild -exportArchive \
-            -archivePath build/App.xcarchive \
-            -exportPath build/ipa \
-            -exportOptionsPlist ios/App/exportOptions.plist
+          echo "📦 Exporting IPA..."
+          cd ios/App
+          xcodebuild \
+            -exportArchive \
+            -archivePath $CM_BUILD_DIR/build/App.xcarchive \
+            -exportOptionsPlist exportOptions.plist \
+            -exportPath $CM_BUILD_DIR/build/ipa \
+            -allowProvisioningUpdates \
+            -allowProvisioningDeviceRegistration \
+            DEVELOPMENT_TEAM=$APPLE_TEAM_ID
 
     artifacts:
       - build/ipa/*.ipa
-      - build/*.xcarchive
+      - build/App.xcarchive
 
     publishing:
       app_store_connect:
         auth: integration
         submit_to_testflight: true
+        submit_to_app_store: false
